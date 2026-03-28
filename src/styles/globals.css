@@ -1,0 +1,557 @@
+/* Import IBM Plex Sans font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+:root {
+  /* Base font size */
+  --font-size: 16px;
+  
+  /* Typography variables - Desktop */
+  --text-h1: 39px;
+  --text-h2: 31px;
+  --text-h3: 25px;
+  --text-h4: 20px;
+  --text-p: 16px;
+  --text-label: 13px;
+  --text-caption: 13px;
+  --text-nav-item: 15px;
+  
+  /* Font weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  /*Spark 2 Fills */
+  --fill-weaker: rgba(54, 57, 61, 0.04);
+  --fill-strong: rgba(54, 57, 61, 1);
+  --fill-high-contrast: rgba(26, 26, 26, 1);
+  --fill-muted: rgba(54, 57, 61, 0.8);
+  --fill-weak: rgba(54, 57, 61, 0.08);
+  --fill-hover: rgba(54, 57, 61, 0.08);
+  --fill-success-strong: rgba(46, 94, 24, 1);
+  --fill-information-strong: rgba(86, 50, 164, 1);
+  --fill-warning-strong: rgba(122, 77, 0, 1);
+  --fill-error-strong: rgba(160, 19, 19, 1);
+  --fill-destructive-strong: rgba(160, 19, 19, 1);
+
+  /*Spark 2 Text */
+  --text-high-contrast: rgba(26, 26, 26, 1);
+  --text-strong: rgba(54, 57, 61, 1);
+  --text-weak: rgba(54, 57, 61, 0.80);
+  --text-key: rgba(22, 90, 138, 1);
+  --text-special: rgba(54, 57, 61, 1);
+  --text-error: rgba(160, 19, 19, 1);
+  --text-success: rgba(46, 94, 24, 1);
+  --text-warning: rgba(122, 77, 0, 1);
+  --text-information: rgba(86, 50, 164, 1);
+  --text-inverse-strong: rgba(242, 236, 233, 1);
+  --text-inverse-weak: rgba(242, 242, 242, 0.85);
+
+  /*Spark 2 Key Fill */
+  --fill-key-strong: rgba(54, 57, 61, 1);
+  --fill-key-vivid: rgba(26, 26, 26, 1);
+  --fill-key-weak: rgba(54, 57, 61, 0.08);
+
+  /*Spark 2 Special Fill */
+  --fill-special-vivid: rgba(254, 198, 46, 1);
+  --fill-special-strong: rgba(230, 168, 23, 1);
+  --fill-special-weak: rgba(230, 168, 23, 0.25);
+
+  /*Spark 2 Stroke */
+  --stroke-key-strong: rgba(54, 57, 61, 0.60);
+  
+  /* The default background colors for the application. */
+  --base: rgba(244, 243, 239, 1);
+  --raised: rgba(249, 249, 247, 1);
+  --sunken: rgba(239, 238, 232, 1);
+  /* The default color for elements or text that appears on top of the background. */
+  --foreground: var(--text-strong);
+  /* The background color for cards, modals, and other containers. */
+  --overlay: rgba(255, 255, 255, 1);
+  /* The default color for text or elements that appear on top of cards, modals and other background containers. */
+  --overlay-foreground: var(--text-strong);
+  /* The background color for dropdowns and tooltips. */
+  --popover: var(--overlay);
+  /* The default color for text or elements that appear on top of dropdowns and tooltips. */
+  --popover-foreground: var(--text-strong);
+  /* The primary color used for buttons, links, and other interactive elements. */
+  --primary: var(--fill-key-strong);
+  /* The default color for text or elements that appear on top of primary colored elements. */
+  --primary-foreground: var(--text-inverse-strong);
+  /* The secondary color used for secondary(but NOT-DESTRUCTIVE) buttons and interactive elements. */
+  --secondary: rgba(255, 255, 255, 0.00);
+  /* The default color for text or elements that appear on top of secondary colored elements. */
+  --secondary-foreground: rgba(54, 57, 61, 0.80);
+  /* The muted color used for less prominent elements, such as disabled buttons or disabled text. */
+  --muted: rgba(54, 57, 61, 0.04);
+  /* The default color for text or elements that appear on top of muted colored elements. */
+  --muted-foreground: rgba(54, 57, 61, 0.60);
+  /* The accent color used for highlights, links, and other interactive elements. */
+  --accent: var(--text-key);
+  /* The default color for text or elements that appear on top of accent colored elements. */
+  --accent-foreground: var(--text-inverse-strong);
+  /* The color used for background in destructive actions, such as delete buttons or error messages. */
+  --destructive: var(--fill-destructive-strong);
+  /* The default color for text or elements that appear on top of destructive colored elements. */
+  --destructive-foreground: rgba(255, 255, 255, 1.00);
+  /* The default border color for elements such as inputs, buttons, and other containers. */
+  --border: rgba(54, 57, 61, 0.12);
+  /* A stronger border color for emphasis or hover states. */
+  --border-strong: rgba(54, 57, 61, 0.25);
+  /* The default background color for input fields once the text has been filled. Should be either transparent or match the input-background. */
+  --input: var(--overlay);
+  /* The default background color for input fields, text areas, and other input elements. */
+  --input-background: var(--raised);
+  /* The default color for focus rings, outlines, and other focus indicators. */
+  --ring: var(--text-key);
+  /* Shadow for small elevations, such as cards or modals. */
+  --elevation-sm: 0px 2px 4px 0px rgba(0, 0, 0, 0.15);
+  /* Shadow for medium elevations, such as dropdown menus or raised cards. */
+  --elevation-md: 0px 4px 12px 0px rgba(0, 0, 0, 0.15), 0px 2px 4px 0px rgba(0, 0, 0, 0.08);
+  /* The color for chart elements, such as a bar or line in a chart. */
+  --chart-1: rgba(22, 90, 138, 1.00);
+  /* The color for another chart element, such as a bar or line in a chart. */
+  --chart-2: rgba(46, 94, 24, 1.00);
+  /* The color for another chart element, such as a bar or line in a chart. */
+  --chart-3: rgba(122, 77, 0, 1.00);
+  /* The color for another chart element, such as a bar or line in a chart. */
+  --chart-4: var(--fill-information-strong);
+  /* The color for another chart element, such as a bar or line in a chart. */
+  --chart-5: rgba(160, 19, 19, 1.00);
+  /* The default border radius for elements such as buttons, tooltip, and other containers. */
+  --radius: 4px;
+  /* The border radius for buttons. */
+  --radius-button: 4px;
+  /* The border radius for card-like elements. */
+  --radius-card: 4px;
+  /* The border radius for badges. */
+  --radius-badge: 16px;
+  /* The border radius for stamps. */
+  --radius-stamp: 4px;
+  /* The background color for sidebars, navigation menus, and other persistent elements. */
+  --sidebar: rgba(249, 249, 247, 1.00);
+  /* The default color for text or elements that appear on top of sidebars, navigation menus, and other persistent elements. */
+  --sidebar-foreground: rgba(66, 62, 53, 1.00);
+  /* The primary color used for buttons, links, and other interactive elements in sidebars and navigation menus. */
+  --sidebar-primary: rgba(15, 15, 11, 1.00);
+  /* The default color for text or elements that appear on top of primary colored elements in sidebars and navigation menus. */
+  --sidebar-primary-foreground: rgba(254, 198, 46, 1.00);
+  /* The accent color used for highlights, links, and other interactive elements in sidebars and navigation menus. */
+  --sidebar-accent: rgba(254, 198, 46, 1.00);
+  --sidebar-active: rgba(15, 15, 11, 1.00);
+  /* The default color for text or elements that appear on top of accent colored elements in sidebars and navigation menus. */
+  --sidebar-accent-foreground: rgba(15, 15, 11, 1.00);
+  /* The default border color for elements in sidebars and navigation menus. */
+  --sidebar-border: rgba(54, 57, 61, 0.06);
+  /* The default color for focus rings, outlines, and other focus indicators in sidebars and navigation menus. */
+  --sidebar-ring: rgba(22, 90, 138, 1.00);
+  /* The success color used for positive states and confirmations. */
+  --success: var(--fill-success-strong);
+  /* The default color for text or elements that appear on top of success colored elements. */
+  --success-foreground: var(--text-inverse-strong);
+  /* The warning color used for cautionary states. */
+  --warning: var(--fill-warning-strong);
+  /* The default color for text or elements that appear on top of warning colored elements. */
+  --warning-foreground: var(--text-inverse-strong);
+  /* Background color for zebra striping in tables (even rows). */
+  --table-zebra: var(--fill-weaker);
+}
+
+/* Dark mode variables */
+.dark {
+  /* Spark fills. */
+  --fill-weaker: rgba(242, 242, 242, 0.05);
+  --fill-strong: rgba(242, 236, 233, 1);
+  --fill-high-contrast: rgba(247, 247, 247, 1);
+  --fill-muted: rgba(242, 236, 233, 0.85);
+  --fill-weak: rgba(242, 242, 242, 0.12);
+  --fill-hover: rgba(242, 242, 242, 0.12);
+  --fill-success-strong: rgba(141, 213, 106, 1);
+  --fill-information-strong: rgba(193, 170, 242, 1);
+  --fill-warning-strong: rgba(243, 192, 104, 1);
+  --fill-error-strong: rgba(255, 138, 138, 1);
+  --fill-destructive-strong: rgba(255, 138, 138, 1);
+
+  /* Spark text. */
+  --text-high-contrast: rgba(247, 247, 247, 1);
+  --text-strong: rgba(242, 236, 233, 1);
+  --text-weak: rgba(54, 57, 61, 0.25);
+  --text-key: rgba(107, 193, 255, 1);
+  --text-special: rgba(54, 57, 61, 1);
+  --text-error: rgba(255, 138, 138, 1);
+  --text-success: rgba(141, 213, 106, 1);
+  --text-warning: rgba(243, 192, 104, 1);
+  --text-information: rgba(193, 170, 242, 1);
+  --text-inverse-strong: rgba(54, 57, 61, 1);
+  --text-inverse-weak: rgba(54, 57, 61, 0.80);
+
+  /* Spark 2 Key Fill. */
+  --fill-key-strong: rgba(242, 242, 242, 1);
+  --fill-key-vivid: rgba(247, 247, 247, 1);
+  --fill-key-weak: rgba(242, 242, 242, 0.12);
+
+  /* Spark 2 Special Fill. */
+  --fill-special-vivid: rgba(254, 198, 46, 1);
+  --fill-special-strong: rgba(255, 213, 99, 1);
+  --fill-special-weak: rgba(255, 213, 99, 0.2);
+
+  /* Spark 2 Stroke. */
+  --stroke-key-strong: rgba(242, 242, 242, 0.25);
+ 
+  /* The default background color for the application. */
+  --base: rgba(20, 18, 23, 1);
+  --raised: rgba(31, 29, 35, 1);
+  --sunken: rgba(0, 0, 0, 1);
+  /* Background color for zebra striping in tables (even rows) in dark mode. */
+  --table-zebra: var(--fill-weaker);
+  /* The background color for cards, modals, and other containers. */
+  --overlay: rgba(44, 42, 48, 1);
+  /* The default color for text or elements that appear on top of cards, modals and other background containers. */
+  --overlay-foreground: var(--text-strong);
+  /* The default color for elements or text that appears on top of the background. */
+  --foreground: var(--text-strong);
+  /* The background color for dropdowns and tooltips. */
+  --popover: var(--overlay);
+  /* The default color for text or elements that appear on top of dropdowns and tooltips. */
+  --popover-foreground: var(--text-strong);
+  /* The primary color used for buttons, links, and other interactive elements. */
+  --primary: var(--fill-key-strong);
+  /* The default color for text or elements that appear on top of primary colored elements. */
+  --primary-foreground: var(--text-inverse-strong);
+  /* The secondary color used for secondary(but NOT-DESTRUCTIVE) buttons and interactive elements. */
+  --secondary: rgba(54, 57, 61, 0.1);
+  /* The default color for text or elements that appear on top of secondary colored elements. */
+  --secondary-foreground: rgba(249, 249, 247, 0.80);
+  /* The muted color used for less prominent elements, such as disabled buttons or disabled text. */
+  --muted: rgba(249, 249, 247, 0.04);
+  /* The default color for text or elements that appear on top of muted colored elements. */
+  --muted-foreground: rgba(249, 249, 247, 0.60);
+  /* The accent color used for highlights, links, and other interactive elements. */
+  --accent: var(--text-key);
+  /* The default color for text or elements that appear on top of accent colored elements. */
+  --accent-foreground: var(--text-inverse-strong);
+  /* The color used for background in destructive actions, such as delete buttons or error messages. */
+  --destructive: var(--fill-destructive-strong);
+  /* The default color for text or elements that appear on top of destructive colored elements. */
+  --destructive-foreground: rgba(255, 255, 255, 1.00);
+  /* The default border color for elements such as inputs, buttons, and other containers. */
+  --border: rgba(249, 249, 247, 0.12);
+  /* A stronger border color for emphasis or hover states in dark mode. */
+  --border-strong: rgba(249, 249, 247, 0.25);
+  /* The default background color for input fields once the text has been filled. Should be either transparent or match the input-background. */
+  --input: var(--overlay);
+  /* The default background color for input fields, text areas, and other input elements. */
+  --input-background: var(--raised);
+  /* The default color for focus rings, outlines, and other focus indicators. */
+  --ring: var(--text-key);
+  /* The background color for sidebars, navigation menus, and other persistent elements. */
+  --sidebar: rgba(15, 15, 11, 1.00);
+  /* The default color for text or elements that appears on top of sidebars, navigation menus, and other persistent elements. */
+  --sidebar-foreground: rgba(249, 249, 247, 1.00);
+  /* The primary color used for buttons, links, and other interactive elements in sidebars and navigation menus. */
+  --sidebar-primary: rgba(249, 249, 247, 1.00);
+  /* The default color for text or elements that appear on top of primary colored elements in sidebars and navigation menus. */
+  --sidebar-primary-foreground: rgba(15, 15, 11, 1.00);
+  /* The accent color used for highlights, links, and other interactive elements in sidebars and navigation menus. */
+  --sidebar-active: rgba(254, 198, 46, 1.00);
+  --sidebar-accent: rgba(254, 198, 46, 1.00);
+  /* The default color for text or elements that appear on top of accent colored elements in sidebars and navigation menus. */
+  --sidebar-accent-foreground: rgba(15, 15, 11, 1.00);
+  /* The default border color for elements in sidebars and navigation menus. */
+  --sidebar-border: rgba(249, 249, 247, 0.06);
+  /* The default color for focus rings, outlines, and other focus indicators in sidebars and navigation menus. */
+  --sidebar-ring: rgba(22, 90, 138, 1.00);
+  /* The success color used for positive states and confirmations. */
+  --success: var(--fill-success-strong);
+  /* The default color for text or elements that appear on top of success colored elements. */
+  --success-foreground: var(--text-inverse-strong);
+  /* The warning color used for cautionary states. */
+  --warning: var(--fill-warning-strong);
+  /* The default color for text or elements that appear on top of warning colored elements. */
+  --warning-foreground: var(--text-inverse-strong);
+}
+
+/* Mobile Typography Variables */
+@media (max-width: 767px) {
+  :root {
+    /* Typography variables - Mobile (optimized for smaller screens) */
+    --text-h1: 28px;   /* Reduced from 39px - ~28% smaller */
+    --text-h2: 24px;   /* Reduced from 31px - ~23% smaller */
+    --text-h3: 20px;   /* Reduced from 25px - 20% smaller */
+    --text-h4: 18px;   /* Reduced from 20px - 10% smaller */
+    --text-p: 16px;    /* Same as desktop - maintain readability */
+    --text-label: 12px; /* Reduced from 13px - slightly smaller */
+    --text-caption: 12px; /* Reduced from 13px - slightly smaller */
+    --text-nav-item: 14px; /* Reduced from 15px - slightly smaller */
+  }
+
+  .dark {
+    /* Mobile typography is the same for both light and dark modes */
+    --text-h1: 28px;
+    --text-h2: 24px;
+    --text-h3: 20px;
+    --text-h4: 18px;
+    --text-p: 16px;
+    --text-label: 12px;
+    --text-caption: 12px;
+    --text-nav-item: 14px;
+  }
+}
+
+@theme inline {
+  --color-base: var(--base);
+  --color-foreground: var(--foreground);
+  --color-overlay: var(--overlay);
+  --color-overlay-foreground: var(--overlay-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-table-zebra: var(--table-zebra);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-base text-foreground;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+}
+
+/* Typography styles */
+h1 {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: var(--text-h1);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.5;
+}
+
+h2 {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: var(--text-h2);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.5;
+}
+
+h3 {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: var(--text-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.5;
+}
+
+h4 {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: var(--text-h4);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.5;
+}
+
+p {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: var(--text-p);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.5;
+}
+
+span {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: var(--text-p);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.5;
+}
+
+label {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: var(--text-label);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.5;
+}
+
+button {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: var(--text-p);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+input {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: var(--text-p);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.5;
+}
+
+.text-label {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: var(--text-label);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.5;
+}
+
+.caption {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.5;
+}
+
+.nav-item {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: var(--text-nav-item);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.5;
+}
+
+html {
+  font-size: var(--font-size);
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+
+/* Dropdown menu destructive styling */
+[data-variant="destructive"] {
+  color: var(--text-error) !important;
+}
+
+[data-variant="destructive"] svg {
+  color: var(--text-error) !important;
+}
+
+/* Select and Command item hover styling using fill-hover */
+[data-slot="select-item"]:hover,
+[data-slot="select-item"]:focus,
+[data-slot="select-item"][data-state="checked"] {
+  background-color: var(--fill-hover) !important;
+}
+
+[data-slot="command-item"]:hover,
+[data-slot="command-item"]:focus,
+[data-slot="command-item"][data-selected="true"] {
+  background-color: var(--fill-hover) !important;
+}
+
+/* Select and Command items - full width with proper padding */
+[data-slot="select-item"] {
+  width: 100% !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+[data-slot="command-item"] {
+  width: 100% !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Badge styling - neutral uses fill-weak, others use semantic fill-strong */
+[data-slot="badge"] {
+  background-color: var(--fill-weak) !important;
+  border-radius: var(--radius-badge) !important;
+}
+
+/* Badge variants with strong fill backgrounds */
+[data-slot="badge"][data-variant="key"] {
+  background-color: var(--fill-key-strong) !important;
+}
+
+[data-slot="badge"][data-variant="green"] {
+  background-color: var(--fill-success-strong) !important;
+}
+
+[data-slot="badge"][data-variant="amber"] {
+  background-color: var(--fill-warning-strong) !important;
+}
+
+[data-slot="badge"][data-variant="red"] {
+  background-color: var(--fill-error-strong) !important;
+}
+
+[data-slot="badge"][data-variant="plum"] {
+  background-color: var(--fill-information-strong) !important;
+}
+
+/* Stamp styling - most variants use fill-weak background */
+[data-slot="stamp"] {
+  background-color: var(--fill-weak) !important;
+  border-radius: var(--radius-stamp) !important;
+}
+
+/* Stamp label variants with strong fill backgrounds */
+[data-slot="stamp"][data-variant="labelRed"] {
+  background-color: var(--fill-error-strong) !important;
+}
+
+[data-slot="stamp"][data-variant="labelKey"] {
+  background-color: var(--fill-key-strong) !important;
+}
+
+[data-slot="stamp"][data-variant="labelGreen"] {
+  background-color: var(--fill-success-strong) !important;
+}
+
+[data-slot="stamp"][data-variant="labelAmber"] {
+  background-color: var(--fill-warning-strong) !important;
+}
+
+[data-slot="stamp"][data-variant="labelPlum"] {
+  background-color: var(--fill-information-strong) !important;
+}
+
+/* Pill styling - interactive components with rounded corners */
+[data-slot="pill"] {
+  border-radius: var(--radius-badge) !important;
+}
+
+/* Pill variants */
+[data-slot="pill"][data-variant="default"] {
+  background-color: var(--fill-weak) !important;
+}
+
+[data-slot="pill"][data-variant="selected"] {
+  background-color: var(--fill-key-strong) !important;
+}
+
+[data-slot="pill"][data-variant="dismissible"] {
+  background-color: var(--fill-weak) !important;
+}
