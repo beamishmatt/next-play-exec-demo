@@ -25,30 +25,28 @@ export async function agentSearch(
   // Ensure vector store + assistant exist on first run
   await ensureInfrastructure();
 
-  // Step 1: Query analysis
+  // Steps 1 + 3 in parallel: analyze query while vector retrieval starts on raw query
   onProgress?.('analyzing');
+  const storeId = getVectorStoreId();
+  const vectorPromise =
+    hasNodes && storeId
+      ? retrieveFromVector(storeId, query, []).catch((err: unknown) => {
+          console.warn('Vector retrieval failed, continuing with graph results:', err);
+          return null;
+        })
+      : Promise.resolve(null);
+
   const analysis = await analyzeQuery(query);
   const chips = buildFilterChips(analysis);
 
-  // Step 2: Graph scoping
+  // Step 2: Graph scoping (needs analysis, local so instant)
   onProgress?.('scoping');
   const scopedNodes = hasNodes ? scopeGraph(graph, analysis) : [];
   const caseIds = [...new Set(scopedNodes.map(n => n.case_id))];
 
-  // Step 3: Vector retrieval — always run when nodes exist, to get actual file text for excerpts
-  const needsVector = hasNodes;
-  let vectorResult = null;
-  if (needsVector) {
-    onProgress?.('retrieving');
-    const storeId = getVectorStoreId();
-    if (storeId) {
-      try {
-        vectorResult = await retrieveFromVector(storeId, analysis.reformulated_query, scopedNodes);
-      } catch (err) {
-        console.warn('Vector retrieval failed, continuing with graph results:', err);
-      }
-    }
-  }
+  // Await vector retrieval (likely already done)
+  onProgress?.('retrieving');
+  const vectorResult = await vectorPromise;
 
   // Step 4: Synthesis
   onProgress?.('synthesizing');

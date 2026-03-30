@@ -27,7 +27,7 @@ Return ONLY valid JSON with this structure (no markdown, no backticks):
   "suggestions": ["Follow-up query suggestion 1", "Follow-up query suggestion 2"]
 }
 
-Rank results by relevance. Include only genuinely relevant items. Keep relevance explanations concise.`;
+Include ALL provided graph candidates in the results — do not drop any. Rank by relevance but return every node. Keep relevance explanations concise.`;
 
 export async function synthesizeResults(
   analysis: QueryAnalysis,
@@ -67,7 +67,7 @@ ${vectorResult?.text ?? '(no vector results)'}`;
       { role: 'system', content: SYNTHESIS_SYSTEM },
       { role: 'user', content: userContent },
     ],
-    { temperature: 0.2, max_tokens: 2000 }
+    { temperature: 0.2, max_tokens: 4000 }
   );
 
   try {
@@ -88,9 +88,20 @@ ${vectorResult?.text ?? '(no vector results)'}`;
     });
 
     // Build entity list from graph nodes too (supplement query-extracted entities)
-    const caseIds = [...new Set(results.map(r => r.case_id).filter(Boolean))];
+    // Normalize case IDs to deduplicate variants like "088142", "2025-088142", "PBPD-2025-088142"
+    const normalizeCaseId = (id: string) => id.replace(/^.*?(\d{6,})$/, '$1');
+    const rawCaseIds = results.map(r => r.case_id).filter(Boolean) as string[];
+    // Keep the longest (most specific) ID per normalized base number
+    const caseIdByBase = new Map<string, string>();
+    for (const id of rawCaseIds) {
+      const base = normalizeCaseId(id);
+      const existing = caseIdByBase.get(base);
+      if (!existing || id.length > existing.length) caseIdByBase.set(base, id);
+    }
+    const caseIds = [...caseIdByBase.values()];
+    const entityBases = new Set(entities.map(e => normalizeCaseId(e.id)));
     const supplementalEntities: EntityResult[] = caseIds
-      .filter(id => !entities.some(e => e.id === id))
+      .filter(id => !entityBases.has(normalizeCaseId(id)))
       .map(id => ({ type: 'case' as const, id, name: id.replace(/^case\s*/i, ''), subtitle: 'Case' }));
 
     return {

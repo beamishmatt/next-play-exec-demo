@@ -7,6 +7,7 @@ import { ActionBar } from '../ActionBar';
 import { ViewSwitcher, ViewMode } from '../ViewSwitcher';
 import { EvidenceFilters } from '../EvidenceFilters';
 import { FilterPanel } from '../FilterPanel';
+import { AssistantPanel } from '../AssistantPanel';
 import { EditCategoryDialog } from '../EditCategoryDialog';
 import { useGraphEvidence } from '../../data/graphEvidence';
 import { deleteEvidence } from '../../data/deleteEvidence';
@@ -159,9 +160,12 @@ export function EvidencePage() {
     },
   ];
 
+  const isAssistantOpen = selectedItems.size > 0;
+
   return (
-    <div className="relative min-h-full">
-      <div className="p-4 md:p-8">
+    <div className="relative min-h-full flex">
+      {/* Main content — shrinks when assistant panel opens */}
+      <div className="flex-1 min-w-0 p-4 md:p-8">
         <div className="space-y-6">
           {/* Search and Button Section - Responsive layout */}
           <div className="flex flex-col gap-4 md:grid md:grid-cols-12 md:gap-4">
@@ -174,7 +178,7 @@ export function EvidencePage() {
                 onChange={setSearchQuery}
                 className="w-full"
               />
-              
+
               {/* Search Results Summary */}
               {showingFiltered && (
                 <p className="text-muted-foreground caption">
@@ -190,21 +194,21 @@ export function EvidencePage() {
           {/* Filter Controls and View Switcher - Desktop only */}
           {!isMobile && (
             <div className="flex items-center justify-between">
-              <EvidenceFilters 
+              <EvidenceFilters
                 isFilterPanelOpen={isFilterPanelOpen}
                 onFilterPanelToggle={handleFilterPanelToggle}
                 activeFilterCount={activeFilterCount}
               />
-              <ViewSwitcher 
-                viewMode={viewMode} 
-                onViewModeChange={handleViewModeChange} 
+              <ViewSwitcher
+                viewMode={viewMode}
+                onViewModeChange={handleViewModeChange}
               />
             </div>
           )}
 
           {/* Evidence Content - Mobile List, Desktop Table/Gallery with Filter Panel */}
           {isMobile ? (
-            <EvidenceList 
+            <EvidenceList
               evidence={filteredEvidence}
               selectedItems={selectedItems}
               onSelectionChange={setSelectedItems}
@@ -212,7 +216,7 @@ export function EvidencePage() {
           ) : (
             <div className="flex">
               {/* Filter Panel - always rendered but animated */}
-              <FilterPanel 
+              <FilterPanel
                 isOpen={isFilterPanelOpen}
                 ownerOptions={ownerOptions}
                 uploadedByOptions={uploadedByOptions}
@@ -228,17 +232,17 @@ export function EvidencePage() {
                 onUploadedOnChange={setUploadedOnDate}
                 onRecordedOnChange={setRecordedOnDate}
               />
-              
+
               {/* Evidence content */}
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 {viewMode === 'table' ? (
-                  <EvidenceSearchTable 
+                  <EvidenceSearchTable
                     evidence={filteredEvidence}
                     selectedItems={selectedItems}
                     onSelectionChange={setSelectedItems}
                   />
                 ) : (
-                  <EvidenceGallery 
+                  <EvidenceGallery
                     evidence={filteredEvidence}
                     selectedItems={selectedItems}
                     onSelectionChange={setSelectedItems}
@@ -249,6 +253,25 @@ export function EvidencePage() {
           )}
         </div>
       </div>
+
+      {/* Assistant Panel — slides in from the right when items are selected */}
+      <AssistantPanel
+        isOpen={isAssistantOpen}
+        items={filteredEvidence
+          .filter(e => selectedItems.has(e.uuid))
+          .map(e => ({
+            id: e.uuid,
+            title: e.title,
+            vector_file_id: e.vector_file_id,
+            description: e.description,
+            category: e.category,
+            officer: e.owner,
+            date_recorded: e.recordedOn.toISOString(),
+            media_class: e.fileType,
+            objects_detected: e.objects_detected?.map(o => `${o.color ? o.color + ' ' : ''}${o.label}`).join(', '),
+          }))}
+        onClose={() => setSelectedItems(new Set())}
+      />
 
       {/* Action Bar - appears when items are selected */}
       {selectedItems.size > 0 && (

@@ -50,7 +50,7 @@ export async function analyzeQuery(query: string): Promise<QueryAnalysis> {
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: query },
     ],
-    { temperature: 0, max_tokens: 600 }
+    { model: 'gpt-4o-mini', temperature: 0, max_tokens: 600 }
   );
 
   try {
@@ -118,6 +118,15 @@ export function buildFilterChips(analysis: QueryAnalysis): FilterChip[] {
 
   for (const caseId of analysis.entities.case_ids) {
     chips.push({ id: `case:${caseId}`, type: 'case', label: `Case ${caseId}`, value: caseId });
+  }
+
+  for (const location of analysis.entities.locations) {
+    chips.push({ id: `location:${location}`, type: 'location', label: location, value: location });
+  }
+
+  for (const obj of analysis.entities.objects) {
+    const label = obj.color ? `${capitalize(obj.color)} ${obj.label}` : capitalize(obj.label);
+    chips.push({ id: `object:${obj.label}`, type: 'object', label, value: obj.label });
   }
 
   return chips;
