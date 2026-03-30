@@ -1,8 +1,7 @@
 # Search 2.0 Takeover — Agentic Evidence Search Prototype
 
-A high-fidelity prototype demonstrating agentic search and AI-assisted investigation over law enforcement evidence, built on a mock Axon Evidence platform. The search UI is a full-screen command palette ("takeover") that runs a 4-step AI pipeline on every query to retrieve, scope, and synthesize results from an evidence vector store.
+A high-fidelity prototype demonstrating agentic search and AI-assisted investigation over law enforcement evidence. The search UI is a full-screen command palette ("takeover") that runs a 4-step AI pipeline on every query to retrieve, scope, and synthesize results from an evidence vector store.
 
-Design reference: [search2.0_takeover](https://git.taservs.net/mbeamish/search2.0_takeover/tree/main)
 
 ---
 
