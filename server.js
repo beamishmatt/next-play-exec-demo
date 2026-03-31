@@ -14,6 +14,9 @@ if (!process.env.OPENAI_API_KEY) {
   process.exit(1);
 }
 
+// ── Health check ─────────────────────────────────────────────────────────────
+app.get('/health', (req, res) => res.sendStatus(200));
+
 // ── OpenAI proxy ──────────────────────────────────────────────────────────────
 // Forwards /api/openai/* → https://api.openai.com/v1/*
 // Injects the real API key server-side. The browser never sees it.
