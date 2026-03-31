@@ -6,21 +6,17 @@ export async function deleteEvidence(uuid: string, vectorFileId?: string): Promi
   const node = graph.nodes[uuid];
   if (!node) return;
 
-  const apiKey = getOpenAIKey();
-
-  // Delete from OpenAI
-  if (vectorFileId && apiKey) {
-    const headers: Record<string, string> = {
-      'Authorization': `Bearer ${apiKey}`,
-      'OpenAI-Beta': 'assistants=v2',
-    };
+  // Delete from OpenAI via proxy
+  if (vectorFileId) {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const headers: Record<string, string> = { 'OpenAI-Beta': 'assistants=v2' };
     const storeId = getVectorStoreId();
     if (storeId) {
-      await fetch(`https://api.openai.com/v1/vector_stores/${storeId}/files/${vectorFileId}`, {
+      await fetch(`${origin}/api/openai/vector_stores/${storeId}/files/${vectorFileId}`, {
         method: 'DELETE', headers,
       }).catch(() => { /* non-fatal */ });
     }
-    await fetch(`https://api.openai.com/v1/files/${vectorFileId}`, {
+    await fetch(`${origin}/api/openai/files/${vectorFileId}`, {
       method: 'DELETE', headers,
     }).catch(() => { /* non-fatal */ });
   }

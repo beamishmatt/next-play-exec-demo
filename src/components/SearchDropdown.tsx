@@ -167,7 +167,7 @@ function ResultRow({ result, onClick }: { result: SearchEvidenceResult; onClick:
       {result.excerpt && (
         <div
           style={{
-            fontSize: 12, color: 'var(--text-weak)', lineHeight: 1.5,
+            fontSize: 12, color: '#9ca3af', fontWeight: 300, lineHeight: 1.5,
             display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
           }}
         >
@@ -439,14 +439,14 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
                       key={i}
                       onClick={() => { onQueryChange(s); setIsOpen(true); }}
                       style={{
-                        display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '7px 14px',
+                        display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '5px 14px',
                         backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
-                        fontSize: 13, color: 'var(--foreground)', textAlign: 'left',
+                        fontSize: 11, color: 'var(--text-weak)', textAlign: 'left',
                       }}
                       onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
                       onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                     >
-                      <Search size={13} style={{ color: 'var(--text-weak)', flexShrink: 0 }} />
+                      <Search size={11} style={{ color: 'var(--text-weak)', flexShrink: 0 }} />
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s}</span>
                     </button>
                   ))}

@@ -13,9 +13,13 @@ export function getOpenAIKey(): string | null {
 
 export function getOpenAIClient(): OpenAI | null {
   if (!_client) {
+    // Use an absolute URL — the SDK needs a full origin to construct request URLs correctly
+    const base = typeof window !== 'undefined'
+      ? `${window.location.origin}/api/openai`
+      : '/api/openai';
     _client = new OpenAI({
-      apiKey: 'proxy',           // real key is on the server, never in the browser
-      baseURL: '/api/openai',    // all requests go through our server-side proxy
+      apiKey: 'proxy',        // real key is on the server, never in the browser
+      baseURL: base,
       dangerouslyAllowBrowser: true,
     });
   }
@@ -110,8 +114,8 @@ export async function searchVectorStore(
   query: string,
   maxResults = 10
 ): Promise<VectorStoreChunk[]> {
-  // Route through our proxy — real key is added server-side
-  const res = await fetch(`/api/openai/vector_stores/${storeId}/search`, {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const res = await fetch(`${origin}/api/openai/vector_stores/${storeId}/search`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
