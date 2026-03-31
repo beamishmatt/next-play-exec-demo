@@ -2,15 +2,22 @@ import OpenAI from 'openai';
 
 let _client: OpenAI | null = null;
 
+/**
+ * Returns a truthy string when the proxy server is in use.
+ * The real API key never leaves the server — this just signals
+ * to the rest of the engine that OpenAI calls are available.
+ */
 export function getOpenAIKey(): string | null {
-  return import.meta.env.VITE_OPENAI_API_KEY || null;
+  return 'proxy';
 }
 
 export function getOpenAIClient(): OpenAI | null {
-  const key = getOpenAIKey();
-  if (!key) return null;
   if (!_client) {
-    _client = new OpenAI({ apiKey: key, dangerouslyAllowBrowser: true });
+    _client = new OpenAI({
+      apiKey: 'proxy',           // real key is on the server, never in the browser
+      baseURL: '/api/openai',    // all requests go through our server-side proxy
+      dangerouslyAllowBrowser: true,
+    });
   }
   return _client;
 }
@@ -19,8 +26,7 @@ export async function chatCompletion(
   messages: OpenAI.Chat.ChatCompletionMessageParam[],
   options: Partial<OpenAI.Chat.ChatCompletionCreateParamsNonStreaming> = {}
 ): Promise<string> {
-  const openai = getOpenAIClient();
-  if (!openai) throw new Error('No OpenAI API key configured. Set VITE_OPENAI_API_KEY in .env');
+  const openai = getOpenAIClient()!;
   const response = await openai.chat.completions.create({
     model: 'gpt-4o',
     ...options,
@@ -34,8 +40,7 @@ export async function chatCompletionStream(
   options: { model?: string; temperature?: number; max_tokens?: number } = {},
   onAccumulated: (text: string) => void
 ): Promise<string> {
-  const openai = getOpenAIClient();
-  if (!openai) throw new Error('No OpenAI API key configured. Set VITE_OPENAI_API_KEY in .env');
+  const openai = getOpenAIClient()!;
   const stream = await openai.chat.completions.create({
     model: options.model ?? 'gpt-4o-mini',
     temperature: options.temperature,
@@ -55,8 +60,7 @@ export async function chatCompletionStream(
 }
 
 export async function uploadTextFile(content: string, filename: string): Promise<string> {
-  const openai = getOpenAIClient();
-  if (!openai) throw new Error('No OpenAI API key configured');
+  const openai = getOpenAIClient()!;
   const blob = new Blob([content], { type: 'text/plain' });
   const file = new File([blob], filename, { type: 'text/plain' });
   const uploaded = await openai.files.create({ file, purpose: 'assistants' });
@@ -64,28 +68,24 @@ export async function uploadTextFile(content: string, filename: string): Promise
 }
 
 export async function uploadBinaryFile(file: File): Promise<string> {
-  const openai = getOpenAIClient();
-  if (!openai) throw new Error('No OpenAI API key configured');
+  const openai = getOpenAIClient()!;
   const uploaded = await openai.files.create({ file, purpose: 'assistants' });
   return uploaded.id;
 }
 
 export async function addFileToVectorStore(storeId: string, fileId: string): Promise<void> {
-  const openai = getOpenAIClient();
-  if (!openai) return;
+  const openai = getOpenAIClient()!;
   await openai.vectorStores.files.create(storeId, { file_id: fileId });
 }
 
 export async function createVectorStore(name: string): Promise<string> {
-  const openai = getOpenAIClient();
-  if (!openai) throw new Error('No OpenAI API key configured');
+  const openai = getOpenAIClient()!;
   const store = await openai.vectorStores.create({ name });
   return store.id;
 }
 
 export async function createAssistant(vectorStoreId: string): Promise<string> {
-  const openai = getOpenAIClient();
-  if (!openai) throw new Error('No OpenAI API key configured');
+  const openai = getOpenAIClient()!;
   const assistant = await openai.beta.assistants.create({
     name: 'Evidence Search Assistant',
     model: 'gpt-4o',
@@ -110,13 +110,10 @@ export async function searchVectorStore(
   query: string,
   maxResults = 10
 ): Promise<VectorStoreChunk[]> {
-  const key = getOpenAIKey();
-  if (!key) throw new Error('No OpenAI API key configured');
-
-  const res = await fetch(`https://api.openai.com/v1/vector_stores/${storeId}/search`, {
+  // Route through our proxy — real key is added server-side
+  const res = await fetch(`/api/openai/vector_stores/${storeId}/search`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${key}`,
       'Content-Type': 'application/json',
       'OpenAI-Beta': 'assistants=v2',
     },

@@ -139,5 +139,18 @@
     server: {
       port: 3000,
       open: true,
+      proxy: {
+        '/api/openai': {
+          target: 'https://api.openai.com',
+          changeOrigin: true,
+          rewrite: (path: string) => path.replace(/^\/api\/openai/, '/v1'),
+          configure: (proxy: any) => {
+            proxy.on('proxyReq', (proxyReq: any) => {
+              // Inject the real key server-side — never exposed to the browser
+              proxyReq.setHeader('Authorization', `Bearer ${process.env.OPENAI_API_KEY}`);
+            });
+          },
+        },
+      },
     },
   });
