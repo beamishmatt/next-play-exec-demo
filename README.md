@@ -1,7 +1,6 @@
-# Search 2.0 Takeover — Agentic Evidence Search Prototype
+# Agentic Evidence Search — Hybrid Dropdown + Takeover Prototype
 
-A high-fidelity prototype demonstrating agentic search and AI-assisted investigation over law enforcement evidence. The search UI is a full-screen command palette ("takeover") that runs a 4-step AI pipeline on every query to retrieve, scope, and synthesize results from an evidence vector store.
-
+A high-fidelity prototype demonstrating agentic search and AI-assisted investigation over law enforcement evidence. Search is a two-tier hybrid experience: a persistent dropdown in the top utility bar for quick results, with a full-screen takeover for deep discovery. Both are powered by the same 4-step AI pipeline.
 
 ---
 
@@ -16,6 +15,35 @@ A high-fidelity prototype demonstrating agentic search and AI-assisted investiga
 | Vector search | OpenAI Vector Stores (Files API) |
 | State | React local state + localStorage (graph + IDs) |
 | Markdown | react-markdown + remark-gfm |
+
+---
+
+## Search UX
+
+### Dropdown (`src/components/SearchDropdown.tsx`)
+
+Always-visible search input in the top utility bar. Clicking or typing opens a dropdown panel:
+
+- **Scope chips** — browse by Cases, Evidence, People, or Vehicles before typing; selected scopes filter results
+- **Recent searches** — shown in empty state for quick re-runs
+- **Live results** — top 3 ranked matches appear as you type (debounced 400ms), each showing title, media icon, ID, date, confidence, matched-on text, and excerpt
+- **Filter chips** — auto-extracted chips from query analysis shown above results
+- **Other Results** — Cases and People rows derived from result metadata, always visible
+- **See all results** — opens the full takeover pre-loaded with the dropdown's results (no re-fetch)
+
+### Takeover (`src/components/SearchTakeover.tsx`)
+
+Full-screen overlay for deep investigation. Opens from the dropdown or directly.
+
+- **Pre-populated** — launched from the dropdown with query, selected item, and results already loaded
+- **Live search** — debounced 500ms, full pipeline runs on new queries typed inside the takeover
+- **Filter chips** — auto-extracted from query analysis, individually removable
+- **Entity cards** — related cases and officers surfaced as secondary results
+- **Evidence results list** — ranked results with confidence badges, relevance excerpts, file-type icons
+- **Preview panel** — 4:3 thumbnail (image/video) or text body for documents, with full metadata badges
+- **Lazy descriptions** — results missing descriptions generate one via `gpt-4o-mini` on first preview and persist to the context graph; no repeat LLM calls
+- **Multi-select** — per-row checkboxes open the AI assistant panel
+- **Recent searches** — shown in empty state before any query is typed
 
 ---
 
@@ -56,21 +84,6 @@ Query → [1] Analysis → [2] Graph Scope → [3] Vector Retrieval → [4] Synt
 - Assigns confidence levels (`high / medium / low`) per result
 - Normalises case ID variants (`088142`, `2025-088142`, `PBPD-2025-088142` → same base)
 - Generates follow-up query suggestions
-
----
-
-### Search UI (`src/components/SearchTakeover.tsx`)
-
-Full-screen command palette overlay triggered from the sidebar "Search" nav item.
-
-- **Live search** — debounced 500ms, pipeline runs on each query
-- **Progress indicator** — shows active pipeline step (Analyzing → Scoping → Retrieving → Synthesizing)
-- **Filter chips** — auto-extracted from query analysis, individually removable
-- **Entity cards** — related cases and officers surfaced as secondary results
-- **Evidence results list** — ranked results with confidence badges, relevance excerpts, file-type icons
-- **Preview panel** — 4:3 thumbnail (image/video) or file-type icon with metadata on hover/select
-- **Multi-select** — per-row checkboxes + "select all" header with indeterminate state
-- **Recent searches** — shown in empty state before any query is typed
 
 ---
 
@@ -134,7 +147,7 @@ VITE_OPENAI_API_KEY=sk-...
 npm run dev
 ```
 
-Dev server runs at `http://localhost:3000`.
+Dev server runs at `http://localhost:3000` (or the next available port).
 
 ---
 
@@ -143,7 +156,7 @@ Dev server runs at `http://localhost:3000`.
 ```
 src/
 ├── engine/
-│   ├── agentSearch.ts        # Orchestrator — runs the 4-step pipeline
+│   ├── agentSearch.ts        # Orchestrator — runs the 4-step pipeline + lazy description generation
 │   ├── queryAnalysis.ts      # Step 1: NL → structured intent + entities
 │   ├── graphScope.ts         # Step 2: local graph filtering + edge expansion
 │   ├── vectorRetrieval.ts    # Step 3: OpenAI vector store semantic search
@@ -151,7 +164,9 @@ src/
 │   └── assistantChat.ts      # Streaming chat engine for the assistant panel
 │
 ├── components/
-│   ├── SearchTakeover.tsx    # Main search UI — command palette overlay
+│   ├── SearchDropdown.tsx    # Utility bar dropdown — scope chips, live results, entity rows
+│   ├── SearchTakeover.tsx    # Full-screen search — accepts pre-loaded results from dropdown
+│   ├── UtilityBar.tsx        # Top bar — hosts the always-visible search input
 │   ├── AssistantPanel.tsx    # AI investigation panel (slides in on selection)
 │   ├── pages/
 │   │   ├── EvidencePage.tsx  # Evidence list page
@@ -161,9 +176,9 @@ src/
 ├── ingestion/                # File classification and processor modules
 ├── data/
 │   ├── types.ts              # All TypeScript types (Evidence, GraphNode, SearchOutput, …)
-│   └── contextGraph.json     # Seed graph data (mock evidence corpus)
+│   └── contextGraph.json     # Persisted evidence graph (nodes, edges, case metadata)
 ├── storage/
-│   └── config.ts             # localStorage wrappers (vector store ID, graph, assistant ID)
+│   └── config.ts             # Graph persistence + vector store / assistant ID wrappers
 └── utils/
     └── openaiClient.ts       # OpenAI SDK singleton + vector store helpers
 ```
