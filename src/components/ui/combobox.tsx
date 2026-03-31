@@ -6,6 +6,33 @@ import { cn } from "./utils";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "./command";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 
+const STOP_WORDS = new Set([
+  'the', 'and', 'or', 'for', 'not', 'but', 'nor', 'yet', 'so',
+  'a', 'an', 'in', 'on', 'at', 'to', 'of', 'up', 'by', 'as',
+  'is', 'it', 'its', 'was', 'are', 'were', 'be', 'been', 'being',
+  'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+  'should', 'may', 'might', 'with', 'from', 'that', 'this', 'these',
+  'those', 'there', 'their', 'they', 'what', 'which', 'who', 'when',
+  'where', 'how', 'any', 'all', 'some', 'than', 'then', 'into', 'about',
+]);
+
+function HighlightText({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>;
+  const words = query.trim().split(/\s+/).filter(w => w.length > 1 && !STOP_WORDS.has(w.toLowerCase()));
+  if (words.length === 0) return <>{text}</>;
+  const escaped = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const re = new RegExp(`(${escaped})`, 'gi');
+  const parts = text.split(re);
+  const matchRe = new RegExp(`^(?:${escaped})$`, 'i');
+  return (
+    <>
+      {parts.map((part, i) =>
+        matchRe.test(part) ? <mark key={i} style={{ backgroundColor: 'var(--color-brand-subtle, #e8f0fe)', color: 'inherit', borderRadius: '2px', padding: '0 1px' }}>{part}</mark> : part
+      )}
+    </>
+  );
+}
+
 export interface ComboboxProps {
   options: { value: string; label: string }[];
   value?: string;
@@ -26,6 +53,7 @@ export function Combobox({
   className,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
+  const [inputValue, setInputValue] = React.useState("");
 
   const handlePillDismiss = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -96,16 +124,19 @@ export function Combobox({
           />
         </button>
       </PopoverTrigger>
-      <PopoverContent 
-        className="p-0" 
-        style={{ 
+      <PopoverContent
+        className="p-0"
+        style={{
           width: 'var(--radix-popover-trigger-width)',
           maxHeight: '300px'
         }}
+        onCloseAutoFocus={() => setInputValue("")}
       >
         <Command>
-          <CommandInput 
+          <CommandInput
             placeholder={searchPlaceholder}
+            value={inputValue}
+            onValueChange={setInputValue}
             style={{
               fontSize: 'var(--text-p)',
               fontWeight: 'var(--font-weight-regular)',
@@ -141,7 +172,7 @@ export function Combobox({
                       opacity: value === option.value ? 1 : 0,
                     }}
                   />
-                  {option.label}
+                  <HighlightText text={option.label} query={inputValue} />
                 </CommandItem>
               ))}
             </CommandGroup>

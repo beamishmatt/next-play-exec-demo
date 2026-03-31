@@ -14,9 +14,13 @@ import {
   Calendar,
   User,
   Tag,
+  Users,
+  Car,
+  Sparkles,
 } from 'lucide-react';
 
 import { Badge } from './ui/badge';
+import { SCOPE_CHIPS } from './SearchDropdown';
 import { AssistantPanel } from './AssistantPanel';
 import { FeedbackDrawer } from './FeedbackDrawer';
 import { getContextGraph, updateGraphNode } from '../storage/config';
@@ -394,6 +398,15 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
     initialSelectedId ?? initialOutput?.results[0]?.evidence_id ?? null
   );
   const [activeChips, setActiveChips] = useState<FilterChip[]>(initialOutput?.chips ?? []);
+  const [selectedScopes, setSelectedScopes] = useState<Set<string>>(new Set());
+
+  const toggleScope = (id: string) => {
+    setSelectedScopes(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
   const [recentSearches, setRecentSearches] = useState<string[]>(loadRecentSearches);
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const [showFeedback, setShowFeedback] = useState(false);
@@ -550,6 +563,13 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
       });
   })();
 
+  const activeScopes = SCOPE_CHIPS.filter(s => selectedScopes.has(s.id));
+  const scopedResults = searchOutput
+    ? (activeScopes.length > 0
+        ? searchOutput.results.filter(r => activeScopes.some(s => s.filter(r)))
+        : searchOutput.results)
+    : [];
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--base)' }}>
       {/* ── Top bar ── */}
@@ -666,47 +686,100 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
               {/* Left column */}
               <div className="flex-1 overflow-hidden flex flex-col min-w-0">
 
-                {/* Filter chips */}
-                {activeChips.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 24 }}>
-                    {activeChips.map(chip => (
-                      <Chip key={chip.id} chip={chip} onRemove={handleRemoveChip} />
-                    ))}
-                  </div>
-                )}
+                {/* Scope chips */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
+                  {SCOPE_CHIPS.map(chip => {
+                    const active = selectedScopes.has(chip.id);
+                    return (
+                      <button
+                        key={chip.id}
+                        onClick={() => toggleScope(chip.id)}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                          padding: '4px 10px', borderRadius: 99, cursor: 'pointer',
+                          fontSize: 12, fontWeight: 500,
+                          border: `1px solid ${active ? 'transparent' : 'var(--border)'}`,
+                          backgroundColor: active ? 'var(--foreground)' : 'transparent',
+                          color: active ? 'var(--raised)' : 'var(--foreground)',
+                          transition: 'all 0.1s',
+                        }}
+                        onMouseEnter={e => { if (!active) e.currentTarget.style.backgroundColor = 'var(--fill-hover)'; }}
+                        onMouseLeave={e => { if (!active) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      >
+                        {chip.icon}
+                        {chip.label}
+                      </button>
+                    );
+                  })}
+                  {activeChips.map(chip => (
+                    <button
+                      key={chip.id}
+                      onClick={() => handleRemoveChip(chip.id)}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 5,
+                        padding: '4px 10px', borderRadius: 99, cursor: 'pointer',
+                        fontSize: 12, fontWeight: 500,
+                        border: '1px solid var(--border)',
+                        backgroundColor: 'transparent',
+                        color: 'var(--foreground)',
+                        transition: 'all 0.1s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <Sparkles size={13} />
+                      {chip.label}
+                      <X size={10} style={{ marginLeft: 2, opacity: 0.6 }} />
+                    </button>
+                  ))}
+                </div>
 
                 {/* Other Results */}
-                {isLoading && searchOutput.results.length === 0
-                  ? <SkeletonEntityCards />
-                  : searchOutput.entities.length > 0 && (
+                {(() => {
+                  if (isLoading && searchOutput.results.length === 0) return <SkeletonEntityCards />;
+
+                  const uniqueCases = [...new Set(searchOutput.results.map(r => r.case_id).filter(Boolean))];
+                  const uniquePeople = [...new Set(searchOutput.results.map(r => r.officer).filter(Boolean))];
+                  const caseEntities = searchOutput.entities.filter(e => e.type === 'case');
+                  const officerEntities = searchOutput.entities.filter(e => e.type === 'officer');
+
+                  const caseNames = uniqueCases.length > 0 ? uniqueCases : caseEntities.map(e => e.name);
+                  const peopleNames = uniquePeople.length > 0 ? uniquePeople : officerEntities.map(e => e.name);
+
+                  if (caseNames.length === 0 && peopleNames.length === 0) return null;
+
+                  return (
                     <div style={{ marginBottom: 24, paddingTop: 8 }}>
                       <p style={{ fontSize: 12, fontWeight: 500, color: '#4b5563', marginBottom: 8 }}>Other Results</p>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 8 }}>
-                        {searchOutput.entities.map(e => (
-                          <EntityCard key={`${e.type}:${e.id}`} entity={e} />
+                        {caseNames.map(name => (
+                          <EntityCard key={name} entity={{ type: 'case', id: name, name, subtitle: '' }} />
+                        ))}
+                        {peopleNames.map(name => (
+                          <EntityCard key={name} entity={{ type: 'officer', id: name, name, subtitle: '' }} />
                         ))}
                       </div>
                     </div>
-                  )
-                }
+                  );
+                })()}
 
                 {/* Results header */}
                 <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
                   <p style={{ fontSize: 12, fontWeight: 500, color: '#4b5563' }}>
-                    Results{searchOutput.results.length > 0 ? ` (${searchOutput.results.length})` : ''}
+                    Results{scopedResults.length > 0 ? ` (${scopedResults.length})` : ''}
                   </p>
                   <div className="flex items-center gap-3">
-                    {searchOutput.results.length > 0 && !isLoading && (
+                    {scopedResults.length > 0 && !isLoading && (
                       <label className="flex items-center gap-1.5 cursor-pointer select-none" style={{ fontSize: 12, color: '#6b7280' }}>
                         <input
                           type="checkbox"
-                          checked={searchOutput.results.length > 0 && searchOutput.results.every(r => checkedIds.has(r.evidence_id))}
+                          checked={scopedResults.length > 0 && scopedResults.every(r => checkedIds.has(r.evidence_id))}
                           ref={el => {
-                            if (el) el.indeterminate = checkedIds.size > 0 && !searchOutput.results.every(r => checkedIds.has(r.evidence_id));
+                            if (el) el.indeterminate = checkedIds.size > 0 && !scopedResults.every(r => checkedIds.has(r.evidence_id));
                           }}
                           onChange={e => {
                             setCheckedIds(e.target.checked
-                              ? new Set(searchOutput.results.map(r => r.evidence_id))
+                              ? new Set(scopedResults.map(r => r.evidence_id))
                               : new Set()
                             );
                           }}
@@ -723,7 +796,7 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
                 </div>
 
                 {/* No results */}
-                {searchOutput.results.length === 0 && !isLoading && (
+                {scopedResults.length === 0 && !isLoading && (
                   <div className="flex-1 flex flex-col items-center justify-center text-center py-16">
                     <Search size={32} className="text-gray-200 mb-3" />
                     <p className="text-[14px] text-gray-500 font-medium">No evidence found</p>
@@ -747,11 +820,11 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
                 )}
 
                 {/* Results list */}
-                {(isLoading || searchOutput.results.length > 0) && (
+                {(isLoading || scopedResults.length > 0) && (
                   <div className="flex-1 overflow-y-auto">
-                    {isLoading && searchOutput.results.length === 0
+                    {isLoading && scopedResults.length === 0
                       ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
-                      : searchOutput.results.map(result => (
+                      : scopedResults.map(result => (
                           <EvidenceRow
                             key={result.evidence_id}
                             result={result}

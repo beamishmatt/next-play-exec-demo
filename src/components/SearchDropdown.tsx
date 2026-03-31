@@ -12,20 +12,21 @@ import {
   ChevronRight,
   Car,
   Shield,
+  Sparkles,
 } from 'lucide-react';
 import { agentSearch } from '../engine/agentSearch';
 import { SearchOutput, SearchEvidenceResult, FilterChip, MediaClass } from '../data/types';
 
 // ─── Scope chips ──────────────────────────────────────────────────────────────
 
-interface ScopeChip {
+export interface ScopeChip {
   id: string;
   label: string;
   icon: React.ReactNode;
   filter: (r: SearchEvidenceResult) => boolean;
 }
 
-const SCOPE_CHIPS: ScopeChip[] = [
+export const SCOPE_CHIPS: ScopeChip[] = [
   {
     id: 'cases',
     label: 'Cases',
@@ -75,6 +76,35 @@ function saveRecentSearch(query: string, current: string[]): string[] {
   const updated = [query, ...current.filter(s => s !== query)].slice(0, 10);
   try { localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated)); } catch { /* ignore */ }
   return updated;
+}
+
+const STOP_WORDS = new Set([
+  'the', 'and', 'or', 'for', 'not', 'but', 'nor', 'yet', 'so',
+  'a', 'an', 'in', 'on', 'at', 'to', 'of', 'up', 'by', 'as',
+  'is', 'it', 'its', 'was', 'are', 'were', 'be', 'been', 'being',
+  'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+  'should', 'may', 'might', 'with', 'from', 'that', 'this', 'these',
+  'those', 'there', 'their', 'they', 'what', 'which', 'who', 'when',
+  'where', 'how', 'any', 'all', 'some', 'than', 'then', 'into', 'about',
+]);
+
+function HighlightText({ text, query }: { text: string; query: string }) {
+  if (!query.trim() || !text) return <>{text}</>;
+  const words = query.trim().split(/\s+/).filter(w => w.length > 1 && !STOP_WORDS.has(w.toLowerCase()));
+  if (words.length === 0) return <>{text}</>;
+  const escaped = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const re = new RegExp(`(${escaped})`, 'gi');
+  const parts = text.split(re);
+  const matchRe = new RegExp(`^(?:${escaped})$`, 'i');
+  return (
+    <>
+      {parts.map((part, i) =>
+        matchRe.test(part)
+          ? <mark key={i} style={{ backgroundColor: 'var(--color-brand-subtle, #dbeafe)', color: 'inherit', borderRadius: 2, padding: '0 1px' }}>{part}</mark>
+          : part
+      )}
+    </>
+  );
 }
 
 function MediaIcon({ mediaClass }: { mediaClass: MediaClass | string }) {
@@ -128,7 +158,7 @@ function ChipBadge({ chip, onRemove }: { chip: FilterChip; onRemove: (id: string
 
 // ─── Result row ───────────────────────────────────────────────────────────────
 
-function ResultRow({ result, onClick }: { result: SearchEvidenceResult; onClick: () => void }) {
+function ResultRow({ result, query, onClick }: { result: SearchEvidenceResult; query: string; onClick: () => void }) {
   const metaParts = [
     result.evidence_id ? `ID: ${result.evidence_id}` : null,
     formatDate(result.date_recorded) || null,
@@ -147,7 +177,7 @@ function ResultRow({ result, onClick }: { result: SearchEvidenceResult; onClick:
     >
       {/* Title */}
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 3 }}>
-        {result.title}
+        <HighlightText text={result.title} query={query} />
       </div>
 
       {/* Icon + meta */}
@@ -171,7 +201,7 @@ function ResultRow({ result, onClick }: { result: SearchEvidenceResult; onClick:
             display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
           }}
         >
-          {result.excerpt}
+          <HighlightText text={result.excerpt} query={query} />
         </div>
       )}
     </button>
@@ -458,14 +488,55 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
           {/* ── Results view ── */}
           {!showRecents && (
             <>
-              {/* Chips */}
-              {chips.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '10px 14px 8px', borderBottom: '1px solid var(--border)' }}>
+              {/* Scope chips + AI filter chips — same row */}
+              <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {SCOPE_CHIPS.map(chip => {
+                    const active = selectedScopes.has(chip.id);
+                    return (
+                      <button
+                        key={chip.id}
+                        onClick={() => toggleScope(chip.id)}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                          padding: '4px 10px', borderRadius: 99, cursor: 'pointer',
+                          fontSize: 12, fontWeight: 500,
+                          border: `1px solid ${active ? 'transparent' : 'var(--border)'}`,
+                          backgroundColor: active ? 'var(--foreground)' : 'transparent',
+                          color: active ? 'var(--raised)' : 'var(--foreground)',
+                          transition: 'all 0.1s',
+                        }}
+                        onMouseEnter={e => { if (!active) e.currentTarget.style.backgroundColor = 'var(--fill-hover)'; }}
+                        onMouseLeave={e => { if (!active) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      >
+                        {chip.icon}
+                        {chip.label}
+                      </button>
+                    );
+                  })}
                   {chips.map(chip => (
-                    <ChipBadge key={chip.id} chip={chip} onRemove={handleRemoveChip} />
+                    <button
+                      key={chip.id}
+                      onClick={() => handleRemoveChip(chip.id)}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 5,
+                        padding: '4px 10px', borderRadius: 99, cursor: 'pointer',
+                        fontSize: 12, fontWeight: 500,
+                        border: '1px solid var(--border)',
+                        backgroundColor: 'transparent',
+                        color: 'var(--foreground)',
+                        transition: 'all 0.1s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <Sparkles size={13} />
+                      {chip.label}
+                      <X size={10} style={{ marginLeft: 2, opacity: 0.6 }} />
+                    </button>
                   ))}
                 </div>
-              )}
+              </div>
 
               {/* Loading state */}
               {isLoading && topResults.length === 0 && (
@@ -485,6 +556,7 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
                     <React.Fragment key={result.evidence_id}>
                       <ResultRow
                         result={result}
+                        query={q}
                         onClick={() => { setIsOpen(false); onOpenSearch(q, result.evidence_id, output ?? undefined); }}
                       />
                       {i < topResults.length - 1 && (
