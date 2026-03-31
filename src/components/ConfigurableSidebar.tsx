@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { TvMinimalPlay, BarChart, Calendar, Mail, Search, Grid3x3, Archive, Waypoints } from 'lucide-react';
+import { TvMinimalPlay, BarChart, Calendar, Mail, Grid3x3, Archive, Waypoints } from 'lucide-react';
 import { ModeSwitch } from './ModeSwitch';
 
 interface NavItem {
@@ -16,8 +16,6 @@ interface ConfigurableSidebarProps {
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   onNavigate?: () => void;
-  onSearchClick?: () => void;
-  searchActive?: boolean;
 }
 
 export function ConfigurableSidebar({
@@ -26,8 +24,6 @@ export function ConfigurableSidebar({
   isCollapsed: controlledIsCollapsed,
   onToggleCollapse,
   onNavigate,
-  onSearchClick,
-  searchActive = false,
 }: ConfigurableSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -109,42 +105,6 @@ export function ConfigurableSidebar({
       {/* Navigation items */}
       <nav className={`flex-1 transition-all duration-300 ${isCollapsed ? 'pl-2 pr-2 py-4' : 'pl-4 pt-4 pb-4'}`}>
         <ul className="space-y-1">
-          {/* Search — always first */}
-          {onSearchClick && (
-            <li>
-              <button
-                onClick={onSearchClick}
-                className={`w-full flex items-center transition-all duration-300 ${
-                  isCollapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2'
-                } text-left transition-colors`}
-                style={{
-                  borderRadius: 'var(--radius)',
-                  fontSize: 'var(--text-nav-item)',
-                  fontWeight: 'var(--font-weight-medium)',
-                  fontFamily: "'IBM Plex Sans', sans-serif",
-                  backgroundColor: searchActive ? 'var(--sidebar-active)' : 'transparent',
-                  color: searchActive ? 'var(--sidebar-primary-foreground)' : 'var(--sidebar-foreground)',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => {
-                  if (!searchActive) {
-                    e.currentTarget.style.backgroundColor = 'var(--fill-hover)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!searchActive) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
-                }}
-                title={isCollapsed ? 'Search' : undefined}
-              >
-                <span style={{ color: searchActive ? 'var(--sidebar-primary-foreground)' : 'var(--sidebar-foreground)' }}>
-                  <Search size={24} />
-                </span>
-                {!isCollapsed && <span className="nav-item">Search</span>}
-              </button>
-            </li>
-          )}
           {navItems.map((item) => (
             <li key={item.id}>
               <button

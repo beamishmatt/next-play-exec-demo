@@ -57,7 +57,7 @@ function AppContent() {
   const isMobile = useIsMobile();
   const [sidebarVisible, setSidebarVisible] = React.useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
-  const [searchOpen, setSearchOpen] = React.useState(false);
+  const [searchState, setSearchState] = React.useState<{ open: boolean; query?: string; selectedId?: string; output?: import('./data/types').SearchOutput }>({ open: false });
   const [importOpen, setImportOpen] = React.useState(false);
 
   // Memoized computation for back button visibility
@@ -134,7 +134,14 @@ function AppContent() {
     <TooltipProvider>
       <div className="h-screen flex bg-base">
         {/* Search takeover */}
-        {searchOpen && <SearchTakeover onClose={() => setSearchOpen(false)} />}
+        {searchState.open && (
+          <SearchTakeover
+            onClose={() => setSearchState({ open: false })}
+            initialQuery={searchState.query}
+            initialSelectedId={searchState.selectedId}
+            initialOutput={searchState.output}
+          />
+        )}
 
         {/* Import Evidence modal */}
         <ImportModal open={importOpen} onClose={() => setImportOpen(false)} />
@@ -146,8 +153,6 @@ function AppContent() {
             headerIcon={headerIcon}
             isCollapsed={sidebarCollapsed}
             onToggleCollapse={handleSidebarCollapseToggle}
-            onSearchClick={() => setSearchOpen(true)}
-            searchActive={searchOpen}
           />
         )}
 
@@ -166,8 +171,6 @@ function AppContent() {
                 isCollapsed={false}
                 onToggleCollapse={handleSidebarCollapseToggle}
                 onNavigate={handleMobileNavigation}
-                onSearchClick={() => { setSearchOpen(true); handleMobileNavigation(); }}
-                searchActive={searchOpen}
               />
             </div>
           </>
@@ -184,6 +187,7 @@ function AppContent() {
               showSidebarToggle={isMobile || isEvidenceDetailPage}
               sidebarVisible={sidebarVisible}
               onSidebarToggle={handleSidebarToggle}
+              onOpenSearch={(query, selectedId, output) => setSearchState({ open: true, query, selectedId, output })}
               actions={location.pathname === '/evidence' ? (
                 <button
                   onClick={() => setImportOpen(true)}

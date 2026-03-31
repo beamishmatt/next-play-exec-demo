@@ -20,7 +20,7 @@ import { Badge } from './ui/badge';
 import { AssistantPanel } from './AssistantPanel';
 import { FeedbackDrawer } from './FeedbackDrawer';
 import { getContextGraph, updateGraphNode } from '../storage/config';
-import { agentSearch, SearchStep } from '../engine/agentSearch';
+import { agentSearch, generateAndSaveDescription, SearchStep } from '../engine/agentSearch';
 import {
   AgentAction,
   SearchOutput,
@@ -269,14 +269,15 @@ function PreviewPanel({ result }: { result: SearchEvidenceResult }) {
 
   const isDocument = ['pdf', 'document', 'text'].includes(result.media_class);
   const isMedia = ['image', 'video'].includes(result.media_class);
-  const bodyText = result.excerpt || result.relevance;
+
+  const bodyText = result.excerpt || result.relevance || '';
 
   return (
     <div style={{ width: 310, maxWidth: 310, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
       {/* Two-part card */}
       <div style={{ border: '1px solid var(--border)', borderRadius: 12, backgroundColor: 'transparent', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-        {/* Top: image/video thumbnail for media, text excerpt for documents */}
+        {/* Top: thumbnail for media (+ description below), text for documents */}
         {isMedia && result.thumbnailUrl ? (
           <div style={{ flexShrink: 0 }}>
             <img
@@ -284,8 +285,11 @@ function PreviewPanel({ result }: { result: SearchEvidenceResult }) {
               alt={result.title}
               style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', display: 'block' }}
             />
-            <div style={{ padding: '10px 14px' }}>
+            <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
               <p style={{ fontSize: 12, fontWeight: 600, color: '#111827', margin: 0 }}>{result.title}</p>
+              {bodyText && (
+                <p style={{ fontSize: 11, color: '#4b5563', lineHeight: 1.6, margin: 0 }}>{bodyText}</p>
+              )}
             </div>
           </div>
         ) : (
@@ -375,21 +379,28 @@ function SkeletonPreview() {
 
 interface SearchTakeoverProps {
   onClose: () => void;
+  initialQuery?: string;
+  initialSelectedId?: string;
+  initialOutput?: SearchOutput;
 }
 
-export function SearchTakeover({ onClose }: SearchTakeoverProps) {
+export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initialOutput }: SearchTakeoverProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [query, setQuery] = useState('');
-  const [committedQuery, setCommittedQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery ?? '');
+  const [committedQuery, setCommittedQuery] = useState(initialOutput ? (initialQuery ?? '') : '');
   const [isLoading, setIsLoading] = useState(false);
-  const [searchOutput, setSearchOutput] = useState<SearchOutput | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [activeChips, setActiveChips] = useState<FilterChip[]>([]);
+  const [searchOutput, setSearchOutput] = useState<SearchOutput | null>(initialOutput ?? null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    initialSelectedId ?? initialOutput?.results[0]?.evidence_id ?? null
+  );
+  const [activeChips, setActiveChips] = useState<FilterChip[]>(initialOutput?.chips ?? []);
   const [recentSearches, setRecentSearches] = useState<string[]>(loadRecentSearches);
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const [showFeedback, setShowFeedback] = useState(false);
   // Version counter — incremented on each search; stale results are discarded
   const searchVersion = useRef(0);
+  // Skip the first debounce trigger when pre-loaded output was provided
+  const skipNextDebounce = useRef(!!initialOutput);
 
   // Focus on mount, close on Esc
   useEffect(() => {
@@ -398,6 +409,13 @@ export function SearchTakeover({ onClose }: SearchTakeoverProps) {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
+
+  // Auto-run search only if no pre-loaded output was provided
+  useEffect(() => {
+    if (!initialOutput && initialQuery && initialQuery.trim().length >= 3) {
+      runSearch(initialQuery.trim());
+    }
+  }, []); // intentionally only on mount
 
   const runSearch = async (q: string) => {
     const version = ++searchVersion.current;
@@ -438,6 +456,7 @@ export function SearchTakeover({ onClose }: SearchTakeoverProps) {
   useEffect(() => {
     const q = query.trim();
     if (q.length < 3) return;
+    if (skipNextDebounce.current) { skipNextDebounce.current = false; return; }
     const t = setTimeout(() => {
       saveRecentSearch(q, recentSearches);
       runSearch(q);
@@ -488,6 +507,26 @@ export function SearchTakeover({ onClose }: SearchTakeoverProps) {
 
   const selectedEvidence = searchOutput?.results.find(r => r.evidence_id === selectedId);
   const hasResults = searchOutput !== null;
+
+  // Lazy description generation — runs once per selected result that has no excerpt
+  useEffect(() => {
+    if (!selectedId || !searchOutput) return;
+    const result = searchOutput.results.find(r => r.evidence_id === selectedId);
+    if (!result || result.excerpt) return; // already has one
+
+    generateAndSaveDescription(selectedId).then(description => {
+      if (!description) return;
+      setSearchOutput(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          results: prev.results.map(r =>
+            r.evidence_id === selectedId ? { ...r, excerpt: description } : r
+          ),
+        };
+      });
+    });
+  }, [selectedId]);
   const isAssistantOpen = checkedIds.size > 0;
 
   const checkedItems = (() => {

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { useTheme } from './ThemeProvider';
 import { ArrowLeft, PanelLeft, Menu } from 'lucide-react';
 
 import { useIsMobile } from './ui/use-mobile';
 import svgPaths from '../imports/svg-d29d82xyuv';
+import { SearchDropdown } from './SearchDropdown';
 
 interface UtilityBarProps {
   title: string;
@@ -13,6 +14,7 @@ interface UtilityBarProps {
   sidebarVisible?: boolean;
   onSidebarToggle?: () => void;
   actions?: React.ReactNode;
+  onOpenSearch: (query: string, selectedId?: string, output?: import('../data/types').SearchOutput) => void;
 }
 
 function BackButton({ onBack }: { onBack: () => void }) {
@@ -179,7 +181,11 @@ export function UtilityBar({
   sidebarVisible,
   onSidebarToggle,
   actions,
+  onOpenSearch,
 }: UtilityBarProps) {
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
   return (
     <div
       className="relative size-full"
@@ -187,7 +193,7 @@ export function UtilityBar({
       style={{ backgroundColor: 'var(--raised)' }}
     >
       <div className="flex flex-row items-center min-w-inherit relative size-full">
-        <div className="box-border content-stretch flex items-center justify-between min-w-inherit px-6 py-0 relative size-full">
+        <div className="box-border content-stretch flex items-center min-w-inherit px-6 py-0 relative size-full gap-4">
           <LeftSection
             title={title}
             showBackButton={showBackButton}
@@ -196,15 +202,28 @@ export function UtilityBar({
             sidebarVisible={sidebarVisible}
             onSidebarToggle={onSidebarToggle}
           />
-          <div className="flex items-center gap-4">
+          {/* Center: search */}
+          <div className="flex-1 flex items-center justify-center" style={{ minWidth: 0 }}>
+            <SearchDropdown
+              inputRef={searchInputRef}
+              query={searchQuery}
+              onQueryChange={setSearchQuery}
+              onClose={() => setSearchQuery('')}
+              onOpenSearch={(q, id, out) => {
+                setSearchQuery('');
+                onOpenSearch(q, id, out);
+              }}
+            />
+          </div>
+          <div className="flex items-center gap-4 shrink-0">
             {actions}
             <RightSection />
           </div>
         </div>
       </div>
-      <div 
-        aria-hidden="true" 
-        className="absolute border-[0px_0px_1px] border-solid inset-0 pointer-events-none" 
+      <div
+        aria-hidden="true"
+        className="absolute border-[0px_0px_1px] border-solid inset-0 pointer-events-none"
         style={{ borderColor: 'var(--border)' }}
       />
     </div>

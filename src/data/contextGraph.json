@@ -17,7 +17,8 @@
       "objects_detected": [],
       "vector_file_id": "file-7Ani2JimhXQJXceSotPT5e",
       "video_processing": null,
-      "tags": []
+      "tags": [],
+      "description": "The evidence item is a PDF document titled \"01-first-responding-officer-report.pdf,\" authored by Officer Maria Thibodaux, related to homicide case 2025-088142, dated March 27, 2026."
     },
     "EV-2OVP11DU": {
       "id": "EV-2OVP11DU",
@@ -36,7 +37,8 @@
       "objects_detected": [],
       "vector_file_id": "file-K9SAkWeamwp77wm8jYXZHg",
       "video_processing": null,
-      "tags": []
+      "tags": [],
+      "description": "This evidence item is a PDF document titled \"02-crime-scene-report.pdf,\" created by Officer Diane Tran, pertaining to a homicide case (PBPD-2025-088142) dated March 27, 2026. It contains details related to the crime scene involved in the investigation."
     },
     "EV-Q8CIC40V": {
       "id": "EV-Q8CIC40V",
@@ -55,7 +57,8 @@
       "objects_detected": [],
       "vector_file_id": "file-Gj3o1vXei5MRE8jEB1YzvF",
       "video_processing": null,
-      "tags": []
+      "tags": [],
+      "description": "The evidence item is a PDF titled \"03-photo-log.pdf,\" authored by Officer Kenneth Okafor, related to homicide case PBPD-2025-088142, created on March 27, 2026. It contains the crime scene photo log documenting pertinent images from the investigation."
     },
     "EV-FCYRXROI": {
       "id": "EV-FCYRXROI",
@@ -121,7 +124,8 @@
       "objects_detected": [],
       "vector_file_id": "file-85r5higG33gCPyHgGQnGE5",
       "video_processing": null,
-      "tags": []
+      "tags": [],
+      "description": "The evidence item titled \"35-bar-records.pdf\" is a PDF document containing transaction records from the Rusty Anchor Bar, relevant to the homicide case PBPD-2025-088142, overseen by Officer Diane Tran. The document was created on March 28, 2026."
     },
     "EV-HUP2BUTT": {
       "id": "EV-HUP2BUTT",
@@ -254,7 +258,8 @@
       "objects_detected": [],
       "vector_file_id": "file-ThkY8PAj9eSn9wo5BbWeDa",
       "video_processing": null,
-      "tags": []
+      "tags": [],
+      "description": "This evidence item is a PDF document titled \"07-officer-martin-statement.pdf,\" which contains the statement of Officer James Martin related to the homicide case PBPD-2025-088142, dated March 28, 2026."
     },
     "EV-DXP1XN2X": {
       "id": "EV-DXP1XN2X",
@@ -273,7 +278,8 @@
       "objects_detected": [],
       "vector_file_id": "file-XU6VU8o5r4Ga4HcR9hbuTP",
       "video_processing": null,
-      "tags": []
+      "tags": [],
+      "description": "Evidence item titled \"08-detective-case-notes.pdf\" is a PDF document containing case notes related to a homicide investigation, managed by Officer Renee Broussard under case number PBPD-2025-088142, dated March 28, 2026."
     },
     "EV-NQP6Y4VH": {
       "id": "EV-NQP6Y4VH",
@@ -294,7 +300,8 @@
       "video_processing": null,
       "tags": [
         "witness statement, bar altercation, suspect identification"
-      ]
+      ],
+      "description": "This PDF document titled \"11-witness-shannon-obrien-initial.pdf\" contains the initial witness statement provided by Shannon O'Brien related to homicide case PBPD-2025-088142, and was processed on March 30, 2026, by Officer Renee Broussard."
     }
   },
   "edges": [

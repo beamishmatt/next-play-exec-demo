@@ -1,10 +1,62 @@
 import { SearchOutput, SearchEvidenceResult, GraphNode } from '../data/types';
 import { getOpenAIKey } from '../utils/openaiClient';
-import { getContextGraph, getVectorStoreId, setVectorStoreId } from '../storage/config';
+import { getContextGraph, getVectorStoreId, setVectorStoreId, updateGraphNode } from '../storage/config';
 import { analyzeQuery, buildFilterChips, buildEntityResults } from './queryAnalysis';
 import { scopeGraph } from './graphScope';
 import { synthesizeSummary } from './synthesis';
-import { createVectorStore } from '../utils/openaiClient';
+import { createVectorStore, chatCompletion } from '../utils/openaiClient';
+
+/**
+ * Generates a description for a graph node using its metadata, then persists it
+ * to the graph so no future LLM call is needed.
+ */
+export async function generateAndSaveDescription(nodeId: string): Promise<string | null> {
+  const graph = getContextGraph();
+  const node = graph.nodes[nodeId];
+  if (!node) return null;
+  if (node.description) return node.description; // already have one
+
+  const key = getOpenAIKey();
+  if (!key) return null;
+
+  const objectsList = node.objects_detected?.length
+    ? node.objects_detected.map(o => `${o.color ? o.color + ' ' : ''}${o.label}`).join(', ')
+    : null;
+
+  const contextLines = [
+    `Title: ${node.title}`,
+    `Type: ${node.media_class}`,
+    `Category: ${node.category}`,
+    `Officer: ${node.officer}`,
+    `Case: ${node.case_id}`,
+    node.date_recorded ? `Date: ${node.date_recorded}` : null,
+    node.scene_type ? `Scene: ${node.scene_type}` : null,
+    node.lighting ? `Lighting: ${node.lighting}` : null,
+    node.people_count != null ? `People visible: ${node.people_count}` : null,
+    node.text_visible ? `Text visible: ${node.text_visible}` : null,
+    objectsList ? `Objects detected: ${objectsList}` : null,
+    node.source ? `Source: ${node.source}` : null,
+  ].filter(Boolean).join('\n');
+
+  try {
+    const description = await chatCompletion([
+      {
+        role: 'system',
+        content: 'You write concise 1–2 sentence descriptions for police evidence items based on metadata. Be factual and specific. Do not invent details not present in the metadata.',
+      },
+      {
+        role: 'user',
+        content: `Write a brief description for this evidence item:\n\n${contextLines}`,
+      },
+    ], { model: 'gpt-4o-mini', max_tokens: 120 });
+
+    const trimmed = description.trim();
+    if (trimmed) updateGraphNode(nodeId, { description: trimmed });
+    return trimmed || null;
+  } catch {
+    return null;
+  }
+}
 
 export type SearchStep = 'analyzing' | 'scoping' | 'retrieving' | 'synthesizing' | 'done';
 
@@ -69,7 +121,7 @@ function nodeToResult(n: GraphNode): SearchEvidenceResult {
     case_id: n.case_id,
     officer: n.officer,
     category: n.category,
-    excerpt: n.description?.slice(0, 200),
+    excerpt: n.description,
     relevance: '',
     confidence: 'medium' as const,
     thumbnailUrl: n.thumbnailUrl,
