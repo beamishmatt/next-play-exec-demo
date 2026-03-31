@@ -235,6 +235,5 @@ GPT-4o streams response with thinking block + inline citations
 
 ## Notes
 
-- The prototype runs entirely client-side. The OpenAI API key is exposed in the browser — this is intentional for a prototype and should never be done in production.
 - The mock evidence corpus lives in `src/data/contextGraph.json`. Add or modify nodes there to change the searchable dataset.
 - Video transcription beyond thumbnail capture requires a server-side ffmpeg pipeline (not included in this prototype).
