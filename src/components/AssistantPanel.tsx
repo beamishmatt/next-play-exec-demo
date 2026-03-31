@@ -1,10 +1,136 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ArrowUp, ChevronDown, Clock, CircleCheck, FileText, X, Copy, Check } from 'lucide-react';
+import { ArrowUp, ChevronDown, Clock, CircleCheck, FileText, X, Copy, Check, Tag, RefreshCw } from 'lucide-react';
 import { PromptInput, PromptInputTextarea, PromptInputActions } from './ui/prompt-input';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
 import { chatWithEvidenceStream, ChatMessage } from '../engine/assistantChat';
+import { AgentAction, AgentActionType } from '../data/types';
+
+// ─── Action parsing ───────────────────────────────────────────────────────────
+
+const ACTION_RE = /<action\s+type="([^"]+)"\s+items="([^"]+)"\s+value="([^"]+)"\s*\/>/g;
+
+function parseActions(content: string): { content: string; actions: AgentAction[] } {
+  const actions: AgentAction[] = [];
+  const cleaned = content.replace(ACTION_RE, (_, type, items, value) => {
+    actions.push({
+      type: type as AgentActionType,
+      item_ids: items.split(',').map((s: string) => s.trim()).filter(Boolean),
+      value,
+    });
+    return '';
+  }).trim();
+  return { content: cleaned, actions };
+}
+
+/** Strip action tags (complete or partial) from content during streaming */
+function stripActionTags(content: string): string {
+  return content
+    .replace(ACTION_RE, '')
+    .replace(/<action\s[^>]*$/, '') // partial tag at end of stream
+    .trim();
+}
+
+// ─── Action card ─────────────────────────────────────────────────────────────
+
+const ACTION_LABELS: Record<AgentActionType, string> = {
+  set_category: 'Set category',
+  set_status: 'Set status',
+  add_tag: 'Add tag',
+};
+
+function ActionCard({
+  action,
+  onApply,
+  onDismiss,
+  status,
+}: {
+  action: AgentAction;
+  onApply: () => void;
+  onDismiss: () => void;
+  status: 'pending' | 'applied' | 'dismissed';
+}) {
+  if (status === 'dismissed') return null;
+
+  const label = ACTION_LABELS[action.type] ?? action.type;
+  const itemCount = action.item_ids.length;
+
+  return (
+    <div
+      style={{
+        marginTop: 8,
+        border: '1px solid var(--border)',
+        borderRadius: 8,
+        padding: '9px 12px',
+        backgroundColor: status === 'applied' ? 'var(--fill-weaker)' : 'transparent',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 9,
+      }}
+    >
+      {status === 'applied' ? (
+        <Check size={13} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+      ) : action.type === 'add_tag' ? (
+        <Tag size={13} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+      ) : (
+        <RefreshCw size={13} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+      )}
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 12, fontWeight: 400, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {status === 'applied'
+            ? `${label} → "${action.value}" applied`
+            : `${label} → "${action.value}"`}
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 1 }}>
+          {status === 'applied'
+            ? `Applied to ${itemCount} item${itemCount !== 1 ? 's' : ''}`
+            : `${itemCount} item${itemCount !== 1 ? 's' : ''} selected`}
+        </div>
+      </div>
+
+      {status === 'pending' && (
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+          <button
+            onClick={onDismiss}
+            style={{
+              padding: '4px 10px',
+              borderRadius: 6,
+              border: '1px solid var(--border)',
+              backgroundColor: 'transparent',
+              color: 'var(--muted-foreground)',
+              fontSize: 11,
+              fontWeight: 400,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            Dismiss
+          </button>
+          <button
+            onClick={onApply}
+            style={{
+              padding: '4px 10px',
+              borderRadius: 6,
+              border: '1px solid var(--fill-strong)',
+              backgroundColor: 'var(--fill-strong)',
+              color: 'var(--text-inverse-strong)',
+              fontSize: 11,
+              fontWeight: 500,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            Apply
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface DraftReport {
   title: string;
@@ -18,6 +144,7 @@ interface Message {
   thinking?: string;
   sources?: AssistantItem[];
   draft?: DraftReport;
+  parsedActions?: AgentAction[];
 }
 
 export interface AssistantItem {
@@ -36,6 +163,7 @@ interface AssistantPanelProps {
   isOpen: boolean;
   items: AssistantItem[];
   onClose: () => void;
+  onAction?: (action: AgentAction) => void;
 }
 
 function SendButton({ onClick, disabled }: { onClick: () => void; disabled: boolean }) {
@@ -487,12 +615,13 @@ const mdStyles: React.CSSProperties = {
   lineHeight: '1.65',
 };
 
-export function AssistantPanel({ isOpen, items, onClose }: AssistantPanelProps) {
+export function AssistantPanel({ isOpen, items, onClose, onAction }: AssistantPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [streamingId, setStreamingId] = useState<string | null>(null);
   const [openDraft, setOpenDraft] = useState<DraftReport | null>(null);
+  const [actionStatuses, setActionStatuses] = useState<Record<string, 'pending' | 'applied' | 'dismissed'>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -521,17 +650,28 @@ export function AssistantPanel({ isOpen, items, onClose }: AssistantPanelProps) 
       const sources = await chatWithEvidenceStream(trimmed, history, items, (chunk) => {
         raw.current += chunk;
         const { thinking, content: rawContent } = parseThinking(raw.current);
-        const { content, draft } = parseDraft(rawContent);
+        const { content: postDraft, draft } = parseDraft(rawContent);
+        const content = stripActionTags(postDraft);
         setMessages(prev =>
           prev.map(m => m.id === assistantId ? { ...m, thinking, content, draft: draft ?? m.draft } : m)
         );
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       });
-      if (sources.length > 0) {
-        setMessages(prev =>
-          prev.map(m => m.id === assistantId ? { ...m, sources } : m)
-        );
-      }
+
+      // Parse action tags from the final raw content
+      const { thinking: finalThinking, content: finalRawContent } = parseThinking(raw.current);
+      const { content: finalPostDraft, draft: finalDraft } = parseDraft(finalRawContent);
+      const { content: finalContent, actions } = parseActions(finalPostDraft);
+      setMessages(prev =>
+        prev.map(m => m.id === assistantId ? {
+          ...m,
+          thinking: finalThinking,
+          content: finalContent,
+          draft: finalDraft ?? m.draft,
+          parsedActions: actions.length > 0 ? actions : m.parsedActions,
+          sources: sources.length > 0 ? sources : m.sources,
+        } : m)
+      );
     } catch {
       setMessages(prev =>
         prev.map(m => m.id === assistantId ? { ...m, content: 'Something went wrong. Please try again.' } : m)
@@ -683,6 +823,23 @@ export function AssistantPanel({ isOpen, items, onClose }: AssistantPanelProps) 
                           onOpen={() => setOpenDraft(msg.draft!)}
                         />
                       )}
+                      {msg.parsedActions && msg.parsedActions.map((action, i) => {
+                        const key = `${msg.id}-action-${i}`;
+                        return (
+                          <ActionCard
+                            key={key}
+                            action={action}
+                            status={actionStatuses[key] ?? 'pending'}
+                            onApply={() => {
+                              setActionStatuses(prev => ({ ...prev, [key]: 'applied' }));
+                              onAction?.(action);
+                            }}
+                            onDismiss={() => {
+                              setActionStatuses(prev => ({ ...prev, [key]: 'dismissed' }));
+                            }}
+                          />
+                        );
+                      })}
                     </>
                   );
                 })() : null}

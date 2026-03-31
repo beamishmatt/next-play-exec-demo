@@ -1,4 +1,4 @@
-import { chatCompletion } from '../utils/openaiClient';
+import { chatCompletion, chatCompletionStream } from '../utils/openaiClient';
 import { GraphNode, SearchEvidenceResult, SearchOutput, EntityResult } from '../data/types';
 import { VectorResult } from './vectorRetrieval';
 import { QueryAnalysis, buildEntityResults } from './queryAnalysis';
@@ -29,11 +29,71 @@ Return ONLY valid JSON with this structure (no markdown, no backticks):
 
 Include ALL provided graph candidates in the results — do not drop any. Rank by relevance but return every node. Keep relevance explanations concise.`;
 
+// Enrich a raw result object with node metadata (thumbnails, dates, etc.)
+function enrichResult(r: SearchEvidenceResult, nodeMap: Record<string, GraphNode>): SearchEvidenceResult {
+  const node = nodeMap[r.evidence_id];
+  return {
+    ...r,
+    excerpt: r.excerpt || (node?.description ? node.description.slice(0, 200) : undefined),
+    thumbnailUrl: node?.thumbnailUrl,
+    date_recorded: node?.date_recorded,
+    source: node?.source,
+  };
+}
+
+// Extract all complete JSON objects from the "results" array in a partial buffer.
+// Uses brace-counting so it works on incomplete/streaming JSON.
+function extractResults(buffer: string): SearchEvidenceResult[] {
+  const markerIdx = buffer.indexOf('"results"');
+  if (markerIdx === -1) return [];
+  const arrStart = buffer.indexOf('[', markerIdx);
+  if (arrStart === -1) return [];
+
+  const results: SearchEvidenceResult[] = [];
+  let i = arrStart + 1;
+
+  while (i < buffer.length) {
+    // Skip whitespace and commas between objects
+    while (i < buffer.length && /[\s,]/.test(buffer[i])) i++;
+    if (i >= buffer.length || buffer[i] === ']') break;
+    if (buffer[i] !== '{') { i++; continue; }
+
+    // Walk forward counting braces to find the end of this object
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    const objStart = i;
+    let j = i;
+
+    for (; j < buffer.length; j++) {
+      const c = buffer[j];
+      if (escape) { escape = false; continue; }
+      if (c === '\\' && inString) { escape = true; continue; }
+      if (c === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (c === '{') depth++;
+      else if (c === '}') {
+        depth--;
+        if (depth === 0) {
+          try { results.push(JSON.parse(buffer.slice(objStart, j + 1)) as SearchEvidenceResult); } catch { /* malformed — skip */ }
+          i = j + 1;
+          break;
+        }
+      }
+    }
+
+    if (depth !== 0) break; // incomplete object — stop scanning
+  }
+
+  return results;
+}
+
 export async function synthesizeResults(
   analysis: QueryAnalysis,
   graphNodes: GraphNode[],
   vectorResult: VectorResult | null,
-  graph_context: { cases_involved: string[]; total_scoped: number }
+  graph_context: { cases_involved: string[]; total_scoped: number },
+  onPartial?: (results: SearchEvidenceResult[]) => void
 ): Promise<SearchOutput> {
   const entities = buildEntityResults(analysis);
 
@@ -62,30 +122,32 @@ ${JSON.stringify(nodesSummary, null, 2)}
 Vector search text (use verbatim excerpts from this for the "excerpt" field):
 ${vectorResult?.text ?? '(no vector results)'}`;
 
-  const raw = await chatCompletion(
+  const nodeMap = Object.fromEntries(graphNodes.map(n => [n.id, n]));
+  let lastEmittedCount = 0;
+
+  const raw = await chatCompletionStream(
     [
       { role: 'system', content: SYNTHESIS_SYSTEM },
       { role: 'user', content: userContent },
     ],
-    { temperature: 0.2, max_tokens: 4000 }
+    { temperature: 0.2, max_tokens: 2000 },
+    (accumulated) => {
+      if (!onPartial) return;
+      const rawResults = extractResults(accumulated);
+      if (rawResults.length > lastEmittedCount) {
+        lastEmittedCount = rawResults.length;
+        onPartial(rawResults.map(r => enrichResult(r, nodeMap)));
+      }
+    }
   );
 
   try {
     const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
     const parsed = JSON.parse(cleaned);
 
-    // Attach thumbnailUrl from graph nodes to results
-    const nodeMap = Object.fromEntries(graphNodes.map(n => [n.id, n]));
-    const results: SearchEvidenceResult[] = (parsed.results ?? []).map((r: SearchEvidenceResult) => {
-      const node = nodeMap[r.evidence_id];
-      return {
-        ...r,
-        excerpt: r.excerpt || (node?.description ? node.description.slice(0, 200) : undefined),
-        thumbnailUrl: node?.thumbnailUrl,
-        date_recorded: node?.date_recorded,
-        source: node?.source,
-      };
-    });
+    const results: SearchEvidenceResult[] = (parsed.results ?? []).map((r: SearchEvidenceResult) =>
+      enrichResult(r, nodeMap)
+    );
 
     // Build entity list from graph nodes too (supplement query-extracted entities)
     // Normalize case IDs to deduplicate variants like "088142", "2025-088142", "PBPD-2025-088142"
@@ -119,6 +181,45 @@ ${vectorResult?.text ?? '(no vector results)'}`;
   } catch (err) {
     console.error('Synthesis parse error. Raw response:', raw, err);
     return emptyOutput(analysis.entities.keywords, entities, graph_context);
+  }
+}
+
+const SUMMARY_SYSTEM = `You are an evidence search assistant. Given a query and matching evidence items, write a brief one-sentence summary of what was found and suggest 2-3 useful follow-up queries.
+
+Return ONLY valid JSON (no markdown, no backticks):
+{"summary": "one sentence summary", "suggestions": ["...", "...", "..."]}`;
+
+export async function synthesizeSummary(
+  analysis: QueryAnalysis,
+  graphNodes: GraphNode[]
+): Promise<{ summary: string; suggestions: string[] }> {
+  if (graphNodes.length === 0) {
+    return { summary: '', suggestions: [] };
+  }
+
+  const nodeList = graphNodes.slice(0, 30).map(n =>
+    `"${n.title}" (${n.media_class}, ${n.category}, ${n.officer}, ${n.case_id})`
+  ).join('\n');
+
+  try {
+    const raw = await chatCompletion(
+      [
+        { role: 'system', content: SUMMARY_SYSTEM },
+        { role: 'user', content: `Query: "${analysis.reformulated_query}"\n\nMatching evidence (${graphNodes.length} items):\n${nodeList}` },
+      ],
+      { model: 'gpt-4o-mini', temperature: 0.2, max_tokens: 300 }
+    );
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    const parsed = JSON.parse(cleaned);
+    return {
+      summary: parsed.summary ?? '',
+      suggestions: parsed.suggestions ?? [],
+    };
+  } catch {
+    return {
+      summary: `Found ${graphNodes.length} matching item${graphNodes.length !== 1 ? 's' : ''}.`,
+      suggestions: [],
+    };
   }
 }
 

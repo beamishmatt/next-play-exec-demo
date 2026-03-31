@@ -29,6 +29,31 @@ export async function chatCompletion(
   return response.choices[0].message.content ?? '';
 }
 
+export async function chatCompletionStream(
+  messages: OpenAI.Chat.ChatCompletionMessageParam[],
+  options: { model?: string; temperature?: number; max_tokens?: number } = {},
+  onAccumulated: (text: string) => void
+): Promise<string> {
+  const openai = getOpenAIClient();
+  if (!openai) throw new Error('No OpenAI API key configured. Set VITE_OPENAI_API_KEY in .env');
+  const stream = await openai.chat.completions.create({
+    model: options.model ?? 'gpt-4o-mini',
+    temperature: options.temperature,
+    max_tokens: options.max_tokens,
+    messages,
+    stream: true,
+  });
+  let accumulated = '';
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta?.content ?? '';
+    if (delta) {
+      accumulated += delta;
+      onAccumulated(accumulated);
+    }
+  }
+  return accumulated;
+}
+
 export async function uploadTextFile(content: string, filename: string): Promise<string> {
   const openai = getOpenAIClient();
   if (!openai) throw new Error('No OpenAI API key configured');

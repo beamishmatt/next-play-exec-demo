@@ -14,6 +14,7 @@ import { deleteEvidence } from '../../data/deleteEvidence';
 import { filterEvidence } from '../../data/searchHelpers';
 import { useIsMobile } from '../ui/use-mobile';
 import { countActiveFilters } from '../../utils/filterHelpers';
+import { ChevronDown, Calendar, Map, Settings, RefreshCw } from 'lucide-react';
 
 export function EvidencePage() {
   const evidence = useGraphEvidence();
@@ -167,42 +168,164 @@ export function EvidencePage() {
       {/* Main content — shrinks when assistant panel opens */}
       <div className="flex-1 min-w-0 p-4 md:p-8">
         <div className="space-y-6">
-          {/* Search and Button Section - Responsive layout */}
-          <div className="flex flex-col gap-4 md:grid md:grid-cols-12 md:gap-4">
-            {/* Search Column - Full width on mobile, 8/12 on desktop */}
-            <div className="md:col-span-8 space-y-2">
-              {/* Search Bar */}
-              <SearchBar
-                placeholder="Search evidence by title, owner, case ID, status..."
-                value={searchQuery}
-                onChange={setSearchQuery}
-                className="w-full"
-              />
-
-              {/* Search Results Summary */}
-              {showingFiltered && (
-                <p className="text-muted-foreground caption">
-                  Showing {resultsCount} of {totalCount} evidence items
-                  {resultsCount === 0 && ' - try adjusting your search terms'}
-                </p>
-              )}
-            </div>
-
-            <div className="md:col-span-4" />
+          {/* Search and Saved Filter Row */}
+          <div className="flex items-center gap-3">
+            <SearchBar
+              placeholder='Search for ID, Title, Tag, or Category. Use " " for exact match.'
+              value={searchQuery}
+              onChange={setSearchQuery}
+              className="flex-1"
+            />
+            {/* Saved filter dropdown */}
+            <button
+              className="flex items-center gap-2 px-3 py-2 rounded-md border text-sm font-medium whitespace-nowrap"
+              style={{
+                borderColor: 'var(--border-strong)',
+                backgroundColor: 'var(--fill-base)',
+                color: 'var(--text-strong)',
+              }}
+            >
+              Saved: All Evidence
+              <ChevronDown size={14} />
+            </button>
           </div>
 
-          {/* Filter Controls and View Switcher - Desktop only */}
+          {/* Inline Filter Bar and View Switcher - Desktop only */}
           {!isMobile && (
-            <div className="flex items-center justify-between">
-              <EvidenceFilters
-                isFilterPanelOpen={isFilterPanelOpen}
-                onFilterPanelToggle={handleFilterPanelToggle}
-                activeFilterCount={activeFilterCount}
-              />
-              <ViewSwitcher
-                viewMode={viewMode}
-                onViewModeChange={handleViewModeChange}
-              />
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                {/* Filters toggle button */}
+                <EvidenceFilters
+                  isFilterPanelOpen={isFilterPanelOpen}
+                  onFilterPanelToggle={handleFilterPanelToggle}
+                  activeFilterCount={activeFilterCount}
+                />
+
+                {/* ID quick filter */}
+                <input
+                  type="text"
+                  placeholder="ID"
+                  className="px-3 py-1.5 rounded-md border text-sm"
+                  style={{
+                    borderColor: 'var(--border-strong)',
+                    backgroundColor: 'var(--fill-base)',
+                    color: 'var(--text-strong)',
+                    width: '100px',
+                    height: '36px',
+                  }}
+                  readOnly
+                />
+
+                {/* Owner quick filter */}
+                <button
+                  className="flex items-center gap-2 px-3 rounded-md border text-sm"
+                  style={{
+                    borderColor: 'var(--border-strong)',
+                    backgroundColor: 'var(--fill-base)',
+                    color: 'var(--text-muted)',
+                    width: '140px',
+                    height: '36px',
+                  }}
+                >
+                  <span>Owner</span>
+                  <ChevronDown size={14} className="ml-auto" />
+                </button>
+
+                {/* Recorded On date range */}
+                <div
+                  className="flex items-center gap-1 px-3 rounded-md border text-sm"
+                  style={{
+                    borderColor: 'var(--border-strong)',
+                    backgroundColor: 'var(--fill-base)',
+                    height: '36px',
+                  }}
+                >
+                  <span className="text-xs font-medium" style={{ color: 'var(--text-strong)', whiteSpace: 'nowrap' }}>Recorded On</span>
+                  <input
+                    type="text"
+                    placeholder="Start"
+                    className="text-sm bg-transparent outline-none w-14"
+                    style={{ color: 'var(--text-muted)' }}
+                    readOnly
+                  />
+                  <Calendar size={14} style={{ color: 'var(--text-muted)' }} />
+                  <input
+                    type="text"
+                    placeholder="End"
+                    className="text-sm bg-transparent outline-none w-14"
+                    style={{ color: 'var(--text-muted)' }}
+                    readOnly
+                  />
+                  <Calendar size={14} style={{ color: 'var(--text-muted)' }} />
+                </div>
+
+                {/* Category quick filter */}
+                <button
+                  className="flex items-center gap-2 px-3 rounded-md border text-sm"
+                  style={{
+                    borderColor: 'var(--border-strong)',
+                    backgroundColor: 'var(--fill-base)',
+                    color: 'var(--text-muted)',
+                    width: '140px',
+                    height: '36px',
+                  }}
+                >
+                  <span>Category</span>
+                  <ChevronDown size={14} className="ml-auto" />
+                </button>
+
+                {/* Spacer */}
+                <div className="flex-1" />
+
+                {/* Map icon */}
+                <button
+                  className="flex items-center justify-center rounded-md border"
+                  style={{
+                    borderColor: 'var(--border-strong)',
+                    backgroundColor: 'var(--fill-base)',
+                    width: '36px',
+                    height: '36px',
+                    color: 'var(--text-muted)',
+                  }}
+                >
+                  <Map size={16} />
+                </button>
+
+                {/* Table / Gallery view switcher */}
+                <ViewSwitcher
+                  viewMode={viewMode}
+                  onViewModeChange={handleViewModeChange}
+                />
+
+                {/* Settings icon */}
+                <button
+                  className="flex items-center justify-center rounded-md border"
+                  style={{
+                    borderColor: 'var(--border-strong)',
+                    backgroundColor: 'var(--fill-base)',
+                    width: '36px',
+                    height: '36px',
+                    color: 'var(--text-muted)',
+                  }}
+                >
+                  <Settings size={16} />
+                </button>
+              </div>
+
+              {/* Results count row */}
+              <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-muted)' }}>
+                <span>
+                  {showingFiltered
+                    ? `${resultsCount.toLocaleString()} results`
+                    : `${totalCount.toLocaleString()} results`}
+                </span>
+                <button
+                  className="flex items-center gap-1 text-sm hover:underline"
+                  style={{ color: 'var(--text-link, var(--text-muted))' }}
+                >
+                  Refresh
+                </button>
+              </div>
             </div>
           )}
 

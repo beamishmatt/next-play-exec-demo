@@ -5,6 +5,7 @@
   import fs from 'fs';
 
   const GRAPH_PATH = path.resolve(__dirname, 'src/data/contextGraph.json');
+  const FEEDBACK_PATH = path.resolve(__dirname, 'src/data/feedback.json');
 
   function graphApiPlugin() {
     return {
@@ -46,8 +47,47 @@
     };
   }
 
+  function feedbackApiPlugin() {
+    return {
+      name: 'feedback-api',
+      configureServer(server: any) {
+        server.middlewares.use('/api/feedback', (req: any, res: any) => {
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+          if (req.method === 'OPTIONS') { res.end(); return; }
+
+          if (req.method === 'POST') {
+            let body = '';
+            req.on('data', (chunk: any) => { body += chunk; });
+            req.on('end', () => {
+              try {
+                const entry = JSON.parse(body);
+                const existing = fs.existsSync(FEEDBACK_PATH)
+                  ? JSON.parse(fs.readFileSync(FEEDBACK_PATH, 'utf-8'))
+                  : [];
+                existing.push(entry);
+                fs.writeFileSync(FEEDBACK_PATH, JSON.stringify(existing, null, 2), 'utf-8');
+                res.end('{"ok":true}');
+              } catch {
+                res.statusCode = 400;
+                res.end('{"error":"invalid json"}');
+              }
+            });
+            return;
+          }
+
+          res.statusCode = 405;
+          res.end();
+        });
+      },
+    };
+  }
+
   export default defineConfig({
-    plugins: [react(), graphApiPlugin()],
+    plugins: [react(), graphApiPlugin(), feedbackApiPlugin()],
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
       alias: {

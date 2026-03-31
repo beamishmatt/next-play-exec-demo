@@ -161,6 +161,16 @@ export interface SearchOutput {
   };
 }
 
+// ─── Agentic actions ─────────────────────────────────────────────────────────
+
+export type AgentActionType = 'set_category' | 'set_status' | 'add_tag';
+
+export interface AgentAction {
+  type: AgentActionType;
+  item_ids: string[];
+  value: string;
+}
+
 // Sharing policy options
 export type SharingPolicy = 'default' | 'share with Police' | 'share with attorneys';
 

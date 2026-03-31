@@ -1,4 +1,4 @@
-import { ContextGraph } from '../data/types';
+import { ContextGraph, GraphNode } from '../data/types';
 
 let _graph: ContextGraph | null = null;
 
@@ -44,6 +44,15 @@ export function setContextGraph(graph: ContextGraph): void {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(graph, null, 2),
   }).catch(() => { /* non-fatal */ });
+}
+
+export function updateGraphNode(id: string, fields: Partial<GraphNode>): void {
+  const graph = getContextGraph();
+  if (!graph.nodes[id]) return;
+  setContextGraph({
+    ...graph,
+    nodes: { ...graph.nodes, [id]: { ...graph.nodes[id], ...fields } },
+  });
 }
 
 export function emptyGraph(): ContextGraph {

@@ -15,9 +15,11 @@ export function scopeGraph(graph: ContextGraph, analysis: QueryAnalysis): GraphN
     entities.dates.start ||
     entities.dates.end;
 
+  const terms = queryTerms(analysis);
+
   // No structured entities extracted — go straight to fuzzy keyword match
   if (!hasEntityFilters) {
-    return fuzzyMatch(all, analysis.reformulated_query, entities.keywords);
+    return scoredSort(fuzzyMatch(all, terms), analysis, terms, new Set());
   }
 
   let candidates = [...all];
@@ -82,18 +84,82 @@ export function scopeGraph(graph: ContextGraph, analysis: QueryAnalysis): GraphN
 
   // If strict filters eliminated everything, fall back to fuzzy match across all nodes
   if (candidates.length === 0) {
-    return fuzzyMatch(all, analysis.reformulated_query, entities.keywords);
+    return scoredSort(fuzzyMatch(all, terms), analysis, terms, new Set());
   }
 
+  // Track direct candidates before edge expansion — used for scoring
+  const directIds = new Set(candidates.map(n => n.id));
+
   // Expand via edges
-  const candidateIds = new Set(candidates.map(n => n.id));
+  const candidateIds = new Set(directIds);
   for (const edge of graph.edges) {
     if (candidateIds.has(edge.source)) candidateIds.add(edge.target);
     if (candidateIds.has(edge.target)) candidateIds.add(edge.source);
   }
 
-  return all.filter(n => candidateIds.has(n.id));
+  const scoped = all.filter(n => candidateIds.has(n.id));
+  return scoredSort(scoped, analysis, terms, directIds);
 }
+
+// ─── Scoring ─────────────────────────────────────────────────────────────────
+
+function scoreNode(n: GraphNode, analysis: QueryAnalysis, terms: string[], directIds: Set<string>): number {
+  let score = 0;
+  const { entities } = analysis;
+
+  const titleLower = n.title.toLowerCase();
+  const descLower = (n.description ?? '').toLowerCase();
+
+  // Direct filter match (not just edge-expanded)
+  if (directIds.has(n.id)) score += 5;
+
+  // Title keyword hits (high signal)
+  for (const term of terms) {
+    if (titleLower.includes(term)) score += 10;
+  }
+
+  // Description keyword hits
+  for (const term of terms) {
+    if (descLower.includes(term)) score += 3;
+  }
+
+  // Structured entity matches
+  for (const caseId of entities.case_ids) {
+    if (n.case_id.toLowerCase().includes(caseId.toLowerCase()) ||
+        caseId.toLowerCase().includes(n.case_id.toLowerCase())) score += 15;
+  }
+  for (const officer of entities.officers) {
+    if (n.officer.toLowerCase().includes(officer.toLowerCase()) ||
+        officer.toLowerCase().includes(n.officer.toLowerCase())) score += 12;
+  }
+  for (const category of entities.categories) {
+    if (n.category.toLowerCase().includes(category.toLowerCase())) score += 8;
+  }
+  for (const type of entities.evidence_types) {
+    if (n.media_class.includes(type.toLowerCase())) score += 6;
+  }
+
+  // Object detection matches
+  for (const searchObj of entities.objects) {
+    for (const det of (n.objects_detected ?? [])) {
+      if (det.label.toLowerCase().includes(searchObj.label.toLowerCase())) {
+        score += 6;
+        if (searchObj.color && det.color?.toLowerCase() === searchObj.color.toLowerCase()) score += 4;
+      }
+    }
+  }
+
+  return score;
+}
+
+function scoredSort(nodes: GraphNode[], analysis: QueryAnalysis, terms: string[], directIds: Set<string>): GraphNode[] {
+  return nodes
+    .map(n => ({ node: n, score: scoreNode(n, analysis, terms, directIds) }))
+    .sort((a, b) => b.score - a.score)
+    .map(({ node }) => node);
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const STOP_WORDS = new Set([
   'the', 'and', 'or', 'for', 'not', 'but', 'nor', 'yet', 'so',
@@ -105,14 +171,15 @@ const STOP_WORDS = new Set([
   'where', 'how', 'any', 'all', 'some', 'than', 'then', 'into', 'about',
 ]);
 
-function fuzzyMatch(nodes: GraphNode[], reformulatedQuery: string, keywords: string[]): GraphNode[] {
-  // Combine reformulated query words + explicit keywords
-  const terms = [
-    ...reformulatedQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !STOP_WORDS.has(w)),
-    ...keywords.map(k => k.toLowerCase()).filter(k => !STOP_WORDS.has(k)),
+function queryTerms(analysis: QueryAnalysis): string[] {
+  return [
+    ...analysis.reformulated_query.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !STOP_WORDS.has(w)),
+    ...analysis.entities.keywords.map(k => k.toLowerCase()).filter(k => !STOP_WORDS.has(k)),
   ];
+}
 
-  if (terms.length === 0) return nodes; // no terms — return everything
+function fuzzyMatch(nodes: GraphNode[], terms: string[]): GraphNode[] {
+  if (terms.length === 0) return nodes;
 
   return nodes.filter(n => {
     const haystack = [

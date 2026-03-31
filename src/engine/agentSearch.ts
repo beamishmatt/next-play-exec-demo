@@ -1,17 +1,17 @@
-import { SearchOutput } from '../data/types';
+import { SearchOutput, SearchEvidenceResult, GraphNode } from '../data/types';
 import { getOpenAIKey } from '../utils/openaiClient';
 import { getContextGraph, getVectorStoreId, setVectorStoreId } from '../storage/config';
 import { analyzeQuery, buildFilterChips, buildEntityResults } from './queryAnalysis';
 import { scopeGraph } from './graphScope';
-import { retrieveFromVector } from './vectorRetrieval';
-import { synthesizeResults } from './synthesis';
+import { synthesizeSummary } from './synthesis';
 import { createVectorStore } from '../utils/openaiClient';
 
 export type SearchStep = 'analyzing' | 'scoping' | 'retrieving' | 'synthesizing' | 'done';
 
 export async function agentSearch(
   query: string,
-  onProgress?: (step: SearchStep) => void
+  onProgress?: (step: SearchStep) => void,
+  onPartialResults?: (results: SearchEvidenceResult[]) => void
 ): Promise<SearchOutput> {
   const graph = getContextGraph();
   const hasNodes = Object.keys(graph.nodes).length > 0;
@@ -22,42 +22,60 @@ export async function agentSearch(
     return localSearch(query, graph);
   }
 
-  // Ensure vector store + assistant exist on first run
+  // Ensure vector store exists on first run
   await ensureInfrastructure();
 
-  // Steps 1 + 3 in parallel: analyze query while vector retrieval starts on raw query
+  // Phase 1: Analyze query (~1-2s)
   onProgress?.('analyzing');
-  const storeId = getVectorStoreId();
-  const vectorPromise =
-    hasNodes && storeId
-      ? retrieveFromVector(storeId, query, []).catch((err: unknown) => {
-          console.warn('Vector retrieval failed, continuing with graph results:', err);
-          return null;
-        })
-      : Promise.resolve(null);
-
   const analysis = await analyzeQuery(query);
   const chips = buildFilterChips(analysis);
 
-  // Step 2: Graph scoping (needs analysis, local so instant)
+  // Phase 1b: Scope graph (instant — pure local)
   onProgress?.('scoping');
   const scopedNodes = hasNodes ? scopeGraph(graph, analysis) : [];
   const caseIds = [...new Set(scopedNodes.map(n => n.case_id))];
+  const entities = buildEntityResults(analysis);
 
-  // Await vector retrieval (likely already done)
-  onProgress?.('retrieving');
-  const vectorResult = await vectorPromise;
+  // Immediately emit all results — no LLM synthesis needed for the result list
+  const immediateResults = scopedNodes.map(nodeToResult);
+  onPartialResults?.(immediateResults);
 
-  // Step 4: Synthesis
+  // Phase 2: Small LLM call for summary + suggestions only (~200 output tokens)
   onProgress?.('synthesizing');
-  const output = await synthesizeResults(analysis, scopedNodes, vectorResult, {
-    cases_involved: caseIds,
-    total_scoped: scopedNodes.length,
-  });
+  const { summary, suggestions } = await synthesizeSummary(analysis, scopedNodes);
 
   onProgress?.('done');
 
-  return { ...output, chips };
+  return {
+    summary,
+    results: immediateResults,
+    entities,
+    chips,
+    suggestions,
+    graph_context: {
+      cases_involved: caseIds,
+      total_scoped: scopedNodes.length,
+      total_matched: immediateResults.length,
+    },
+  };
+}
+
+// Convert a graph node to a search result (no LLM needed)
+function nodeToResult(n: GraphNode): SearchEvidenceResult {
+  return {
+    evidence_id: n.id,
+    title: n.title,
+    media_class: n.media_class,
+    case_id: n.case_id,
+    officer: n.officer,
+    category: n.category,
+    excerpt: n.description?.slice(0, 200),
+    relevance: '',
+    confidence: 'medium' as const,
+    thumbnailUrl: n.thumbnailUrl,
+    date_recorded: n.date_recorded,
+    source: n.source,
+  };
 }
 
 // Local-only search (no OpenAI key)
@@ -94,20 +112,7 @@ function localSearch(query: string, graph: ReturnType<typeof getContextGraph>): 
 
   return {
     summary: matched.length > 0 ? `Found ${matched.length} matching items` : '',
-    results: matched.map(n => ({
-      evidence_id: n.id,
-      title: n.title,
-      media_class: n.media_class,
-      case_id: n.case_id,
-      officer: n.officer,
-      category: n.category,
-      excerpt: n.description ? n.description.slice(0, 200) : undefined,
-      relevance: 'Matches search keywords',
-      confidence: 'medium' as const,
-      thumbnailUrl: n.thumbnailUrl,
-      date_recorded: n.date_recorded,
-      source: n.source,
-    })),
+    results: matched.map(nodeToResult),
     entities,
     chips: [],
     suggestions: [],

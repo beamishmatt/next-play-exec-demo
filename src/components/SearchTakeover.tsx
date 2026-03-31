@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   X,
   Search,
@@ -18,9 +18,11 @@ import {
 
 import { Badge } from './ui/badge';
 import { AssistantPanel } from './AssistantPanel';
-import { getContextGraph } from '../storage/config';
+import { FeedbackDrawer } from './FeedbackDrawer';
+import { getContextGraph, updateGraphNode } from '../storage/config';
 import { agentSearch, SearchStep } from '../engine/agentSearch';
 import {
+  AgentAction,
   SearchOutput,
   SearchEvidenceResult,
   FilterChip,
@@ -385,8 +387,7 @@ export function SearchTakeover({ onClose }: SearchTakeoverProps) {
   const [activeChips, setActiveChips] = useState<FilterChip[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>(loadRecentSearches);
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
-  const [showTechDocs, setShowTechDocs] = useState(false);
-
+  const [showFeedback, setShowFeedback] = useState(false);
   // Version counter — incremented on each search; stale results are discarded
   const searchVersion = useRef(0);
 
@@ -401,14 +402,30 @@ export function SearchTakeover({ onClose }: SearchTakeoverProps) {
   const runSearch = async (q: string) => {
     const version = ++searchVersion.current;
     setIsLoading(true);
+    setSearchOutput(null);
+    setActiveChips([]);
+    setSelectedId(null);
 
     try {
-      const output = await agentSearch(q, () => {});
+      const output = await agentSearch(q, () => {}, (partialResults) => {
+        if (version !== searchVersion.current) return;
+        setCommittedQuery(q);
+        setSearchOutput(prev => ({
+          summary: prev?.summary ?? '',
+          results: partialResults,
+          entities: prev?.entities ?? [],
+          chips: prev?.chips ?? [],
+          suggestions: prev?.suggestions ?? [],
+          graph_context: prev?.graph_context ?? { cases_involved: [], total_scoped: 0, total_matched: 0 },
+        }));
+        // Auto-select first result when it first appears
+        setSelectedId(prev => prev ?? (partialResults[0]?.evidence_id ?? null));
+      });
       if (version !== searchVersion.current) return; // stale — newer search started
       setSearchOutput(output);
       setCommittedQuery(q);
       setActiveChips(output.chips);
-      if (output.results.length > 0) setSelectedId(output.results[0].evidence_id);
+      if (output.results.length > 0) setSelectedId(prev => prev ?? output.results[0].evidence_id);
     } catch (err) {
       if (version !== searchVersion.current) return;
       console.error('Search failed:', err);
@@ -437,6 +454,37 @@ export function SearchTakeover({ onClose }: SearchTakeoverProps) {
   const handleRemoveChip = (chipId: string) => {
     setActiveChips(prev => prev.filter(c => c.id !== chipId));
   };
+
+  const handleAction = useCallback((action: AgentAction) => {
+    // Persist to context graph
+    action.item_ids.forEach(id => {
+      const graph = getContextGraph();
+      if (action.type === 'set_category') {
+        updateGraphNode(id, { category: action.value });
+      } else if (action.type === 'set_status') {
+        updateGraphNode(id, { status: action.value });
+      } else if (action.type === 'add_tag') {
+        const existing = graph.nodes[id]?.tags ?? [];
+        if (!existing.includes(action.value)) {
+          updateGraphNode(id, { tags: [...existing, action.value] });
+        }
+      }
+    });
+
+    // Patch search results immediately so the UI reflects the change
+    setSearchOutput(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        results: prev.results.map(r => {
+          if (!action.item_ids.includes(r.evidence_id)) return r;
+          if (action.type === 'set_category') return { ...r, category: action.value };
+          if (action.type === 'set_status') return r; // status not shown in results list
+          return r;
+        }),
+      };
+    });
+  }, []);
 
   const selectedEvidence = searchOutput?.results.find(r => r.evidence_id === selectedId);
   const hasResults = searchOutput !== null;
@@ -481,12 +529,25 @@ export function SearchTakeover({ onClose }: SearchTakeoverProps) {
           </button>
           <span style={{ fontSize: 'var(--text-h4)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-high-contrast)' }}>Search</span>
         </div>
-        <button
-          onClick={() => setShowTechDocs(true)}
-          style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--text-weak)', backgroundColor: 'transparent', lineHeight: '18px', cursor: 'pointer' }}
-        >
-          Technical docs
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            onClick={() => setShowFeedback(true)}
+            style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--text-weak)', backgroundColor: 'transparent', lineHeight: '18px', cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            Feedback
+          </button>
+          <a
+            href="https://git.taservs.net/mbeamish/search2.0_takeover/tree/main"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--text-weak)', backgroundColor: 'transparent', lineHeight: '18px', textDecoration: 'none' }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222 0 1.606-.015 2.896-.015 3.286 0 .322.216.694.825.576C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z" />
+            </svg>
+            GitHub
+          </a>
+        </div>
       </div>
 
       {/* ── Content ── */}
@@ -576,7 +637,7 @@ export function SearchTakeover({ onClose }: SearchTakeoverProps) {
                 )}
 
                 {/* Other Results */}
-                {isLoading
+                {isLoading && searchOutput.results.length === 0
                   ? <SkeletonEntityCards />
                   : searchOutput.entities.length > 0 && (
                     <div style={{ marginBottom: 24, paddingTop: 8 }}>
@@ -649,7 +710,7 @@ export function SearchTakeover({ onClose }: SearchTakeoverProps) {
                 {/* Results list */}
                 {(isLoading || searchOutput.results.length > 0) && (
                   <div className="flex-1 overflow-y-auto">
-                    {isLoading
+                    {isLoading && searchOutput.results.length === 0
                       ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
                       : searchOutput.results.map(result => (
                           <EvidenceRow
@@ -676,7 +737,9 @@ export function SearchTakeover({ onClose }: SearchTakeoverProps) {
 
               {/* Right column — preview card */}
               <div style={{ width: 310, maxWidth: 310, flexShrink: 0 }}>
-                {isLoading ? <SkeletonPreview /> : selectedEvidence && <PreviewPanel result={selectedEvidence} />}
+                {isLoading && searchOutput.results.length === 0
+                  ? <SkeletonPreview />
+                  : selectedEvidence && <PreviewPanel result={selectedEvidence} />}
               </div>
 
             </div>
@@ -688,180 +751,17 @@ export function SearchTakeover({ onClose }: SearchTakeoverProps) {
             isOpen={isAssistantOpen}
             items={checkedItems}
             onClose={() => setCheckedIds(new Set())}
+            onAction={handleAction}
           />
         </div>
       )}
 
-      {/* Technical docs drawer */}
-      {showTechDocs && (
-        <>
-          {/* Backdrop */}
-          <div
-            onClick={() => setShowTechDocs(false)}
-            style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 200 }}
-          />
-          {/* Drawer */}
-          <div style={{
-            position: 'fixed', top: 0, right: 0, bottom: 0, width: 480, maxWidth: '90vw',
-            backgroundColor: 'var(--bg-surface, #fff)', borderLeft: '1px solid var(--border)',
-            zIndex: 201, overflowY: 'auto', display: 'flex', flexDirection: 'column',
-          }}>
-            {/* Drawer header */}
-            <div className="flex items-center justify-between" style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-high-contrast)' }}>Technical Documentation</span>
-              <button
-                onClick={() => setShowTechDocs(false)}
-                style={{ padding: 4, borderRadius: 4, border: 'none', backgroundColor: 'transparent', cursor: 'pointer', color: 'var(--text-weak)' }}
-                aria-label="Close"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Drawer content */}
-            <div style={{ padding: '24px 20px', fontSize: 13, lineHeight: 1.65, color: 'var(--text-high-contrast)', display: 'flex', flexDirection: 'column', gap: 28 }}>
-
-              {/* Overview */}
-              <section>
-                <h2 style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-weak)', marginBottom: 10 }}>Overview</h2>
-                <p style={{ color: 'var(--text-medium, #374151)' }}>
-                  Search runs a four-stage agentic pipeline. Each natural language query is parsed into
-                  structured intent, scoped against a local evidence graph, retrieved from a semantic vector
-                  store, and finally synthesized into ranked results by an LLM.
-                </p>
-              </section>
-
-              {/* Stage 1 */}
-              <section>
-                <div className="flex items-center gap-2" style={{ marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, backgroundColor: 'var(--bg-subtle, #f3f4f6)', borderRadius: 4, padding: '1px 7px', color: 'var(--text-weak)' }}>Step 1</span>
-                  <h3 style={{ fontSize: 13, fontWeight: 600 }}>Query Analysis</h3>
-                </div>
-                <p style={{ color: 'var(--text-medium, #374151)', marginBottom: 8 }}>
-                  The raw query is sent to <code style={codeStyle}>gpt-4o-mini</code> with a structured
-                  extraction prompt (<code style={codeStyle}>queryAnalysis.ts</code>). The model returns JSON
-                  with the following fields:
-                </p>
-                <ul style={listStyle}>
-                  <li><strong>intent</strong> — one of <em>lookup, investigation, comparison, timeline, relationship, object_search</em></li>
-                  <li><strong>entities</strong> — case IDs, officers, date ranges, evidence types, locations, detected objects, keywords, categories</li>
-                  <li><strong>reformulated_query</strong> — a cleaner restatement used for vector search</li>
-                  <li><strong>search_strategy</strong> — a short description of how to search</li>
-                </ul>
-                <p style={{ color: 'var(--text-medium, #374151)' }}>
-                  The structured output drives filter chips displayed below the search bar.
-                </p>
-              </section>
-
-              {/* Stage 2 */}
-              <section>
-                <div className="flex items-center gap-2" style={{ marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, backgroundColor: 'var(--bg-subtle, #f3f4f6)', borderRadius: 4, padding: '1px 7px', color: 'var(--text-weak)' }}>Step 2</span>
-                  <h3 style={{ fontSize: 13, fontWeight: 600 }}>Graph Scoping</h3>
-                </div>
-                <p style={{ color: 'var(--text-medium, #374151)', marginBottom: 8 }}>
-                  The local evidence graph (<code style={codeStyle}>graphScope.ts</code>) is filtered down to a
-                  candidate set before any network calls. This keeps synthesis prompts small and focused.
-                </p>
-                <ul style={listStyle}>
-                  <li>If structured entities are present, nodes are filtered sequentially: evidence type → date range → officer → case ID → category → detected objects.</li>
-                  <li>If strict filters eliminate everything, the engine falls back to <strong>fuzzy keyword matching</strong> across title, description, category, officer, case ID, source, detected objects, and tags.</li>
-                  <li>Once a candidate set is found, <strong>graph edges are traversed one hop</strong> to pull in directly related evidence nodes, broadening recall without opening the full corpus.</li>
-                </ul>
-              </section>
-
-              {/* Stage 3 */}
-              <section>
-                <div className="flex items-center gap-2" style={{ marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, backgroundColor: 'var(--bg-subtle, #f3f4f6)', borderRadius: 4, padding: '1px 7px', color: 'var(--text-weak)' }}>Step 3</span>
-                  <h3 style={{ fontSize: 13, fontWeight: 600 }}>Vector Retrieval</h3>
-                </div>
-                <p style={{ color: 'var(--text-medium, #374151)', marginBottom: 8 }}>
-                  Evidence files are indexed in an <strong>OpenAI vector store</strong>. At search time,
-                  <code style={codeStyle}>vectorRetrieval.ts</code> queries the store with the reformulated query
-                  plus a focus hint listing the titles of graph-scoped nodes. Up to 10 chunks are returned.
-                </p>
-                <p style={{ color: 'var(--text-medium, #374151)' }}>
-                  The vector store is created lazily on first use and its ID is persisted locally.
-                  Retrieved chunk text is passed verbatim to synthesis so the LLM can extract
-                  direct quotes for result excerpts.
-                </p>
-              </section>
-
-              {/* Stage 4 */}
-              <section>
-                <div className="flex items-center gap-2" style={{ marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, backgroundColor: 'var(--bg-subtle, #f3f4f6)', borderRadius: 4, padding: '1px 7px', color: 'var(--text-weak)' }}>Step 4</span>
-                  <h3 style={{ fontSize: 13, fontWeight: 600 }}>Synthesis</h3>
-                </div>
-                <p style={{ color: 'var(--text-medium, #374151)', marginBottom: 8 }}>
-                  <code style={codeStyle}>synthesis.ts</code> sends the scoped graph nodes and vector text to
-                  <code style={codeStyle}>gpt-4o-mini</code> with a ranking prompt. The model returns:
-                </p>
-                <ul style={listStyle}>
-                  <li><strong>summary</strong> — a one-sentence description of what was found</li>
-                  <li><strong>results</strong> — ranked evidence items, each with title, media class, case ID, officer, category, a one-sentence relevance explanation, a verbatim excerpt from file content, and a confidence level (high / medium / low)</li>
-                  <li><strong>suggestions</strong> — follow-up query ideas</li>
-                </ul>
-                <p style={{ color: 'var(--text-medium, #374151)' }}>
-                  After synthesis, supplemental <em>Other Results</em> entity cards are built from any
-                  case IDs present in results but not already extracted from the query. Case ID variants
-                  (e.g. <code style={codeStyle}>088142</code>, <code style={codeStyle}>2025-088142</code>,{' '}
-                  <code style={codeStyle}>PBPD-2025-088142</code>) are normalised to their base number and
-                  deduplicated before display.
-                </p>
-              </section>
-
-              {/* Assistant */}
-              <section>
-                <h2 style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-weak)', marginBottom: 10 }}>Evidence Assistant</h2>
-                <p style={{ color: 'var(--text-medium, #374151)', marginBottom: 8 }}>
-                  Selecting one or more evidence items from the results list opens an AI chat panel
-                  (<code style={codeStyle}>AssistantPanel</code>) anchored to the right side of the search view.
-                  The assistant is scoped strictly to the selected items — it cannot reference evidence
-                  outside the selection.
-                </p>
-                <p style={{ color: 'var(--text-medium, #374151)', marginBottom: 8 }}>
-                  Each turn in <code style={codeStyle}>assistantChat.ts</code> runs two operations before calling the model:
-                </p>
-                <ul style={listStyle}>
-                  <li><strong>Vector scoping</strong> — the vector store is queried using the selected item titles plus the user's message as a combined hint (up to 20 chunks). Only chunks whose file IDs match the selected evidence are kept, ensuring the model sees actual file content rather than unrelated documents.</li>
-                  <li><strong>System prompt construction</strong> — a structured prompt is assembled containing metadata for each selected item (title, ID, category, officer, date, type, description, detected objects) followed by the scoped vector text. The model is instructed to cite evidence IDs inline using bracket notation (e.g. <code style={codeStyle}>[EV-16M3TQA7]</code>).</li>
-                </ul>
-                <p style={{ color: 'var(--text-medium, #374151)', marginBottom: 8 }}>
-                  The model is <code style={codeStyle}>gpt-4o</code> with streaming enabled — response tokens
-                  are appended to the message in real time. After streaming completes, items whose vector
-                  file IDs contributed chunks are returned as sources and rendered as hoverable citation
-                  marks next to the assistant's reply.
-                </p>
-                <p style={{ color: 'var(--text-medium, #374151)' }}>
-                  Conversation history is maintained in local component state and passed to each subsequent
-                  call, enabling multi-turn investigation threads. Clicking <em>New chat</em> clears the
-                  history without deselecting the evidence.
-                </p>
-              </section>
-
-            </div>
-          </div>
-        </>
-      )}
+      <FeedbackDrawer
+        isOpen={showFeedback}
+        onClose={() => setShowFeedback(false)}
+        currentQuery={committedQuery || undefined}
+      />
     </div>
   );
 }
 
-const codeStyle: React.CSSProperties = {
-  fontFamily: 'monospace',
-  fontSize: 11.5,
-  backgroundColor: 'var(--bg-subtle, #f3f4f6)',
-  borderRadius: 3,
-  padding: '1px 4px',
-};
-
-const listStyle: React.CSSProperties = {
-  paddingLeft: 18,
-  marginBottom: 8,
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 4,
-  color: 'var(--text-medium, #374151)',
-};

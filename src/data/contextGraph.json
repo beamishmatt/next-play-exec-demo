@@ -274,6 +274,27 @@
       "vector_file_id": "file-XU6VU8o5r4Ga4HcR9hbuTP",
       "video_processing": null,
       "tags": []
+    },
+    "EV-NQP6Y4VH": {
+      "id": "EV-NQP6Y4VH",
+      "title": "11-witness-shannon-obrien-initial.pdf",
+      "media_class": "pdf",
+      "mime_type": "application/pdf",
+      "size": 3763,
+      "case_id": "PBPD-2025-088142",
+      "date_recorded": "2026-03-30T14:03:08.466Z",
+      "date_ingested": "2026-03-30T14:03:08.466Z",
+      "officer": "Renee Broussard",
+      "category": "Homicide",
+      "source": "O'Brien Witness Statement",
+      "duration": null,
+      "status": "complete",
+      "objects_detected": [],
+      "vector_file_id": "file-7wwoQhnFM4kCUfKiWhtA6r",
+      "video_processing": null,
+      "tags": [
+        "witness statement, bar altercation, suspect identification"
+      ]
     }
   },
   "edges": [
@@ -564,6 +585,70 @@
       "metadata": {
         "case_id": "PBPD-2025-088142"
       }
+    },
+    {
+      "source": "EV-NQP6Y4VH",
+      "target": "EV-2OVP11DU",
+      "relationship": "same_case",
+      "metadata": {
+        "case_id": "PBPD-2025-088142"
+      }
+    },
+    {
+      "source": "EV-NQP6Y4VH",
+      "target": "EV-Q8CIC40V",
+      "relationship": "same_case",
+      "metadata": {
+        "case_id": "PBPD-2025-088142"
+      }
+    },
+    {
+      "source": "EV-NQP6Y4VH",
+      "target": "EV-FCYRXROI",
+      "relationship": "same_case",
+      "metadata": {
+        "case_id": "PBPD-2025-088142"
+      }
+    },
+    {
+      "source": "EV-NQP6Y4VH",
+      "target": "EV-UT5Q8MB6",
+      "relationship": "same_case",
+      "metadata": {
+        "case_id": "PBPD-2025-088142"
+      }
+    },
+    {
+      "source": "EV-NQP6Y4VH",
+      "target": "EV-HUP2BUTT",
+      "relationship": "same_case",
+      "metadata": {
+        "case_id": "PBPD-2025-088142"
+      }
+    },
+    {
+      "source": "EV-NQP6Y4VH",
+      "target": "EV-FCTFTVSU",
+      "relationship": "same_case",
+      "metadata": {
+        "case_id": "PBPD-2025-088142"
+      }
+    },
+    {
+      "source": "EV-NQP6Y4VH",
+      "target": "EV-KNDLJCIY",
+      "relationship": "same_case",
+      "metadata": {
+        "case_id": "PBPD-2025-088142"
+      }
+    },
+    {
+      "source": "EV-NQP6Y4VH",
+      "target": "EV-DXP1XN2X",
+      "relationship": "same_case",
+      "metadata": {
+        "case_id": "PBPD-2025-088142"
+      }
     }
   ],
   "cases": {
@@ -588,16 +673,17 @@
         "EV-HUP2BUTT",
         "EV-FCTFTVSU",
         "EV-KNDLJCIY",
-        "EV-DXP1XN2X"
+        "EV-DXP1XN2X",
+        "EV-NQP6Y4VH"
       ],
       "date_opened": "2026-03-27T20:56:29.050Z"
     }
   },
   "metadata": {
-    "total_items": 9,
-    "last_updated": "2026-03-28T04:36:32.698Z",
+    "total_items": 10,
+    "last_updated": "2026-03-30T14:03:08.467Z",
     "media_breakdown": {
-      "pdf": 6,
+      "pdf": 7,
       "image": 3
     }
   }
