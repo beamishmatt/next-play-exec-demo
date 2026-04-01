@@ -250,7 +250,7 @@ function EvidenceRow({
         <div className="flex items-center gap-1.5 mt-0.5">
           <MediaIcon mediaClass={result.media_class} size={12} />
           <p
-            style={{ fontSize: 11, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            style={{ fontSize: 12, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
             dangerouslySetInnerHTML={{ __html: [
               result.evidence_id && highlightText(result.evidence_id, query),
               result.case_id && highlightText(result.case_id, query),
@@ -262,7 +262,7 @@ function EvidenceRow({
         </div>
         {(result.excerpt || result.relevance) && (
           <p
-            style={{ fontSize: 11, color: '#9ca3af', marginTop: 3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+            style={{ fontSize: 12, color: '#9ca3af', marginTop: 3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
             dangerouslySetInnerHTML={{ __html: highlightText(result.excerpt || result.relevance || '', query) }}
           />
         )}

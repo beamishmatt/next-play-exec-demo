@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import { useParams, Navigate, useSearchParams } from 'react-router-dom';
 import { getCaseById } from '../../data/mockCases';
-import { getEvidenceByCaseId } from '../../data/mockEvidence';
+import { useGraphEvidence } from '../../data/graphEvidence';
 import { Case, FileType } from '../../data/types';
 import { CaseHeader } from '../CaseHeader';
 import { CaseActions } from '../CaseActions';
@@ -36,10 +36,11 @@ export function CaseDetailPage() {
     return getCaseById(caseId || '');
   }, [caseId, sharingUpdated]);
   
-  // Get evidence associated with this case - memoized to prevent recalculation
+  // Get evidence associated with this case from the graph (reactive to uploads)
+  const allGraphEvidence = useGraphEvidence();
   const caseEvidence = useMemo(() => {
-    return getEvidenceByCaseId(caseId || '');
-  }, [caseId]);
+    return allGraphEvidence.filter(e => e.id === (caseId || ''));
+  }, [allGraphEvidence, caseId]);
 
   // State for file type filters - initialize from URL params
   const [selectedFileTypes, setSelectedFileTypes] = useState<FileType[]>(() => {

@@ -1,158 +1,197 @@
 import React, { useState, useMemo } from 'react';
 import { CasesTable } from '../CasesTable';
 import { CasesList } from '../CasesList';
-import { SearchBar } from '../SearchBar';
-import { CasesPageActions } from '../CasesPageActions';
 import { ActionBar } from '../ActionBar';
 import { getAllCasesWithSharingStatus } from '../../data/mockCases';
-import { filterCases } from '../../data/searchHelpers';
 import { useIsMobile } from '../ui/use-mobile';
-import { UserX, Users, AlertCircle } from 'lucide-react';
+import { UserX, Users, AlertCircle, ChevronDown, SlidersHorizontal } from 'lucide-react';
+
+const TOTAL_MOCK_COUNT = 229510;
+
+const OWNERS = [
+  'Nguyen, Ace (acnguyen)',
+  'Johnson, Mark (mjohnson)',
+  'Smith, Rachel (rsmith)',
+  'Davis, Chris (cdavis)',
+  'Wilson, Tom (twilson)',
+  'Martinez, Lisa (lmartinez)',
+  'Thompson, Ben (bthompson)',
+];
 
 export function CasesPage() {
-  const [searchQuery, setSearchQuery] = useState('');
   const isMobile = useIsMobile();
-  
-  // State for case selection
+
+  // Filter state
+  const [caseIdFilter, setCaseIdFilter] = useState('');
+  const [ownerFilter, setOwnerFilter] = useState('');
+  const [createdStart, setCreatedStart] = useState('');
+  const [createdEnd, setCreatedEnd] = useState('');
+  const [updatedStart, setUpdatedStart] = useState('');
+  const [updatedEnd, setUpdatedEnd] = useState('');
+
   const [selectedCaseItems, setSelectedCaseItems] = useState<Set<number>>(new Set());
-  
-  // Force re-render to show updated sharing status when returning to page
   const [refreshKey, setRefreshKey] = useState(0);
-  
+
   React.useEffect(() => {
-    const handleFocus = () => {
-      setRefreshKey(prev => prev + 1);
-    };
-    
+    const handleFocus = () => setRefreshKey(prev => prev + 1);
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
-  // Get cases with sharing status (refresh when key changes)
-  const casesWithSharingStatus = useMemo(() => {
-    return getAllCasesWithSharingStatus();
-  }, [refreshKey]);
+  const allCases = useMemo(() => getAllCasesWithSharingStatus(), [refreshKey]);
 
-  // Filter cases based on search query
   const filteredCases = useMemo(() => {
-    return filterCases(casesWithSharingStatus, searchQuery);
-  }, [searchQuery, casesWithSharingStatus]);
+    return allCases.filter(c => {
+      if (caseIdFilter && !c.caseId.toLowerCase().includes(caseIdFilter.toLowerCase())) return false;
+      if (ownerFilter && c.owner !== ownerFilter) return false;
+      if (createdStart && c.createdOn < new Date(createdStart)) return false;
+      if (createdEnd && c.createdOn > new Date(createdEnd + 'T23:59:59')) return false;
+      if (updatedStart && c.lastUpdatedOn < new Date(updatedStart)) return false;
+      if (updatedEnd && c.lastUpdatedOn > new Date(updatedEnd + 'T23:59:59')) return false;
+      return true;
+    });
+  }, [allCases, caseIdFilter, ownerFilter, createdStart, createdEnd, updatedStart, updatedEnd]);
 
-  // Calculate results summary
-  const resultsCount = filteredCases.length;
-  const totalCount = casesWithSharingStatus.length;
-  const showingFiltered = searchQuery.trim() !== '';
+  const hasFilters = !!(caseIdFilter || ownerFilter || createdStart || createdEnd || updatedStart || updatedEnd);
+  const displayedCount = hasFilters ? filteredCases.length : TOTAL_MOCK_COUNT;
 
-  // Handle case selection change
-  const handleCaseSelectionChange = (selectedItems: Set<number>) => {
-    setSelectedCaseItems(selectedItems);
-  };
+  const handleCaseSelectionChange = (selectedItems: Set<number>) => setSelectedCaseItems(selectedItems);
 
-  // Action handlers
-  const handleCreateCase = () => {
-    // TODO: Implement create case functionality
-    console.log('Create case clicked');
-  };
-
-  const handleExportResults = () => {
-    // TODO: Implement export results functionality
-    const selectedCases = Array.from(selectedCaseItems).map(index => filteredCases[index]);
-    console.log('Export results clicked', { selectedCount: selectedCaseItems.size, selectedCases });
-  };
-
-  // Case ActionBar handlers
-  const handleReassign = () => {
-    const selectedCases = Array.from(selectedCaseItems).map(index => filteredCases[index]);
-    console.log('Reassign cases:', selectedCases);
-    // TODO: Implement reassign functionality
-  };
-
-  const handleManageAccess = () => {
-    const selectedCases = Array.from(selectedCaseItems).map(index => filteredCases[index]);
-    console.log('Manage access for cases:', selectedCases);
-    // TODO: Implement manage access functionality
-  };
-
-  const handleUpdateStatus = () => {
-    const selectedCases = Array.from(selectedCaseItems).map(index => filteredCases[index]);
-    console.log('Update status for cases:', selectedCases);
-    // TODO: Implement update status functionality
-  };
-
-  const handleClearCaseSelection = () => {
-    setSelectedCaseItems(new Set());
-  };
-
-  // Define case actions for ActionBar
   const caseActions = [
-    {
-      key: 'reassign',
-      label: 'Reassign',
-      icon: <UserX size={14} className="mr-1.5" />,
-      onClick: handleReassign
-    },
-    {
-      key: 'manage-access',
-      label: 'Manage Access',
-      icon: <Users size={14} className="mr-1.5" />,
-      onClick: handleManageAccess
-    },
-    {
-      key: 'update-status',
-      label: 'Update Status',
-      icon: <AlertCircle size={14} className="mr-1.5" />,
-      onClick: handleUpdateStatus
-    }
+    { key: 'reassign',      label: 'Reassign',      icon: <UserX size={14} className="mr-1.5" />,     onClick: () => {} },
+    { key: 'manage-access', label: 'Manage Access', icon: <Users size={14} className="mr-1.5" />,      onClick: () => {} },
+    { key: 'update-status', label: 'Update Status', icon: <AlertCircle size={14} className="mr-1.5" />, onClick: () => {} },
   ];
 
+  const inputStyle: React.CSSProperties = {
+    height: 32,
+    padding: '0 10px',
+    border: '1px solid var(--border)',
+    borderRadius: 6,
+    backgroundColor: 'var(--background)',
+    color: 'var(--text-strong)',
+    fontSize: 13,
+    outline: 'none',
+    fontFamily: 'inherit',
+  };
+
   return (
-    <div className="p-4 md:p-8 space-y-6">
-      {/* Header Section with Search and Actions - Responsive layout */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-4">
-        <div className="flex-1 space-y-2">
-          <SearchBar
-            value={searchQuery}
-            onChange={setSearchQuery}
-            className="w-full md:max-w-md"
-          />
-          {showingFiltered && (
-            <p className="text-muted-foreground caption">
-              Showing {resultsCount} of {totalCount} cases
-              {resultsCount === 0 && ' - try adjusting your search terms'}
-            </p>
-          )}
+    <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+      {/* ── Filter bar ────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+
+        {/* All Cases dropdown */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <button
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              height: 32, padding: '0 10px',
+              border: '1px solid var(--border)', borderRadius: 6,
+              backgroundColor: 'var(--background)', color: 'var(--text-strong)',
+              fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            <ChevronDown size={14} style={{ color: 'var(--text-weak)' }} />
+            All Cases
+          </button>
         </div>
-        
-        {/* Page Actions */}
-        <div className="flex-shrink-0">
-          <CasesPageActions 
-            onCreateCase={handleCreateCase}
-            onExportResults={handleExportResults}
-            selectedCount={selectedCaseItems.size}
+
+        {/* Case ID */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, color: 'var(--text-weak)', fontWeight: 500 }}>Case ID</label>
+          <input
+            style={{ ...inputStyle, width: 160 }}
+            value={caseIdFilter}
+            onChange={e => setCaseIdFilter(e.target.value)}
+            placeholder=""
           />
+        </div>
+
+        {/* Owner */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, color: 'var(--text-weak)', fontWeight: 500 }}>Owner</label>
+          <select
+            style={{ ...inputStyle, width: 160, paddingRight: 28, appearance: 'none',
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center',
+            }}
+            value={ownerFilter}
+            onChange={e => setOwnerFilter(e.target.value)}
+          >
+            <option value=""></option>
+            {OWNERS.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+
+        {/* Created on */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, color: 'var(--text-weak)', fontWeight: 500 }}>Created on</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <input type="date" style={{ ...inputStyle, width: 130 }} value={createdStart} onChange={e => setCreatedStart(e.target.value)} placeholder="Start" />
+            <input type="date" style={{ ...inputStyle, width: 130 }} value={createdEnd}   onChange={e => setCreatedEnd(e.target.value)}   placeholder="End"   />
+          </div>
+        </div>
+
+        {/* Updated on */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, color: 'var(--text-weak)', fontWeight: 500 }}>Updated on</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <input type="date" style={{ ...inputStyle, width: 130 }} value={updatedStart} onChange={e => setUpdatedStart(e.target.value)} placeholder="Start" />
+            <input type="date" style={{ ...inputStyle, width: 130 }} value={updatedEnd}   onChange={e => setUpdatedEnd(e.target.value)}   placeholder="End"   />
+          </div>
         </div>
       </div>
 
-      {/* Cases Table (Desktop) / Cases List (Mobile) */}
+      {/* ── Filters button + Export Results ───────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <button
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            height: 32, padding: '0 12px',
+            border: '1px solid var(--border)', borderRadius: 6,
+            backgroundColor: 'var(--background)', color: 'var(--text-strong)',
+            fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          <SlidersHorizontal size={14} />
+          Filters
+        </button>
+        <button
+          style={{
+            background: 'none', border: 'none', padding: 0,
+            color: 'var(--accent)', fontSize: 13, fontWeight: 500,
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          Export Results
+        </button>
+      </div>
+
+      {/* ── Result count ─────────────────────────────── */}
+      <p style={{ fontSize: 13, color: 'var(--text-weak)', margin: 0 }}>
+        {displayedCount.toLocaleString()} results
+      </p>
+
+      {/* ── Table / List ─────────────────────────────── */}
       {isMobile ? (
-        <CasesList 
-          cases={filteredCases} 
+        <CasesList
+          cases={filteredCases}
           selectedItems={selectedCaseItems}
           onSelectionChange={handleCaseSelectionChange}
         />
       ) : (
-        <CasesTable 
-          cases={filteredCases} 
+        <CasesTable
+          cases={filteredCases}
           selectedItems={selectedCaseItems}
           onSelectionChange={handleCaseSelectionChange}
         />
       )}
 
-      {/* Action Bar for selected cases */}
       <ActionBar
         selectedCount={selectedCaseItems.size}
         actions={caseActions}
-        onClearSelection={handleClearCaseSelection}
+        onClearSelection={() => setSelectedCaseItems(new Set())}
         pageType="cases"
       />
     </div>

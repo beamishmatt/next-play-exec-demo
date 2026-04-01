@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from './ui/select';
 import { Checkbox } from './ui/checkbox';
-import { ArrowUpAZ, ArrowDownAZ, ArrowDownUp, Users } from 'lucide-react';
+import { ArrowUpAZ, ArrowDownAZ, ArrowDownUp, MoreVertical } from 'lucide-react';
 import { Case } from '../data/types';
 
 interface CasesTableProps {
@@ -87,13 +87,11 @@ export function CasesTable({
   const endIndex = startIndex + itemsPerPage;
   const currentCases = sortedCases.slice(startIndex, endIndex);
 
-  // Format date for display
+  // Format date + time for display (e.g. "Apr 1, 2026 11:06 AM")
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    const datePart = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    const timePart = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    return `${datePart} ${timePart}`;
   };
 
   // Generate page numbers for pagination
@@ -236,57 +234,35 @@ export function CasesTable({
               <TableHead className="pl-4">
                 {/* No select all for empty state */}
               </TableHead>
-              <TableHead 
-                className="cursor-pointer select-none hover:bg-muted/50 transition-colors"
-                onClick={() => handleSort('caseId')}
-              >
-                <div className="flex items-center">
+              <TableHead className="cursor-pointer select-none hover:bg-muted/50 transition-colors" onClick={() => handleSort('caseId')}>
+                <div className="flex items-center gap-1">
                   Case ID
-                  {renderSortIcon('caseId')}
+                  <MoreVertical size={13} className="opacity-40 shrink-0" />
                 </div>
               </TableHead>
-              <TableHead 
-                className="cursor-pointer select-none hover:bg-muted/50 transition-colors"
-                onClick={() => handleSort('owner')}
-              >
-                <div className="flex items-center">
-                  Owner
-                  {renderSortIcon('owner')}
+              <TableHead className="cursor-pointer select-none hover:bg-muted/50 transition-colors" onClick={() => handleSort('owner')}>
+                <div className="flex items-center">Owner</div>
+              </TableHead>
+              <TableHead className="cursor-pointer select-none hover:bg-muted/50 transition-colors" onClick={() => handleSort('createdOn')}>
+                <div className="flex items-center gap-1">
+                  Created on
+                  <MoreVertical size={13} className="opacity-40 shrink-0" />
                 </div>
               </TableHead>
-              <TableHead 
-                className="cursor-pointer select-none hover:bg-muted/50 transition-colors"
-                onClick={() => handleSort('createdOn')}
-              >
-                <div className="flex items-center">
-                  Created On
-                  {renderSortIcon('createdOn')}
-                </div>
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer select-none hover:bg-muted/50 transition-colors"
-                onClick={() => handleSort('lastUpdatedOn')}
-              >
-                <div className="flex items-center">
-                  Last Updated On
+              <TableHead className="cursor-pointer select-none hover:bg-muted/50 transition-colors" onClick={() => handleSort('lastUpdatedOn')}>
+                <div className="flex items-center gap-1">
+                  Last Updated on
                   {renderSortIcon('lastUpdatedOn')}
                 </div>
               </TableHead>
-              <TableHead 
-                className="cursor-pointer select-none hover:bg-muted/50 transition-colors"
-                onClick={() => handleSort('status')}
-              >
-                <div className="flex items-center">
-                  Status
-                  {renderSortIcon('status')}
-                </div>
+              <TableHead className="cursor-pointer select-none hover:bg-muted/50 transition-colors" onClick={() => handleSort('status')}>
+                <div className="flex items-center">Status</div>
               </TableHead>
-              <TableHead>Shared</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow>
-              <TableCell colSpan={7} className="text-center text-muted-foreground">
+              <TableCell colSpan={6} className="text-center text-muted-foreground">
                 No cases found
               </TableCell>
             </TableRow>
@@ -309,52 +285,30 @@ export function CasesTable({
                   aria-label="Select all cases"
                 />
               </TableHead>
-              <TableHead 
-                className="cursor-pointer select-none hover:bg-muted/50 transition-colors"
-                onClick={() => handleSort('caseId')}
-              >
-                <div className="flex items-center">
+              <TableHead className="cursor-pointer select-none hover:bg-muted/50 transition-colors" onClick={() => handleSort('caseId')}>
+                <div className="flex items-center gap-1">
                   Case ID
-                  {renderSortIcon('caseId')}
+                  <MoreVertical size={13} className="opacity-40 shrink-0" />
                 </div>
               </TableHead>
-              <TableHead 
-                className="cursor-pointer select-none hover:bg-muted/50 transition-colors"
-                onClick={() => handleSort('owner')}
-              >
-                <div className="flex items-center">
-                  Owner
-                  {renderSortIcon('owner')}
+              <TableHead className="cursor-pointer select-none hover:bg-muted/50 transition-colors" onClick={() => handleSort('owner')}>
+                <div className="flex items-center">Owner</div>
+              </TableHead>
+              <TableHead className="cursor-pointer select-none hover:bg-muted/50 transition-colors" onClick={() => handleSort('createdOn')}>
+                <div className="flex items-center gap-1">
+                  Created on
+                  <MoreVertical size={13} className="opacity-40 shrink-0" />
                 </div>
               </TableHead>
-              <TableHead 
-                className="cursor-pointer select-none hover:bg-muted/50 transition-colors"
-                onClick={() => handleSort('createdOn')}
-              >
-                <div className="flex items-center">
-                  Created On
-                  {renderSortIcon('createdOn')}
-                </div>
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer select-none hover:bg-muted/50 transition-colors"
-                onClick={() => handleSort('lastUpdatedOn')}
-              >
-                <div className="flex items-center">
-                  Last Updated On
+              <TableHead className="cursor-pointer select-none hover:bg-muted/50 transition-colors" onClick={() => handleSort('lastUpdatedOn')}>
+                <div className="flex items-center gap-1">
+                  Last Updated on
                   {renderSortIcon('lastUpdatedOn')}
                 </div>
               </TableHead>
-              <TableHead 
-                className="cursor-pointer select-none hover:bg-muted/50 transition-colors"
-                onClick={() => handleSort('status')}
-              >
-                <div className="flex items-center">
-                  Status
-                  {renderSortIcon('status')}
-                </div>
+              <TableHead className="cursor-pointer select-none hover:bg-muted/50 transition-colors" onClick={() => handleSort('status')}>
+                <div className="flex items-center">Status</div>
               </TableHead>
-              <TableHead>Shared</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -388,15 +342,6 @@ export function CasesTable({
                   <TableCell>{formatDate(case_.createdOn)}</TableCell>
                   <TableCell>{formatDate(case_.lastUpdatedOn)}</TableCell>
                   <TableCell>{case_.status}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-center">
-                      {case_.isShared ? (
-                        <Users size={16} className="text-accent" />
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </div>
-                  </TableCell>
                 </TableRow>
               );
             })}

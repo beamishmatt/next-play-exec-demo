@@ -188,7 +188,25 @@ function AppContent() {
               sidebarVisible={sidebarVisible}
               onSidebarToggle={handleSidebarToggle}
               onOpenSearch={(query, selectedId, output) => setSearchState({ open: true, query, selectedId, output })}
-              actions={location.pathname === '/evidence' ? (
+              actions={location.pathname === '/cases' ? (
+                <button
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    height: 32, padding: '0 12px',
+                    borderRadius: 6,
+                    border: '1px solid var(--border)',
+                    backgroundColor: 'transparent',
+                    fontSize: 13, fontWeight: 500,
+                    color: 'var(--text-strong)',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  <Plus size={14} />
+                  Create Case
+                </button>
+              ) : location.pathname === '/evidence' ? (
                 <button
                   onClick={() => setImportOpen(true)}
                   style={{
