@@ -7,12 +7,13 @@ import {
   Image,
   File,
   Loader2,
+  LayoutGrid,
+  ChevronRight,
+  Headphones,
+  FileText as FileDoc,
+  Sparkles,
   FolderOpen,
   Users,
-  ChevronRight,
-  Car,
-  Shield,
-  Sparkles,
 } from 'lucide-react';
 import { agentSearch } from '../engine/agentSearch';
 import { SearchOutput, SearchEvidenceResult, FilterChip, MediaClass } from '../data/types';
@@ -28,37 +29,34 @@ export interface ScopeChip {
 
 export const SCOPE_CHIPS: ScopeChip[] = [
   {
-    id: 'cases',
-    label: 'Cases',
-    icon: <FolderOpen size={13} />,
-    filter: (r) => !!r.case_id,
+    id: 'all',
+    label: 'All',
+    icon: <LayoutGrid size={13} />,
+    filter: () => true,
   },
   {
-    id: 'evidence',
-    label: 'Evidence',
-    icon: <Shield size={13} />,
-    filter: (r) => ['video', 'image', 'audio', 'document', 'pdf'].includes(r.media_class),
+    id: 'images',
+    label: 'Images',
+    icon: <Image size={13} />,
+    filter: (r) => r.media_class === 'image',
   },
   {
-    id: 'people',
-    label: 'People',
-    icon: <Users size={13} />,
-    filter: (r) => {
-      const cat = r.category?.toLowerCase() ?? '';
-      const title = r.title?.toLowerCase() ?? '';
-      return cat.includes('assault') || cat.includes('domestic') || cat.includes('homicide') ||
-             cat.includes('shooting') || title.includes('interview') || title.includes('witness');
-    },
+    id: 'video',
+    label: 'Video',
+    icon: <Video size={13} />,
+    filter: (r) => r.media_class === 'video',
   },
   {
-    id: 'vehicles',
-    label: 'Vehicles',
-    icon: <Car size={13} />,
-    filter: (r) => {
-      const cat = r.category?.toLowerCase() ?? '';
-      const title = r.title?.toLowerCase() ?? '';
-      return cat.includes('traffic') || title.includes('fleet') || title.includes('dash') || title.includes('vehicle');
-    },
+    id: 'audio',
+    label: 'Audio',
+    icon: <Headphones size={13} />,
+    filter: (r) => r.media_class === 'audio',
+  },
+  {
+    id: 'documents',
+    label: 'Documents',
+    icon: <FileDoc size={13} />,
+    filter: (r) => ['document', 'pdf'].includes(r.media_class),
   },
 ];
 
@@ -420,6 +418,7 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
             boxShadow: 'var(--elevation-md)',
             zIndex: 200,
             overflow: 'hidden',
+            paddingBottom: 12,
           }}
         >
 
@@ -471,12 +470,12 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
                       style={{
                         display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '5px 14px',
                         backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
-                        fontSize: 11, color: 'var(--text-weak)', textAlign: 'left',
+                        fontSize: 10, color: '#9ca3af', textAlign: 'left',
                       }}
                       onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
                       onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                     >
-                      <Search size={11} style={{ color: 'var(--text-weak)', flexShrink: 0 }} />
+                      <Search size={10} style={{ color: '#9ca3af', flexShrink: 0 }} />
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s}</span>
                     </button>
                   ))}

@@ -10,6 +10,8 @@ import {
   FolderOpen,
   Shield,
   ChevronDown,
+  ChevronRight,
+  ChevronLeft,
   Hash,
   Calendar,
   User,
@@ -17,6 +19,7 @@ import {
   Users,
   Car,
   Sparkles,
+  Headphones,
 } from 'lucide-react';
 
 import { Badge } from './ui/badge';
@@ -30,7 +33,6 @@ import {
   SearchOutput,
   SearchEvidenceResult,
   FilterChip,
-  EntityResult,
   MediaClass,
 } from '../data/types';
 
@@ -87,22 +89,112 @@ function Chip({ chip, onRemove }: { chip: FilterChip; onRemove: (id: string) => 
   );
 }
 
-// ─── Entity card (Other Results) ─────────────────────────────────────────────
+// ─── Person row ──────────────────────────────────────────────────────────────
 
-function EntityCard({ entity }: { entity: EntityResult }) {
-  const Icon = entity.type === 'case' ? FolderOpen : Shield;
+// ─── Entity scroll row ────────────────────────────────────────────────────────
+
+function EntityScrollRow({ children, count }: { children: React.ReactNode; count: number }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateScrollState = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 0);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  };
+
+  useEffect(() => { updateScrollState(); }, [count]);
+
+  const scroll = (dir: 'left' | 'right') => {
+    scrollRef.current?.scrollBy({ left: dir === 'right' ? 220 : -220, behavior: 'smooth' });
+    setTimeout(updateScrollState, 300);
+  };
+
+  const btnStyle: React.CSSProperties = {
+    width: 26, height: 26, borderRadius: '50%', border: 'none',
+    backgroundColor: '#374151', color: '#fff', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transition: 'background-color 0.1s', flexShrink: 0, position: 'relative', zIndex: 1,
+  };
+
   return (
-    <button
-      style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, padding: '12px 14px', borderRadius: 6, border: '1px solid var(--border)', backgroundColor: 'transparent', width: 160, flexShrink: 0, textAlign: 'left', cursor: 'pointer', transition: 'background-color 0.1s' }}
-      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-weak)')}
-      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-    >
-      <Icon size={13} style={{ color: '#9ca3af' }} />
-      <span style={{ fontSize: 11, fontWeight: 500, color: '#374151', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{entity.name}</span>
-      {entity.subtitle && (
-        <span style={{ fontSize: 10, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{entity.subtitle}</span>
+    <div style={{ position: 'relative', overflow: 'hidden' }}>
+      <div
+        ref={scrollRef}
+        onScroll={updateScrollState}
+        style={{ display: 'flex', gap: 6, overflowX: 'hidden', paddingBottom: 2 }}
+      >
+        {children}
+      </div>
+
+      {canScrollLeft && (
+        <div style={{
+          position: 'absolute', left: 0, top: 0, bottom: 2, width: 64,
+          background: 'linear-gradient(to right, var(--base) 40%, transparent 100%)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', paddingLeft: 6,
+        }}>
+          <button onClick={() => scroll('left')} style={btnStyle}>
+            <ChevronLeft size={13} />
+          </button>
+        </div>
       )}
-    </button>
+
+      {canScrollRight && (
+        <div style={{
+          position: 'absolute', right: 0, top: 0, bottom: 2, width: 64,
+          background: 'linear-gradient(to left, var(--base) 40%, transparent 100%)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 6,
+        }}>
+          <button onClick={() => scroll('right')} style={btnStyle}>
+            <ChevronRight size={13} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Person card ─────────────────────────────────────────────────────────────
+
+function PersonCard({ name }: { name: string }) {
+  const initials = name.split(' ').map(p => p[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+  const parts = name.split(' ');
+  const lastName = parts[0] ?? name;
+  const subtitle = parts.length > 1 ? parts.slice(1).join(' ') : '';
+  return (
+    <div
+      style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 12px', borderRadius: 6, border: 'none', backgroundColor: 'var(--fill-weak)', flexShrink: 0, cursor: 'pointer', transition: 'background-color 0.1s', width: 160 }}
+      onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--fill-hover)'}
+      onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--fill-weak)'}
+    >
+      <Shield size={18} style={{ color: '#9ca3af' }} />
+      <div>
+        <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</p>
+        {subtitle && <p style={{ fontSize: 11, color: '#6b7280', margin: '2px 0 0' }}>Officer</p>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Case card ───────────────────────────────────────────────────────────────
+
+function CaseCard({ name }: { name: string }) {
+  return (
+    <div
+      style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 12px', borderRadius: 6, border: 'none', backgroundColor: 'var(--fill-weak)', flexShrink: 0, cursor: 'pointer', transition: 'background-color 0.1s', width: 160 }}
+      onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--fill-hover)'}
+      onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--fill-weak)'}
+    >
+      <FolderOpen size={18} style={{ color: '#9ca3af' }} />
+      <div>
+        <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</p>
+        <p style={{ fontSize: 11, color: '#6b7280', margin: '2px 0 0' }}>Case</p>
+      </div>
+    </div>
   );
 }
 
@@ -194,44 +286,45 @@ function escapeHtml(str: string): string {
 }
 
 // Layered input: a transparent-text backing div shows mark highlights beneath the real input
-function HighlightInput({ inputRef, value, committedQuery, onChange, placeholder }: {
+function HighlightInput({ inputRef, value, committedQuery, chipTerms, onChange, placeholder }: {
   inputRef?: React.RefObject<HTMLInputElement>;
   value: string;
-  committedQuery: string;
+  committedQuery?: string;
+  chipTerms?: string[];
   onChange: (v: string) => void;
   placeholder: string;
 }) {
-  // Only highlight terms from the last completed search, not the live value
-  const terms = new Set(
-    (committedQuery ?? '')
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(w => w.length > 1 && !STOP_WORDS.has(w))
+  // Build a set of individual words extracted from chip values
+  const goldTerms = new Set(
+    (chipTerms ?? [])
+      .flatMap(t => t.toLowerCase().split(/\s+/))
+      .filter(w => w.length > 1)
   );
 
-  const highlighted = terms.size === 0
+  const highlighted = goldTerms.size === 0
     ? escapeHtml(value ?? '')
     : (value ?? '')
         .split(/(\s+)/)
         .map(part => {
           if (!part) return '';
           if (/^\s+$/.test(part)) return part;
-          if (terms.has(part.toLowerCase())) {
-            return `<mark style="background:#bfdbfe;color:inherit;border-radius:2px;padding:0 1px;">${escapeHtml(part)}</mark>`;
+          if (goldTerms.has(part.toLowerCase())) {
+            return `<mark style="background:rgba(254,198,46,0.5);color:transparent;border-radius:2px;">${escapeHtml(part)}</mark>`;
           }
           return escapeHtml(part);
         })
         .join('');
 
   return (
-    <>
+    <div style={{ position: 'relative', height: 52 }}>
       <div
         aria-hidden
         style={{
           position: 'absolute', inset: 0,
+          border: '1px solid transparent',
           paddingLeft: 16, paddingRight: 48,
-          fontSize: 14, lineHeight: '52px',
-          fontFamily: 'inherit', letterSpacing: 'normal',
+          font: 'inherit', fontSize: 14,
+          lineHeight: '50px',
           whiteSpace: 'pre', overflow: 'hidden',
           pointerEvents: 'none', color: 'transparent',
           borderRadius: 6, boxSizing: 'border-box',
@@ -243,10 +336,10 @@ function HighlightInput({ inputRef, value, committedQuery, onChange, placeholder
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full pl-4 pr-12 rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-gray-300"
-        style={{ height: 52, border: '1px solid var(--border)', background: 'transparent', position: 'relative' }}
+        className="w-full pl-4 pr-12 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-300"
+        style={{ position: 'absolute', inset: 0, height: 52, border: '1px solid var(--border)', background: 'transparent', boxSizing: 'border-box', fontSize: 14, fontFamily: 'inherit' }}
       />
-    </>
+    </div>
   );
 }
 
@@ -258,7 +351,7 @@ function highlightText(text: string, query: string): string {
     .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   if (words.length === 0) return text;
   const regex = new RegExp(`(${words.join('|')})`, 'gi');
-  const result = text.replace(regex, '<mark style="background:#bfdbfe;color:inherit;border-radius:2px;padding:0 1px;">$1</mark>');
+  const result = text.replace(regex, '<mark style="background:rgba(254,198,46,0.5);color:inherit;border-radius:2px;padding:0 1px;">$1</mark>');
   return result;
 }
 
@@ -349,18 +442,6 @@ function SkeletonRow() {
   );
 }
 
-function SkeletonEntityCards() {
-  return (
-    <div style={{ marginBottom: 24, paddingTop: 8 }}>
-      <div style={{ height: 12, width: 80, borderRadius: 3, backgroundColor: 'var(--border)', marginBottom: 16 }} className="animate-pulse" />
-      <div style={{ display: 'flex', gap: 8 }}>
-        {[1, 2, 3].map(i => (
-          <div key={i} style={{ width: 160, height: 72, borderRadius: 6, backgroundColor: 'var(--border)' }} className="animate-pulse" />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function SkeletonPreview() {
   return (
@@ -563,8 +644,20 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
       });
   })();
 
+  const entityPeople: string[] = (() => {
+    if (!searchOutput) return [];
+    const unique = [...new Set(searchOutput.results.map(r => r.officer).filter(Boolean))];
+    return unique.length > 0 ? unique : searchOutput.entities.filter(e => e.type === 'officer').map(e => e.name);
+  })();
+
+  const entityCases: string[] = (() => {
+    if (!searchOutput) return [];
+    const unique = [...new Set(searchOutput.results.map(r => r.case_id).filter(Boolean))];
+    return unique.length > 0 ? unique : searchOutput.entities.filter(e => e.type === 'case').map(e => e.name);
+  })();
+
   const activeScopes = SCOPE_CHIPS.filter(s => selectedScopes.has(s.id));
-  const scopedResults = searchOutput
+  const evidenceItems = searchOutput
     ? (activeScopes.length > 0
         ? searchOutput.results.filter(r => activeScopes.some(s => s.filter(r)))
         : searchOutput.results)
@@ -619,6 +712,7 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
                 inputRef={inputRef}
                 value={query}
                 committedQuery={committedQuery}
+                chipTerms={activeChips.map(c => c.label)}
                 onChange={setQuery}
                 placeholder="Describe what you want to find..."
               />
@@ -668,6 +762,8 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
               <HighlightInput
                 inputRef={inputRef}
                 value={query}
+                committedQuery={committedQuery}
+                chipTerms={activeChips.map(c => c.label)}
                 onChange={setQuery}
                 placeholder="Describe what you want to find..."
               />
@@ -689,11 +785,13 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
                 {/* Scope chips */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
                   {SCOPE_CHIPS.map(chip => {
-                    const active = selectedScopes.has(chip.id);
+                    const active = chip.id === 'all'
+                      ? selectedScopes.size === 0
+                      : selectedScopes.has(chip.id);
                     return (
                       <button
                         key={chip.id}
-                        onClick={() => toggleScope(chip.id)}
+                        onClick={() => chip.id === 'all' ? setSelectedScopes(new Set()) : toggleScope(chip.id)}
                         style={{
                           display: 'inline-flex', alignItems: 'center', gap: 5,
                           padding: '4px 10px', borderRadius: 99, cursor: 'pointer',
@@ -711,79 +809,49 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
                       </button>
                     );
                   })}
-                  {activeChips.map(chip => (
-                    <button
-                      key={chip.id}
-                      onClick={() => handleRemoveChip(chip.id)}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 5,
-                        padding: '4px 10px', borderRadius: 99, cursor: 'pointer',
-                        fontSize: 12, fontWeight: 500,
-                        border: '1px solid var(--border)',
-                        backgroundColor: 'transparent',
-                        color: 'var(--foreground)',
-                        transition: 'all 0.1s',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
-                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                    >
-                      <Sparkles size={13} />
-                      {chip.label}
-                      <X size={10} style={{ marginLeft: 2, opacity: 0.6 }} />
-                    </button>
-                  ))}
                 </div>
 
-                {/* Other Results */}
-                {(() => {
-                  if (isLoading && searchOutput.results.length === 0) return <SkeletonEntityCards />;
+                {/* Cases scroll row */}
+                {entityCases.length > 0 && (
+                  <div style={{ marginBottom: 10 }}>
+                    <p style={{ fontSize: 11, fontWeight: 500, color: '#9ca3af', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cases</p>
+                    <EntityScrollRow count={entityCases.length}>
+                      {entityCases.map(name => <CaseCard key={name} name={name} />)}
+                    </EntityScrollRow>
+                  </div>
+                )}
 
-                  const uniqueCases = [...new Set(searchOutput.results.map(r => r.case_id).filter(Boolean))];
-                  const uniquePeople = [...new Set(searchOutput.results.map(r => r.officer).filter(Boolean))];
-                  const caseEntities = searchOutput.entities.filter(e => e.type === 'case');
-                  const officerEntities = searchOutput.entities.filter(e => e.type === 'officer');
-
-                  const caseNames = uniqueCases.length > 0 ? uniqueCases : caseEntities.map(e => e.name);
-                  const peopleNames = uniquePeople.length > 0 ? uniquePeople : officerEntities.map(e => e.name);
-
-                  if (caseNames.length === 0 && peopleNames.length === 0) return null;
-
-                  return (
-                    <div style={{ marginBottom: 24, paddingTop: 8 }}>
-                      <p style={{ fontSize: 12, fontWeight: 500, color: '#4b5563', marginBottom: 8 }}>Other Results</p>
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 8 }}>
-                        {caseNames.map(name => (
-                          <EntityCard key={name} entity={{ type: 'case', id: name, name, subtitle: '' }} />
-                        ))}
-                        {peopleNames.map(name => (
-                          <EntityCard key={name} entity={{ type: 'officer', id: name, name, subtitle: '' }} />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
+                {/* People scroll row */}
+                {entityPeople.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <p style={{ fontSize: 11, fontWeight: 500, color: '#9ca3af', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>People</p>
+                    <EntityScrollRow count={entityPeople.length}>
+                      {entityPeople.map(name => <PersonCard key={name} name={name} />)}
+                    </EntityScrollRow>
+                  </div>
+                )}
 
                 {/* Results header */}
                 <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
                   <p style={{ fontSize: 12, fontWeight: 500, color: '#4b5563' }}>
-                    Results{scopedResults.length > 0 ? ` (${scopedResults.length})` : ''}
+                    Results{evidenceItems.length > 0 ? ` (${evidenceItems.length})` : ''}
                   </p>
                   <div className="flex items-center gap-3">
-                    {scopedResults.length > 0 && !isLoading && (
+                    {evidenceItems.length > 0 && !isLoading && (
                       <label className="flex items-center gap-1.5 cursor-pointer select-none" style={{ fontSize: 12, color: '#6b7280' }}>
                         <input
                           type="checkbox"
-                          checked={scopedResults.length > 0 && scopedResults.every(r => checkedIds.has(r.evidence_id))}
+                          checked={evidenceItems.length > 0 && evidenceItems.every(r => checkedIds.has(r.evidence_id))}
                           ref={el => {
-                            if (el) el.indeterminate = checkedIds.size > 0 && !scopedResults.every(r => checkedIds.has(r.evidence_id));
+                            if (el) el.indeterminate = checkedIds.size > 0 && !evidenceItems.every(r => checkedIds.has(r.evidence_id));
                           }}
                           onChange={e => {
                             setCheckedIds(e.target.checked
-                              ? new Set(scopedResults.map(r => r.evidence_id))
+                              ? new Set(evidenceItems.map(r => r.evidence_id))
                               : new Set()
                             );
                           }}
-                          style={{ width: 13, height: 13, cursor: 'pointer', accentColor: '#1a73e8' }}
+                          style={{ width: 13, height: 13, cursor: 'pointer', accentColor: '#111827' }}
                         />
                         Select all
                       </label>
@@ -796,7 +864,7 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
                 </div>
 
                 {/* No results */}
-                {scopedResults.length === 0 && !isLoading && (
+                {evidenceItems.length === 0 && !isLoading && (
                   <div className="flex-1 flex flex-col items-center justify-center text-center py-16">
                     <Search size={32} className="text-gray-200 mb-3" />
                     <p className="text-[14px] text-gray-500 font-medium">No evidence found</p>
@@ -820,11 +888,11 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
                 )}
 
                 {/* Results list */}
-                {(isLoading || scopedResults.length > 0) && (
+                {(isLoading || evidenceItems.length > 0) && (
                   <div className="flex-1 overflow-y-auto">
-                    {isLoading && scopedResults.length === 0
+                    {isLoading && evidenceItems.length === 0
                       ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
-                      : scopedResults.map(result => (
+                      : evidenceItems.map(result => (
                           <EvidenceRow
                             key={result.evidence_id}
                             result={result}
