@@ -4,6 +4,7 @@ import {
   Search,
   Loader2,
   ArrowLeft,
+  ArrowUpRight,
   Download,
   Video,
   FileText,
@@ -411,8 +412,8 @@ function SkeletonRow() {
     <div className="px-4 py-3 flex gap-3 items-start">
       <div style={{ width: 16, height: 16, borderRadius: 3, backgroundColor: 'var(--border)', marginTop: 2, flexShrink: 0 }} className="animate-pulse" />
       <div className="flex-1 flex flex-col gap-2">
-        <div style={{ height: 13, width: '55%', borderRadius: 3, backgroundColor: 'var(--border)' }} className="animate-pulse" />
-        <div style={{ height: 11, width: '35%', borderRadius: 3, backgroundColor: 'var(--border)' }} className="animate-pulse" />
+        <div style={{ height: 13, width: '100%', borderRadius: 3, backgroundColor: 'var(--border)' }} className="animate-pulse" />
+        <div style={{ height: 11, width: '60%', borderRadius: 3, backgroundColor: 'var(--border)' }} className="animate-pulse" />
       </div>
     </div>
   );
@@ -601,7 +602,18 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
 
           {/* Search input row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px', height: 52, borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-            <Search size={16} style={{ color: 'var(--text-weak)', flexShrink: 0 }} />
+            {isLoading ? (
+              <Loader2 size={16} className="animate-spin" style={{ color: 'var(--text-weak)', flexShrink: 0 }} />
+            ) : query ? (
+              <button
+                onClick={() => { setQuery(''); setCommittedQuery(''); setSearchOutput(null); setActiveChips([]); setSelectedId(null); inputRef.current?.focus(); }}
+                style={{ display: 'flex', alignItems: 'center', color: 'var(--text-weak)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}
+              >
+                <X size={16} />
+              </button>
+            ) : (
+              <Search size={16} style={{ color: 'var(--text-weak)', flexShrink: 0 }} />
+            )}
             <input
               ref={inputRef}
               value={query}
@@ -609,33 +621,24 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
               placeholder="Describe what you want to find..."
               style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 15, fontFamily: 'inherit', color: 'var(--foreground)' }}
             />
-            {(isLoading || query) && (
-              <button
-                onClick={() => { setQuery(''); setCommittedQuery(''); setSearchOutput(null); setActiveChips([]); setSelectedId(null); inputRef.current?.focus(); }}
-                disabled={isLoading}
-                style={{ display: 'flex', alignItems: 'center', color: 'var(--text-weak)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0, opacity: isLoading ? 0.4 : 1 }}
-              >
-                {isLoading ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
-              </button>
-            )}
             <kbd style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--text-weak)', backgroundColor: 'transparent', fontFamily: 'inherit', flexShrink: 0, lineHeight: '18px' }}>Esc</kbd>
           </div>
 
           {/* Scope filter chips */}
           <div style={{ display: 'flex', gap: 6, padding: '10px 16px', borderBottom: (entityCases.length > 0 || entityPeople.length > 0) ? 'none' : '1px solid var(--border)', flexShrink: 0, flexWrap: 'wrap' }}>
-            {SCOPE_CHIPS.filter(c => c.id !== 'all').map(chip => {
-              const active = selectedScopes.has(chip.id);
+            {SCOPE_CHIPS.map(chip => {
+              const active = chip.id === 'all' ? selectedScopes.size === 0 : selectedScopes.has(chip.id);
               return (
                 <button
                   key={chip.id}
-                  onClick={() => toggleScope(chip.id)}
+                  onClick={() => chip.id === 'all' ? setSelectedScopes(new Set()) : toggleScope(chip.id)}
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 5,
                     padding: '4px 10px', borderRadius: 99, cursor: 'pointer',
                     fontSize: 12, fontFamily: 'inherit', fontWeight: active ? 500 : 400,
-                    border: '1px solid var(--border)',
-                    backgroundColor: active ? 'var(--fill)' : 'transparent',
-                    color: active ? 'var(--foreground)' : 'var(--text-weak)',
+                    border: active ? '1px solid #111827' : '1px solid var(--border)',
+                    backgroundColor: active ? '#111827' : 'transparent',
+                    color: active ? '#fff' : 'var(--text-weak)',
                     transition: 'background-color 0.1s',
                   }}
                 >
@@ -664,6 +667,7 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
                   <FolderOpen size={12} />
                   {id}
                   {category && <span style={{ fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 99, backgroundColor: 'var(--fill)', color: 'var(--text-weak)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{category}</span>}
+                  <ArrowUpRight size={11} style={{ color: '#111827' }} />
                 </button>
               ))}
               {entityPeople.map(name => (
@@ -680,13 +684,14 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
                 >
                   <User size={12} />
                   {name}
+                  <ArrowUpRight size={11} style={{ color: '#111827' }} />
                 </button>
               ))}
             </div>
           )}
 
           {/* Content */}
-          {!hasResults ? (
+          {!hasResults && !isLoading ? (
             /* Empty state — recent searches */
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {isLoading && Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
@@ -716,32 +721,23 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
               <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
 
                 {/* Results header */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '10px 16px 6px', flexShrink: 0 }}>
-                  <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-weak)', margin: 0 }}>
-                    Results{evidenceItems.length > 0 ? ` (${evidenceItems.length})` : ''}
-                  </p>
-                </div>
+                {(isLoading || evidenceItems.length > 0) && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '10px 16px 6px', flexShrink: 0 }}>
+                    <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-weak)', margin: 0 }}>
+                      Results{evidenceItems.length > 0 ? ` (${evidenceItems.length})` : ''}
+                    </p>
+                  </div>
+                )}
 
                 {/* No results */}
                 {evidenceItems.length === 0 && !isLoading && (
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, textAlign: 'center' }}>
-                    <Search size={28} style={{ color: 'var(--border)', marginBottom: 12 }} />
-                    <p style={{ fontSize: 14, color: 'var(--text-weak)', fontWeight: 500, margin: 0 }}>No evidence found</p>
-                    <p style={{ fontSize: 13, color: 'var(--text-subtle)', marginTop: 4, marginBottom: 0 }}>{searchOutput.summary || 'Try refining your query.'}</p>
-                    {searchOutput.suggestions.length > 0 && (
-                      <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {searchOutput.suggestions.map((s, i) => (
-                          <button key={i} onClick={() => { setQuery(s); saveRecentSearch(s, recentSearches); runSearch(s); }} style={{ fontSize: 13, color: '#1a73e8', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
-                            {s}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+                    <p style={{ fontSize: 13, color: 'var(--text-weak)', margin: 0 }}>No results found.</p>
                   </div>
                 )}
 
                 {/* Results list */}
-                <div style={{ flex: 1, overflowY: 'auto' }}>
+                <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none' }} className="[&::-webkit-scrollbar]:hidden">
                   {isLoading && evidenceItems.length === 0
                     ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
                     : evidenceItems.map(result => (
@@ -758,11 +754,11 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
               </div>
 
               {/* Right: preview — starts flush with top of content area */}
-              {selectedEvidence && (
-                <div style={{ width: 340, minWidth: 340, flexShrink: 0, overflowY: 'auto', padding: 12,  }}>
-                  {isLoading && searchOutput && searchOutput.results.length === 0
+              {(isLoading || selectedEvidence) && (
+                <div style={{ width: 340, minWidth: 340, flexShrink: 0, overflowY: 'auto', padding: 12 }}>
+                  {isLoading && evidenceItems.length === 0
                     ? <SkeletonPreview />
-                    : <PreviewPanel result={selectedEvidence} />
+                    : selectedEvidence && <PreviewPanel result={selectedEvidence} />
                   }
                 </div>
               )}

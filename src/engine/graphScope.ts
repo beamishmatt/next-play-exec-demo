@@ -17,9 +17,13 @@ export function scopeGraph(graph: ContextGraph, analysis: QueryAnalysis): GraphN
 
   const terms = queryTerms(analysis);
 
-  // No structured entities extracted — go straight to fuzzy keyword match
+  // No structured entities extracted — fuzzy match on keywords only, never fall back to reformulated query
   if (!hasEntityFilters) {
-    return scoredSort(fuzzyMatch(all, terms), analysis, terms, new Set());
+    const keywordTerms = analysis.entities.keywords
+      .map(k => k.toLowerCase())
+      .filter(k => k.length > 2 && !STOP_WORDS.has(k));
+    if (keywordTerms.length === 0) return [];
+    return scoredSort(fuzzyMatch(all, keywordTerms), analysis, keywordTerms, new Set());
   }
 
   let candidates = [...all];
@@ -59,13 +63,10 @@ export function scopeGraph(graph: ContextGraph, analysis: QueryAnalysis): GraphN
     );
   }
 
-  // Category — partial match
+  // Category — exact match only (partial match causes false positives with LLM fallback categories)
   if (entities.categories.length > 0) {
     candidates = candidates.filter(n =>
-      entities.categories.some(c =>
-        n.category.toLowerCase().includes(c.toLowerCase()) ||
-        c.toLowerCase().includes(n.category.toLowerCase())
-      )
+      entities.categories.some(c => n.category.toLowerCase() === c.toLowerCase())
     );
   }
 
@@ -79,20 +80,28 @@ export function scopeGraph(graph: ContextGraph, analysis: QueryAnalysis): GraphN
         )
       )
     );
-    if (objectMatches.length > 0) candidates = objectMatches;
+    candidates = objectMatches;
   }
 
-  // If strict filters eliminated everything, fall back to fuzzy match across all nodes
+  // If strict filters eliminated everything, fall back to keyword-only fuzzy match
+  // (avoids broad reformulated query terms like "evidence" matching everything)
   if (candidates.length === 0) {
-    return scoredSort(fuzzyMatch(all, terms), analysis, terms, new Set());
+    const keywordTerms = analysis.entities.keywords
+      .map(k => k.toLowerCase())
+      .filter(k => k.length > 2 && !STOP_WORDS.has(k));
+    if (keywordTerms.length === 0) return [];
+    const fallback = fuzzyMatch(all, keywordTerms);
+    if (fallback.length === 0) return [];
+    return scoredSort(fallback, analysis, keywordTerms, new Set());
   }
 
   // Track direct candidates before edge expansion — used for scoring
   const directIds = new Set(candidates.map(n => n.id));
 
-  // Expand via edges
+  // Expand via edges — only non-same_case relationships to avoid pulling in entire cases
   const candidateIds = new Set(directIds);
   for (const edge of graph.edges) {
+    if (edge.relationship === 'same_case') continue;
     if (candidateIds.has(edge.source)) candidateIds.add(edge.target);
     if (candidateIds.has(edge.target)) candidateIds.add(edge.source);
   }
@@ -183,7 +192,7 @@ function queryTerms(analysis: QueryAnalysis): string[] {
 }
 
 function fuzzyMatch(nodes: GraphNode[], terms: string[]): GraphNode[] {
-  if (terms.length === 0) return nodes;
+  if (terms.length === 0) return [];
 
   return nodes.filter(n => {
     const haystack = [
