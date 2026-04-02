@@ -38,11 +38,11 @@ import {
 const RECENT_SEARCHES_KEY = 'command_recent_searches';
 
 const PLACEHOLDER_RECENT: string[] = [
-  'ID 2025 - 12345',
-  'Uploads last week for officer 1223',
-  'Man wearing red hat in piedmont park two weeks ago',
-  'Body cam footage for case 33726',
-  '2025-88292',
+  '088',
+  'murder in bar last week',
+  'CCTV footage',
+  'blood on floor',
+  'knocked over bar stool',
 ];
 
 function loadRecentSearches(): string[] {
@@ -318,6 +318,37 @@ function HighlightInput({ inputRef, value, committedQuery, chipTerms, onChange, 
       />
     </div>
   );
+}
+
+function getMatchedInputTerms(query: string, results: SearchEvidenceResult[]): Set<string> {
+  const words = query
+    .split(/\s+/)
+    .filter(w => w.length > 1 && !STOP_WORDS.has(w.toLowerCase()));
+  const matched = new Set<string>();
+  for (const word of words) {
+    const re = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    for (const r of results) {
+      const haystack = [r.title, r.evidence_id, r.case_id, r.officer, r.category, r.excerpt, r.relevance]
+        .filter(Boolean).join(' ');
+      if (re.test(haystack)) { matched.add(word.toLowerCase()); break; }
+    }
+  }
+  return matched;
+}
+
+function highlightInputText(value: string, matchedTerms: Set<string>): string {
+  if (!value || matchedTerms.size === 0) return escapeHtml(value ?? '');
+  return value
+    .split(/(\s+)/)
+    .map(part => {
+      if (!part) return '';
+      if (/^\s+$/.test(part)) return part;
+      if (matchedTerms.has(part.toLowerCase())) {
+        return `<mark style="background:rgba(254,198,46,0.5);color:transparent;border-radius:2px;">${escapeHtml(part)}</mark>`;
+      }
+      return escapeHtml(part);
+    })
+    .join('');
 }
 
 function highlightText(text: string, query: string): string {
@@ -614,13 +645,27 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
             ) : (
               <Search size={16} style={{ color: 'var(--text-weak)', flexShrink: 0 }} />
             )}
-            <input
-              ref={inputRef}
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Describe what you want to find..."
-              style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 15, fontFamily: 'inherit', color: 'var(--foreground)' }}
-            />
+            <div style={{ flex: 1, position: 'relative', height: 52 }}>
+              <div
+                aria-hidden
+                style={{
+                  position: 'absolute', inset: 0,
+                  font: 'inherit', fontSize: 15, fontFamily: 'inherit',
+                  lineHeight: '52px',
+                  whiteSpace: 'pre', overflow: 'hidden',
+                  pointerEvents: 'none', color: 'transparent',
+                  boxSizing: 'border-box',
+                }}
+                dangerouslySetInnerHTML={{ __html: highlightInputText(query, getMatchedInputTerms(committedQuery, searchOutput?.results ?? [])) }}
+              />
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Describe what you want to find..."
+                style={{ position: 'absolute', inset: 0, width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 15, fontFamily: 'inherit', color: 'var(--foreground)' }}
+              />
+            </div>
             <kbd style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--text-weak)', backgroundColor: 'transparent', fontFamily: 'inherit', flexShrink: 0, lineHeight: '18px' }}>Esc</kbd>
           </div>
 

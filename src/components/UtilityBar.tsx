@@ -181,12 +181,11 @@ function SearchButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-function UtilityIcons({ onOpenSearch }: { onOpenSearch: () => void }) {
+function UtilityIcons() {
   const isMobile = useIsMobile();
 
   return (
     <div className="flex gap-3 items-center" data-name="utility-icons">
-      {!isMobile && <SearchButton onClick={onOpenSearch} />}
       {!isMobile && <QuestionFill />}
       {!isMobile && <MailFill />}
       <ButtonIconMode />
@@ -194,10 +193,10 @@ function UtilityIcons({ onOpenSearch }: { onOpenSearch: () => void }) {
   );
 }
 
-function RightSection({ onOpenSearch }: { onOpenSearch: () => void }) {
+function RightSection() {
   return (
     <div className="flex" data-name="right section">
-      <UtilityIcons onOpenSearch={onOpenSearch} />
+      <UtilityIcons />
     </div>
   );
 }
@@ -212,6 +211,8 @@ export function UtilityBar({
   actions,
   onOpenSearch,
 }: UtilityBarProps) {
+  const isMobile = useIsMobile();
+
   return (
     <div
       className="relative size-full"
@@ -230,8 +231,9 @@ export function UtilityBar({
           />
           <div className="flex-1" />
           <div className="flex items-center gap-4 shrink-0">
+            {!isMobile && <SearchButton onClick={() => onOpenSearch('')} />}
             {actions}
-            <RightSection onOpenSearch={() => onOpenSearch('')} />
+            <RightSection />
           </div>
         </div>
       </div>
