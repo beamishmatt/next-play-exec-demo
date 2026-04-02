@@ -1,10 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React from 'react';
 import { useTheme } from './ThemeProvider';
-import { ArrowLeft, PanelLeft, Menu } from 'lucide-react';
+import { ArrowLeft, PanelLeft, Menu, Search } from 'lucide-react';
 
 import { useIsMobile } from './ui/use-mobile';
 import svgPaths from '../imports/svg-d29d82xyuv';
-import { SearchDropdown } from './SearchDropdown';
 
 interface UtilityBarProps {
   title: string;
@@ -153,11 +152,41 @@ function ButtonIconMode() {
   );
 }
 
-function UtilityIcons() {
-  const isMobile = useIsMobile();
-  
+function SearchButton({ onClick }: { onClick: () => void }) {
   return (
-    <div className="flex gap-4 items-center" data-name="utility-icons">
+    <button
+      onClick={onClick}
+      data-name="search-button"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        height: 30,
+        padding: '0 10px',
+        borderRadius: 6,
+        border: '1px solid var(--border)',
+        backgroundColor: 'var(--fill)',
+        color: 'var(--text-subtle)',
+        fontSize: 13,
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+        fontFamily: 'inherit',
+        width: 160,
+      }}
+    >
+      <Search size={12} style={{ flexShrink: 0, opacity: 0.6 }} />
+      <span style={{ opacity: 0.6, fontSize: 12 }}>Search...</span>
+      <kbd style={{ fontSize: 11, padding: '1px 5px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--text-weak)', backgroundColor: 'transparent', fontFamily: 'inherit', lineHeight: '16px', opacity: 0.7, marginLeft: 'auto' }}>/</kbd>
+    </button>
+  );
+}
+
+function UtilityIcons({ onOpenSearch }: { onOpenSearch: () => void }) {
+  const isMobile = useIsMobile();
+
+  return (
+    <div className="flex gap-3 items-center" data-name="utility-icons">
+      {!isMobile && <SearchButton onClick={onOpenSearch} />}
       {!isMobile && <QuestionFill />}
       {!isMobile && <MailFill />}
       <ButtonIconMode />
@@ -165,10 +194,10 @@ function UtilityIcons() {
   );
 }
 
-function RightSection() {
+function RightSection({ onOpenSearch }: { onOpenSearch: () => void }) {
   return (
     <div className="flex" data-name="right section">
-      <UtilityIcons />
+      <UtilityIcons onOpenSearch={onOpenSearch} />
     </div>
   );
 }
@@ -183,9 +212,6 @@ export function UtilityBar({
   actions,
   onOpenSearch,
 }: UtilityBarProps) {
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-
   return (
     <div
       className="relative size-full"
@@ -202,22 +228,10 @@ export function UtilityBar({
             sidebarVisible={sidebarVisible}
             onSidebarToggle={onSidebarToggle}
           />
-          {/* Center: search */}
-          <div className="flex-1 flex items-center justify-center" style={{ minWidth: 0 }}>
-            <SearchDropdown
-              inputRef={searchInputRef}
-              query={searchQuery}
-              onQueryChange={setSearchQuery}
-              onClose={() => setSearchQuery('')}
-              onOpenSearch={(q, id, out) => {
-                setSearchQuery('');
-                onOpenSearch(q, id, out);
-              }}
-            />
-          </div>
+          <div className="flex-1" />
           <div className="flex items-center gap-4 shrink-0">
             {actions}
-            <RightSection />
+            <RightSection onOpenSearch={() => onOpenSearch('')} />
           </div>
         </div>
       </div>

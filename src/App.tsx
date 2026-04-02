@@ -89,6 +89,19 @@ function AppContent() {
     }
   }, [isMobile, isEvidenceDetailPage]);
 
+  // Open search modal on '/' keypress (when not in an input)
+  React.useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== '/') return;
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return;
+      e.preventDefault();
+      setSearchState({ open: true });
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   // Memoized handlers to prevent unnecessary re-renders
   const handleSidebarToggle = React.useCallback(() => {
     setSidebarVisible(prev => !prev);

@@ -1,8 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   X,
   Search,
   Loader2,
+  ArrowLeft,
+  Download,
   Video,
   FileText,
   Image,
@@ -18,18 +20,14 @@ import {
   Tag,
   Users,
   Car,
-  Sparkles,
   Headphones,
 } from 'lucide-react';
 
 import { Badge } from './ui/badge';
 import { SCOPE_CHIPS } from './SearchDropdown';
-import { AssistantPanel } from './AssistantPanel';
 import { FeedbackDrawer } from './FeedbackDrawer';
-import { getContextGraph, updateGraphNode } from '../storage/config';
 import { agentSearch, generateAndSaveDescription, SearchStep } from '../engine/agentSearch';
 import {
-  AgentAction,
   SearchOutput,
   SearchEvidenceResult,
   FilterChip,
@@ -63,7 +61,7 @@ function saveRecentSearch(query: string, current: string[]): string[] {
 // ─── Media type icon ─────────────────────────────────────────────────────────
 
 function MediaIcon({ mediaClass, size = 16 }: { mediaClass: MediaClass | string; size?: number }) {
-  const props = { size, className: 'text-gray-500 shrink-0' };
+  const props = { size, style: { color: '#9ca3af', flexShrink: 0 as const } };
   switch (mediaClass) {
     case 'video': return <Video {...props} />;
     case 'image': return <Image {...props} />;
@@ -161,20 +159,16 @@ function EntityScrollRow({ children, count }: { children: React.ReactNode; count
 // ─── Person card ─────────────────────────────────────────────────────────────
 
 function PersonCard({ name }: { name: string }) {
-  const initials = name.split(' ').map(p => p[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
-  const parts = name.split(' ');
-  const lastName = parts[0] ?? name;
-  const subtitle = parts.length > 1 ? parts.slice(1).join(' ') : '';
   return (
     <div
-      style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 12px', borderRadius: 6, border: 'none', backgroundColor: 'var(--fill-weak)', flexShrink: 0, cursor: 'pointer', transition: 'background-color 0.1s', width: 160 }}
+      style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, border: 'none', backgroundColor: 'var(--fill-weak)', flexShrink: 0, cursor: 'pointer', transition: 'background-color 0.1s', width: 160 }}
       onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--fill-hover)'}
       onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--fill-weak)'}
     >
-      <Shield size={18} style={{ color: '#9ca3af' }} />
-      <div>
+      <Shield size={14} style={{ color: '#9ca3af', flexShrink: 0 }} />
+      <div style={{ minWidth: 0 }}>
         <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</p>
-        {subtitle && <p style={{ fontSize: 11, color: '#6b7280', margin: '2px 0 0' }}>Officer</p>}
+        <p style={{ fontSize: 11, color: '#6b7280', margin: 0 }}>Officer</p>
       </div>
     </div>
   );
@@ -185,14 +179,14 @@ function PersonCard({ name }: { name: string }) {
 function CaseCard({ name }: { name: string }) {
   return (
     <div
-      style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 12px', borderRadius: 6, border: 'none', backgroundColor: 'var(--fill-weak)', flexShrink: 0, cursor: 'pointer', transition: 'background-color 0.1s', width: 160 }}
+      style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, border: 'none', backgroundColor: 'var(--fill-weak)', flexShrink: 0, cursor: 'pointer', transition: 'background-color 0.1s', width: 160 }}
       onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--fill-hover)'}
       onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--fill-weak)'}
     >
-      <FolderOpen size={18} style={{ color: '#9ca3af' }} />
-      <div>
+      <FolderOpen size={14} style={{ color: '#9ca3af', flexShrink: 0 }} />
+      <div style={{ minWidth: 0 }}>
         <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</p>
-        <p style={{ fontSize: 11, color: '#6b7280', margin: '2px 0 0' }}>Case</p>
+        <p style={{ fontSize: 11, color: '#6b7280', margin: 0 }}>Case</p>
       </div>
     </div>
   );
@@ -205,15 +199,11 @@ function EvidenceRow({
   isSelected,
   query,
   onHover,
-  isChecked,
-  onCheck,
 }: {
   result: SearchEvidenceResult;
   isSelected: boolean;
   query: string;
   onHover: () => void;
-  isChecked: boolean;
-  onCheck: (e: React.MouseEvent) => void;
 }) {
   return (
     <div
@@ -229,40 +219,26 @@ function EvidenceRow({
         (e.currentTarget as HTMLDivElement).style.backgroundColor = isSelected ? 'var(--fill-weaker)' : 'transparent';
       }}
     >
-      {/* Checkbox column */}
-      <div
-        className="flex items-center justify-center shrink-0 self-stretch px-3"
-        onClick={onCheck}
-        style={{ cursor: 'default' }}
-      >
-        <input
-          type="checkbox"
-          checked={isChecked}
-          onChange={() => {}}
-          onClick={e => { e.stopPropagation(); onCheck(e); }}
-          className="w-3.5 h-3.5 rounded cursor-pointer"
-          style={{ accentColor: '#000000' }}
-        />
+      {/* Icon */}
+      <div className="flex items-center justify-center shrink-0 pl-4">
+        <MediaIcon mediaClass={result.media_class} size={18} />
       </div>
       {/* Content */}
-      <div className="flex flex-col py-3 pr-4 flex-1 min-w-0">
+      <div className="flex flex-col py-3 px-3 flex-1 min-w-0">
         <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} dangerouslySetInnerHTML={{ __html: highlightText(result.title, query) }} />
-        <div className="flex items-center gap-1.5 mt-0.5">
-          <MediaIcon mediaClass={result.media_class} size={12} />
-          <p
-            style={{ fontSize: 12, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-            dangerouslySetInnerHTML={{ __html: [
-              result.evidence_id && highlightText(result.evidence_id, query),
-              result.case_id && highlightText(result.case_id, query),
-              result.date_recorded && new Date(result.date_recorded).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
-              result.officer && highlightText(result.officer, query),
-              result.category && highlightText(result.category, query),
-            ].filter(Boolean).join(' • ') }}
-          />
-        </div>
+        <p
+          style={{ fontSize: 13, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}
+          dangerouslySetInnerHTML={{ __html: [
+            result.evidence_id && highlightText(result.evidence_id, query),
+            result.case_id && highlightText(result.case_id, query),
+            result.date_recorded && new Date(result.date_recorded).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+            result.officer && highlightText(result.officer, query),
+            result.category && highlightText(result.category, query),
+          ].filter(Boolean).join(' • ') }}
+        />
         {(result.excerpt || result.relevance) && (
           <p
-            style={{ fontSize: 12, color: '#9ca3af', marginTop: 3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+            style={{ fontSize: 13, color: '#9ca3af', marginTop: 3, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
             dangerouslySetInnerHTML={{ __html: highlightText(result.excerpt || result.relevance || '', query) }}
           />
         )}
@@ -372,7 +348,7 @@ function PreviewPanel({ result }: { result: SearchEvidenceResult }) {
   return (
     <div style={{ width: 310, maxWidth: 310, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
       {/* Two-part card */}
-      <div style={{ border: '1px solid var(--border)', borderRadius: 12, backgroundColor: 'transparent', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ border: '1px solid var(--border)', borderRadius: 12, backgroundColor: 'var(--base)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
         {/* Top: thumbnail for media (+ description below), text for documents */}
         {isMedia && result.thumbnailUrl ? (
@@ -489,12 +465,12 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
     });
   };
   const [recentSearches, setRecentSearches] = useState<string[]>(loadRecentSearches);
-  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const [showFeedback, setShowFeedback] = useState(false);
   // Version counter — incremented on each search; stale results are discarded
   const searchVersion = useRef(0);
   // Skip the first debounce trigger when pre-loaded output was provided
   const skipNextDebounce = useRef(!!initialOutput);
+
 
   // Focus on mount, close on Esc
   useEffect(() => {
@@ -568,37 +544,6 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
     setActiveChips(prev => prev.filter(c => c.id !== chipId));
   };
 
-  const handleAction = useCallback((action: AgentAction) => {
-    // Persist to context graph
-    action.item_ids.forEach(id => {
-      const graph = getContextGraph();
-      if (action.type === 'set_category') {
-        updateGraphNode(id, { category: action.value });
-      } else if (action.type === 'set_status') {
-        updateGraphNode(id, { status: action.value });
-      } else if (action.type === 'add_tag') {
-        const existing = graph.nodes[id]?.tags ?? [];
-        if (!existing.includes(action.value)) {
-          updateGraphNode(id, { tags: [...existing, action.value] });
-        }
-      }
-    });
-
-    // Patch search results immediately so the UI reflects the change
-    setSearchOutput(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        results: prev.results.map(r => {
-          if (!action.item_ids.includes(r.evidence_id)) return r;
-          if (action.type === 'set_category') return { ...r, category: action.value };
-          if (action.type === 'set_status') return r; // status not shown in results list
-          return r;
-        }),
-      };
-    });
-  }, []);
-
   const selectedEvidence = searchOutput?.results.find(r => r.evidence_id === selectedId);
   const hasResults = searchOutput !== null;
 
@@ -621,28 +566,6 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
       });
     });
   }, [selectedId]);
-  const isAssistantOpen = checkedIds.size > 0;
-
-  const checkedItems = (() => {
-    if (!searchOutput) return [];
-    const graph = getContextGraph();
-    return searchOutput.results
-      .filter(r => checkedIds.has(r.evidence_id))
-      .map(r => {
-        const node = graph.nodes[r.evidence_id];
-        return {
-          id: r.evidence_id,
-          title: r.title,
-          vector_file_id: node?.vector_file_id,
-          description: node?.description,
-          category: r.category,
-          officer: r.officer,
-          date_recorded: r.date_recorded,
-          media_class: r.media_class,
-          objects_detected: node?.objects_detected?.map(o => `${o.color ? o.color + ' ' : ''}${o.label}`).join(', '),
-        };
-      });
-  })();
 
   const entityPeople: string[] = (() => {
     if (!searchOutput) return [];
@@ -650,10 +573,12 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
     return unique.length > 0 ? unique : searchOutput.entities.filter(e => e.type === 'officer').map(e => e.name);
   })();
 
-  const entityCases: string[] = (() => {
+  const entityCases: { id: string; category?: string }[] = (() => {
     if (!searchOutput) return [];
-    const unique = [...new Set(searchOutput.results.map(r => r.case_id).filter(Boolean))];
-    return unique.length > 0 ? unique : searchOutput.entities.filter(e => e.type === 'case').map(e => e.name);
+    const seen = new Map<string, string | undefined>();
+    searchOutput.results.forEach(r => { if (r.case_id && !seen.has(r.case_id)) seen.set(r.case_id, r.category); });
+    if (seen.size > 0) return [...seen.entries()].map(([id, category]) => ({ id, category }));
+    return searchOutput.entities.filter(e => e.type === 'case').map(e => ({ id: e.name }));
   })();
 
   const activeScopes = SCOPE_CHIPS.filter(s => selectedScopes.has(s.id));
@@ -664,221 +589,149 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
     : [];
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--base)' }}>
-      {/* ── Top bar ── */}
-      <div
-        className="flex items-center justify-between px-4 shrink-0"
-        style={{ height: 52, borderBottom: '1px solid var(--border)' }}
-      >
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onClose}
-            className="transition-colors"
-            aria-label="Close"
-            style={{ padding: '6px 8px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--text-weak)', backgroundColor: 'transparent' }}
-          >
-            <X size={16} />
-          </button>
-          <span style={{ fontSize: 'var(--text-h4)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-high-contrast)' }}>Search</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button
-            onClick={() => setShowFeedback(true)}
-            style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--text-weak)', backgroundColor: 'transparent', lineHeight: '18px', cursor: 'pointer', fontFamily: 'inherit' }}
-          >
-            Feedback
-          </button>
-          <a
-            href="https://git.taservs.net/mbeamish/search2.0_takeover/tree/main"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--text-weak)', backgroundColor: 'transparent', lineHeight: '18px', textDecoration: 'none' }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222 0 1.606-.015 2.896-.015 3.286 0 .322.216.694.825.576C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z" />
-            </svg>
-            GitHub
-          </a>
-        </div>
-      </div>
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center"
+      style={{ backdropFilter: 'blur(6px)', backgroundColor: 'rgba(0,0,0,0.18)', paddingTop: '8vh' }}
+      onClick={onClose}
+    >
+      <div className="flex items-start gap-3" style={{ width: '90vw', maxWidth: 1050 }} onClick={e => e.stopPropagation()}>
 
-      {/* ── Content ── */}
-      {!hasResults ? (
-        /* ── Empty state ── */
-        <div className="flex-1 overflow-y-auto px-4" style={{ paddingTop: 48 }}>
-          <div style={{ maxWidth: '70%', margin: '0 auto' }}>
-            <div className="relative" style={{ padding: '2px 2px', overflow: 'visible' }}>
-              <HighlightInput
-                inputRef={inputRef}
-                value={query}
-                committedQuery={committedQuery}
-                chipTerms={activeChips.map(c => c.label)}
-                onChange={setQuery}
-                placeholder="Describe what you want to find..."
-              />
+        {/* ── Modal card ── */}
+        <div style={{ flex: 1, minWidth: 0, backgroundColor: 'var(--base)', borderRadius: 10, border: '1px solid var(--border)', boxShadow: '0 4px 24px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', maxHeight: '82vh', overflow: 'hidden' }}>
+
+          {/* Search input row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px', height: 52, borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+            <Search size={16} style={{ color: 'var(--text-weak)', flexShrink: 0 }} />
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Describe what you want to find..."
+              style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 15, fontFamily: 'inherit', color: 'var(--foreground)' }}
+            />
+            {(isLoading || query) && (
               <button
-                onClick={() => { if (query.trim()) { setQuery(''); setCommittedQuery(''); setSearchOutput(null); setActiveChips([]); setSelectedId(null); } }}
+                onClick={() => { setQuery(''); setCommittedQuery(''); setSearchOutput(null); setActiveChips([]); setSelectedId(null); inputRef.current?.focus(); }}
                 disabled={isLoading}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-40 transition-colors"
-                aria-label="Clear"
+                style={{ display: 'flex', alignItems: 'center', color: 'var(--text-weak)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0, opacity: isLoading ? 0.4 : 1 }}
               >
-                {isLoading ? <Loader2 size={16} className="animate-spin" /> : query ? <X size={16} /> : <Search size={16} />}
+                {isLoading ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
               </button>
-            </div>
-
-            {/* Skeleton rows while first search is running */}
-            {isLoading && (
-              <div className="mt-6">
-                {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
-              </div>
             )}
-
-            {/* Recent searches */}
-            {!isLoading && (
-              <div style={{ marginTop: 48 }}>
-                <p style={{ fontSize: 12, fontWeight: 500, color: '#4b5563', marginBottom: 8 }}>Recent searches</p>
-                {recentSearches.map((s, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleRecentClick(s)}
-                    style={{ color: 'var(--text-weak)', fontSize: 14, textAlign: 'left', padding: '12px 0', display: 'block', width: '100%', background: 'none', borderBottom: '1px solid var(--border)' }}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
+            <kbd style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--text-weak)', backgroundColor: 'transparent', fontFamily: 'inherit', flexShrink: 0, lineHeight: '18px' }}>Esc</kbd>
           </div>
-        </div>
-      ) : (
-        /* ── Results state ── */
-        <div className="flex-1 overflow-hidden flex">
-          {/* Centering shell — centers main content within remaining space, preserving original layout */}
-          <div className="flex-1 overflow-hidden flex flex-col items-center">
-          {/* Main results area — same 70% centered layout as original */}
-          <div className="flex-1 overflow-hidden flex flex-col" style={{ width: '100%', maxWidth: isAssistantOpen ? '92%' : '70%', paddingTop: 48, transition: 'max-width 400ms cubic-bezier(0, 0.74, 0, 1)' }}>
-            {/* Search input */}
-            <div className="relative" style={{ marginBottom: 8, padding: '2px 2px', overflow: 'visible' }}>
-              <HighlightInput
-                inputRef={inputRef}
-                value={query}
-                committedQuery={committedQuery}
-                chipTerms={activeChips.map(c => c.label)}
-                onChange={setQuery}
-                placeholder="Describe what you want to find..."
-              />
-              <button
-                onClick={() => { if (query.trim()) { setQuery(''); setCommittedQuery(''); setSearchOutput(null); setActiveChips([]); setSelectedId(null); } }}
-                disabled={isLoading}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-40 transition-colors"
-              >
-                {isLoading ? <Loader2 size={16} className="animate-spin" /> : query ? <X size={16} /> : <Search size={16} />}
-              </button>
+
+          {/* Scope filter chips */}
+          <div style={{ display: 'flex', gap: 6, padding: '10px 16px', borderBottom: (entityCases.length > 0 || entityPeople.length > 0) ? 'none' : '1px solid var(--border)', flexShrink: 0, flexWrap: 'wrap' }}>
+            {SCOPE_CHIPS.filter(c => c.id !== 'all').map(chip => {
+              const active = selectedScopes.has(chip.id);
+              return (
+                <button
+                  key={chip.id}
+                  onClick={() => toggleScope(chip.id)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    padding: '4px 10px', borderRadius: 99, cursor: 'pointer',
+                    fontSize: 12, fontFamily: 'inherit', fontWeight: active ? 500 : 400,
+                    border: '1px solid var(--border)',
+                    backgroundColor: active ? 'var(--fill)' : 'transparent',
+                    color: active ? 'var(--foreground)' : 'var(--text-weak)',
+                    transition: 'background-color 0.1s',
+                  }}
+                >
+                  {chip.icon}
+                  {chip.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Cases & people chips */}
+          {(entityCases.length > 0 || entityPeople.length > 0) && (
+            <div style={{ display: 'flex', gap: 6, padding: '8px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0, flexWrap: 'wrap' }}>
+              {entityCases.map(({ id, category }) => (
+                <button
+                  key={id}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    padding: '4px 10px', borderRadius: 99, cursor: 'pointer',
+                    fontSize: 12, fontFamily: 'inherit', fontWeight: 400,
+                    border: '1px solid var(--border)',
+                    backgroundColor: 'transparent',
+                    color: 'var(--text-weak)',
+                  }}
+                >
+                  <FolderOpen size={12} />
+                  {id}
+                  {category && <span style={{ fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 99, backgroundColor: 'var(--fill)', color: 'var(--text-weak)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{category}</span>}
+                </button>
+              ))}
+              {entityPeople.map(name => (
+                <button
+                  key={name}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    padding: '4px 10px', borderRadius: 99, cursor: 'pointer',
+                    fontSize: 12, fontFamily: 'inherit', fontWeight: 400,
+                    border: '1px solid var(--border)',
+                    backgroundColor: 'transparent',
+                    color: 'var(--text-weak)',
+                  }}
+                >
+                  <User size={12} />
+                  {name}
+                </button>
+              ))}
             </div>
+          )}
 
-            {/* Two-column layout: results list + preview card */}
-            <div className="flex-1 overflow-hidden flex gap-6">
+          {/* Content */}
+          {!hasResults ? (
+            /* Empty state — recent searches */
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {isLoading && Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
+              {!isLoading && (
+                <>
+                  <p style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-weak)', padding: '14px 16px 6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recent searches</p>
+                  {recentSearches.map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleRecentClick(s)}
+                      className="w-full text-left transition-colors"
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--foreground)', fontSize: 13 }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-weaker)')}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+          ) : (
+            /* Results state */
+            <div style={{ flex: 1, overflow: 'hidden', display: 'flex', minHeight: 0 }}>
 
-              {/* Left column */}
-              <div className="flex-1 overflow-hidden flex flex-col min-w-0">
-
-                {/* Scope chips */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
-                  {SCOPE_CHIPS.map(chip => {
-                    const active = chip.id === 'all'
-                      ? selectedScopes.size === 0
-                      : selectedScopes.has(chip.id);
-                    return (
-                      <button
-                        key={chip.id}
-                        onClick={() => chip.id === 'all' ? setSelectedScopes(new Set()) : toggleScope(chip.id)}
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 5,
-                          padding: '4px 10px', borderRadius: 99, cursor: 'pointer',
-                          fontSize: 12, fontWeight: 500,
-                          border: `1px solid ${active ? 'transparent' : 'var(--border)'}`,
-                          backgroundColor: active ? 'var(--foreground)' : 'transparent',
-                          color: active ? 'var(--raised)' : 'var(--foreground)',
-                          transition: 'all 0.1s',
-                        }}
-                        onMouseEnter={e => { if (!active) e.currentTarget.style.backgroundColor = 'var(--fill-hover)'; }}
-                        onMouseLeave={e => { if (!active) e.currentTarget.style.backgroundColor = 'transparent'; }}
-                      >
-                        {chip.icon}
-                        {chip.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Cases scroll row */}
-                {entityCases.length > 0 && (
-                  <div style={{ marginBottom: 10 }}>
-                    <p style={{ fontSize: 11, fontWeight: 500, color: '#9ca3af', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cases</p>
-                    <EntityScrollRow count={entityCases.length}>
-                      {entityCases.map(name => <CaseCard key={name} name={name} />)}
-                    </EntityScrollRow>
-                  </div>
-                )}
-
-                {/* People scroll row */}
-                {entityPeople.length > 0 && (
-                  <div style={{ marginBottom: 14 }}>
-                    <p style={{ fontSize: 11, fontWeight: 500, color: '#9ca3af', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>People</p>
-                    <EntityScrollRow count={entityPeople.length}>
-                      {entityPeople.map(name => <PersonCard key={name} name={name} />)}
-                    </EntityScrollRow>
-                  </div>
-                )}
+              {/* Left: results header + list */}
+              <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
 
                 {/* Results header */}
-                <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
-                  <p style={{ fontSize: 12, fontWeight: 500, color: '#4b5563' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '10px 16px 6px', flexShrink: 0 }}>
+                  <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-weak)', margin: 0 }}>
                     Results{evidenceItems.length > 0 ? ` (${evidenceItems.length})` : ''}
                   </p>
-                  <div className="flex items-center gap-3">
-                    {evidenceItems.length > 0 && !isLoading && (
-                      <label className="flex items-center gap-1.5 cursor-pointer select-none" style={{ fontSize: 12, color: '#6b7280' }}>
-                        <input
-                          type="checkbox"
-                          checked={evidenceItems.length > 0 && evidenceItems.every(r => checkedIds.has(r.evidence_id))}
-                          ref={el => {
-                            if (el) el.indeterminate = checkedIds.size > 0 && !evidenceItems.every(r => checkedIds.has(r.evidence_id));
-                          }}
-                          onChange={e => {
-                            setCheckedIds(e.target.checked
-                              ? new Set(evidenceItems.map(r => r.evidence_id))
-                              : new Set()
-                            );
-                          }}
-                          style={{ width: 13, height: 13, cursor: 'pointer', accentColor: '#111827' }}
-                        />
-                        Select all
-                      </label>
-                    )}
-                    <button className="flex items-center gap-1 transition-colors" style={{ fontSize: 12, color: '#6b7280' }}>
-                      Best matches
-                      <ChevronDown size={11} />
-                    </button>
-                  </div>
                 </div>
 
                 {/* No results */}
                 {evidenceItems.length === 0 && !isLoading && (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center py-16">
-                    <Search size={32} className="text-gray-200 mb-3" />
-                    <p className="text-[14px] text-gray-500 font-medium">No evidence found</p>
-                    <p className="text-[13px] text-gray-400 mt-1">
-                      {searchOutput.summary || 'Try uploading evidence first, or refine your query.'}
-                    </p>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, textAlign: 'center' }}>
+                    <Search size={28} style={{ color: 'var(--border)', marginBottom: 12 }} />
+                    <p style={{ fontSize: 14, color: 'var(--text-weak)', fontWeight: 500, margin: 0 }}>No evidence found</p>
+                    <p style={{ fontSize: 13, color: 'var(--text-subtle)', marginTop: 4, marginBottom: 0 }}>{searchOutput.summary || 'Try refining your query.'}</p>
                     {searchOutput.suggestions.length > 0 && (
-                      <div className="mt-6 flex flex-col gap-2">
+                      <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {searchOutput.suggestions.map((s, i) => (
-                          <button
-                            key={i}
-                            onClick={() => { setQuery(s); saveRecentSearch(s, recentSearches); runSearch(s); }}
-                            className="text-[13px] text-[#1a73e8] hover:underline"
-                          >
+                          <button key={i} onClick={() => { setQuery(s); saveRecentSearch(s, recentSearches); runSearch(s); }} style={{ fontSize: 13, color: '#1a73e8', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
                             {s}
                           </button>
                         ))}
@@ -888,59 +741,43 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
                 )}
 
                 {/* Results list */}
-                {(isLoading || evidenceItems.length > 0) && (
-                  <div className="flex-1 overflow-y-auto">
-                    {isLoading && evidenceItems.length === 0
-                      ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
-                      : evidenceItems.map(result => (
-                          <EvidenceRow
-                            key={result.evidence_id}
-                            result={result}
-                            isSelected={result.evidence_id === selectedId}
-                            query={query}
-                            onHover={() => setSelectedId(result.evidence_id)}
-                            isChecked={checkedIds.has(result.evidence_id)}
-                            onCheck={e => {
-                              e.stopPropagation();
-                              setCheckedIds(prev => {
-                                const next = new Set(prev);
-                                next.has(result.evidence_id) ? next.delete(result.evidence_id) : next.add(result.evidence_id);
-                                return next;
-                              });
-                            }}
-                          />
-                        ))
-                    }
-                  </div>
-                )}
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                  {isLoading && evidenceItems.length === 0
+                    ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+                    : evidenceItems.map(result => (
+                        <EvidenceRow
+                          key={result.evidence_id}
+                          result={result}
+                          isSelected={result.evidence_id === selectedId}
+                          query={query}
+                          onHover={() => setSelectedId(result.evidence_id)}
+                        />
+                      ))
+                  }
+                </div>
               </div>
 
-              {/* Right column — preview card */}
-              <div style={{ width: 310, maxWidth: 310, flexShrink: 0 }}>
-                {isLoading && searchOutput.results.length === 0
-                  ? <SkeletonPreview />
-                  : selectedEvidence && <PreviewPanel result={selectedEvidence} />}
-              </div>
+              {/* Right: preview — starts flush with top of content area */}
+              {selectedEvidence && (
+                <div style={{ width: 340, minWidth: 340, flexShrink: 0, overflowY: 'auto', padding: 12,  }}>
+                  {isLoading && searchOutput && searchOutput.results.length === 0
+                    ? <SkeletonPreview />
+                    : <PreviewPanel result={selectedEvidence} />
+                  }
+                </div>
+              )}
 
             </div>
-          </div>
-          </div>{/* end centering shell */}
+          )}
 
-          {/* Assistant panel — slides in from the right when items are checked */}
-          <AssistantPanel
-            isOpen={isAssistantOpen}
-            items={checkedItems}
-            onClose={() => setCheckedIds(new Set())}
-            onAction={handleAction}
+          <FeedbackDrawer
+            isOpen={showFeedback}
+            onClose={() => setShowFeedback(false)}
+            currentQuery={committedQuery || undefined}
           />
         </div>
-      )}
 
-      <FeedbackDrawer
-        isOpen={showFeedback}
-        onClose={() => setShowFeedback(false)}
-        currentQuery={committedQuery || undefined}
-      />
+      </div>
     </div>
   );
 }

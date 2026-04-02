@@ -154,8 +154,12 @@ function scoreNode(n: GraphNode, analysis: QueryAnalysis, terms: string[], direc
 
 function scoredSort(nodes: GraphNode[], analysis: QueryAnalysis, terms: string[], directIds: Set<string>): GraphNode[] {
   return nodes
-    .map(n => ({ node: n, score: scoreNode(n, analysis, terms, directIds) }))
-    .sort((a, b) => b.score - a.score)
+    .map(n => ({ node: n, score: scoreNode(n, analysis, terms, directIds), isDirect: directIds.size > 0 && directIds.has(n.id) }))
+    .sort((a, b) => {
+      // Direct matches always rank above edge-expanded results
+      if (a.isDirect !== b.isDirect) return a.isDirect ? -1 : 1;
+      return b.score - a.score;
+    })
     .map(({ node }) => node);
 }
 
