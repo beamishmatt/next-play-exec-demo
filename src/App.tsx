@@ -14,11 +14,12 @@ import { EvidenceDetailPage } from './components/pages/EvidenceDetailPage';
 import { CommunityPage } from './components/pages/CommunityPage';
 import { DevicesPage } from './components/pages/DevicesPage';
 import { AnalyticsPage } from './components/pages/AnalyticsPage';
+import { HomePage } from './components/pages/HomePage';
 import { ImportModal } from './components/ImportModal';
 import { getEvidenceByCaseId } from './data/mockEvidence';
 import { useIsMobile } from './components/ui/use-mobile';
 import { SearchTakeover } from './components/SearchTakeover';
-import { Plus } from 'lucide-react';
+import { Plus, Home } from 'lucide-react';
 import EvidenceIcon from './imports/EvidenceIcon';
 import CasesIcon from './imports/CasesIcon';
 import CommunityIcon from './imports/CommunityIcon';
@@ -27,6 +28,7 @@ import AnalyticsIcon from './imports/AnalyticsIcon';
 
 // Define your navigation items here - add or remove items as needed
 const navigationItems: NavItem[] = [
+  { id: 'home', label: 'Home', icon: <Home size={24} />, path: '/home' },
   { id: 'evidence', label: 'Evidence', icon: <div style={{ width: 24, height: 24 }}><EvidenceIcon /></div>, path: '/evidence' },
   { id: 'cases', label: 'Cases', icon: <div style={{ width: 24, height: 24 }}><CasesIcon /></div>, path: '/cases' },
   { id: 'community', label: 'Community', icon: <div style={{ width: 24, height: 24 }}><CommunityIcon /></div>, path: '/community' },
@@ -191,7 +193,8 @@ function AppContent() {
         
         {/* Main content area */}
         <div className="flex-1 h-full flex flex-col" style={{ minWidth: 0 }}>
-          {/* Fixed Utility Bar */}
+          {/* Fixed Utility Bar - hidden on home page */}
+          {location.pathname !== '/home' && (
           <div className="h-16 border-b shrink-0" style={{ borderColor: 'var(--border)' }}>
             <UtilityBar
               title={pageTitle}
@@ -240,11 +243,13 @@ function AppContent() {
               ) : undefined}
             />
           </div>
+          )}
           
           {/* Scrollable content area */}
           <div className="flex-1 overflow-y-auto" style={{ minWidth: 0 }}>
             <Routes>
-              <Route path="/" element={<Navigate to="/evidence" replace />} />
+              <Route path="/" element={<Navigate to="/home" replace />} />
+              <Route path="/home" element={<HomePage onSearch={(q) => setSearchState({ open: true, query: q })} />} />
               <Route path="/evidence" element={<EvidencePage />} />
               <Route path="/evidence/:caseId/:evidenceIndex" element={<EvidenceDetailPage />} />
               <Route path="/cases" element={<CasesPage />} />
@@ -254,7 +259,7 @@ function AppContent() {
               <Route path="/devices" element={<DevicesPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
               {/* Catch-all route for unmatched paths */}
-              <Route path="*" element={<Navigate to="/evidence" replace />} />
+              <Route path="*" element={<Navigate to="/home" replace />} />
             </Routes>
           </div>
         </div>
@@ -266,6 +271,7 @@ function AppContent() {
 // Memoized component to get the current page title based on route
 function usePageTitle(pathname: string): string {
   return React.useMemo(() => {
+    if (pathname === '/home') return 'Home';
     if (pathname === '/evidence') return 'Evidence';
     if (pathname === '/cases') return 'Cases';
     if (pathname === '/community') return 'Community';

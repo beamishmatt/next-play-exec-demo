@@ -33,7 +33,9 @@ import {
   SearchEvidenceResult,
   FilterChip,
   MediaClass,
+  Case,
 } from '../data/types';
+import { mockCases } from '../data/mockCases';
 
 const RECENT_SEARCHES_KEY = 'command_recent_searches';
 
@@ -242,6 +244,40 @@ function EvidenceRow({
             style={{ fontSize: 13, color: '#9ca3af', marginTop: 3, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
             dangerouslySetInnerHTML={{ __html: highlightText(result.excerpt || result.relevance || '', query) }}
           />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CaseRow({ c, query }: { c: Case; query: string }) {
+  const [hovered, setHovered] = React.useState(false);
+  const statusColor = c.status === 'Active' ? 'var(--fill-success-strong)' : c.status === 'Closed' ? 'var(--muted-foreground)' : 'var(--fill-warning-strong)';
+  return (
+    <div
+      className="w-full text-left flex transition-colors cursor-pointer pr-4"
+      style={{ backgroundColor: hovered ? 'var(--fill-weaker)' : 'transparent' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div className="flex items-center justify-center shrink-0 pl-4">
+        <FolderOpen size={18} style={{ color: '#9ca3af' }} />
+      </div>
+      <div className="flex flex-col py-3 px-3 flex-1 min-w-0">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, margin: 0 }}
+            dangerouslySetInnerHTML={{ __html: highlightText(c.caseId, query) }} />
+          <span style={{ fontSize: 11, fontWeight: 600, color: statusColor, flexShrink: 0 }}>{c.status}</span>
+        </div>
+        <p style={{ fontSize: 13, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}
+          dangerouslySetInnerHTML={{ __html: [
+            c.owner && highlightText(c.owner, query),
+            c.accessClass,
+            c.lastUpdatedOn && `Updated ${c.lastUpdatedOn.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}`,
+          ].filter(Boolean).join(' • ') }} />
+        {c.description && (
+          <p style={{ fontSize: 13, color: '#9ca3af', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            dangerouslySetInnerHTML={{ __html: highlightText(c.description, query) }} />
         )}
       </div>
     </div>
@@ -614,11 +650,24 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
   })();
 
   const activeScopes = SCOPE_CHIPS.filter(s => selectedScopes.has(s.id));
-  const evidenceItems = searchOutput
-    ? (activeScopes.length > 0
-        ? searchOutput.results.filter(r => activeScopes.some(s => s.filter(r)))
-        : searchOutput.results)
-    : [];
+  const showingCasesScope = activeScopes.some(s => s.id === 'cases');
+  const showingEvidenceScope = activeScopes.length === 0 || activeScopes.some(s => s.id !== 'cases');
+
+  const matchedCases: Case[] = React.useMemo(() => {
+    if (!committedQuery.trim()) return [];
+    const terms = committedQuery.toLowerCase().split(/\s+/).filter(Boolean);
+    return mockCases.filter(c => {
+      const hay = [c.caseId, c.owner, c.description, c.status, c.accessClass].join(' ').toLowerCase();
+      return terms.some(t => hay.includes(t));
+    }).slice(0, 10);
+  }, [committedQuery]);
+
+  const caseItems = activeScopes.length === 0 || showingCasesScope ? matchedCases : [];
+  const evidenceItems = showingEvidenceScope && !showingCasesScope
+    ? (searchOutput ? searchOutput.results.filter(r => activeScopes.length === 0 || activeScopes.some(s => s.id !== 'cases' && s.filter(r))) : [])
+    : !showingCasesScope
+      ? (searchOutput ? searchOutput.results.filter(r => activeScopes.some(s => s.filter(r))) : [])
+      : [];
 
   return (
     <div
@@ -670,7 +719,7 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
           </div>
 
           {/* Scope filter chips */}
-          <div style={{ display: 'flex', gap: 6, padding: '10px 16px', borderBottom: (entityCases.length > 0 || entityPeople.length > 0) ? 'none' : '1px solid var(--border)', flexShrink: 0, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 6, padding: '10px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0, flexWrap: 'wrap' }}>
             {SCOPE_CHIPS.map(chip => {
               const active = chip.id === 'all' ? selectedScopes.size === 0 : selectedScopes.has(chip.id);
               return (
@@ -694,46 +743,6 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
             })}
           </div>
 
-          {/* Cases & people chips */}
-          {(entityCases.length > 0 || entityPeople.length > 0) && (
-            <div style={{ display: 'flex', gap: 6, padding: '8px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0, flexWrap: 'wrap' }}>
-              {entityCases.map(({ id, category }) => (
-                <button
-                  key={id}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 5,
-                    padding: '4px 10px', borderRadius: 99, cursor: 'pointer',
-                    fontSize: 12, fontFamily: 'inherit', fontWeight: 400,
-                    border: '1px solid var(--border)',
-                    backgroundColor: 'transparent',
-                    color: 'var(--text-weak)',
-                  }}
-                >
-                  <FolderOpen size={12} />
-                  {id}
-                  {category && <span style={{ fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 99, backgroundColor: 'var(--fill)', color: 'var(--text-weak)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{category}</span>}
-                  <ArrowUpRight size={11} style={{ color: '#111827' }} />
-                </button>
-              ))}
-              {entityPeople.map(name => (
-                <button
-                  key={name}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 5,
-                    padding: '4px 10px', borderRadius: 99, cursor: 'pointer',
-                    fontSize: 12, fontFamily: 'inherit', fontWeight: 400,
-                    border: '1px solid var(--border)',
-                    backgroundColor: 'transparent',
-                    color: 'var(--text-weak)',
-                  }}
-                >
-                  <User size={12} />
-                  {name}
-                  <ArrowUpRight size={11} style={{ color: '#111827' }} />
-                </button>
-              ))}
-            </div>
-          )}
 
           {/* Content */}
           {!hasResults && !isLoading ? (
@@ -765,17 +774,8 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
               {/* Left: results header + list */}
               <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
 
-                {/* Results header */}
-                {(isLoading || evidenceItems.length > 0) && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '10px 16px 6px', flexShrink: 0 }}>
-                    <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-weak)', margin: 0 }}>
-                      Results{evidenceItems.length > 0 ? ` (${evidenceItems.length})` : ''}
-                    </p>
-                  </div>
-                )}
-
-                {/* No results */}
-                {evidenceItems.length === 0 && !isLoading && (
+{/* No results */}
+                {evidenceItems.length === 0 && caseItems.length === 0 && !isLoading && (
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
                     <p style={{ fontSize: 13, color: 'var(--text-weak)', margin: 0 }}>No results found.</p>
                   </div>
@@ -783,17 +783,34 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
 
                 {/* Results list */}
                 <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none' }} className="[&::-webkit-scrollbar]:hidden">
-                  {isLoading && evidenceItems.length === 0
+                  {isLoading && evidenceItems.length === 0 && caseItems.length === 0
                     ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
-                    : evidenceItems.map(result => (
-                        <EvidenceRow
-                          key={result.evidence_id}
-                          result={result}
-                          isSelected={result.evidence_id === selectedId}
-                          query={query}
-                          onHover={() => setSelectedId(result.evidence_id)}
-                        />
-                      ))
+                    : <>
+                        {caseItems.length > 0 && (
+                          <>
+                            {evidenceItems.length > 0 && (
+                              <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', padding: '6px 16px 2px', letterSpacing: '0.06em', textTransform: 'uppercase', margin: 0 }}>Cases</p>
+                            )}
+                            {caseItems.map(c => <CaseRow key={c.caseId} c={c} query={query} />)}
+                          </>
+                        )}
+                        {evidenceItems.length > 0 && (
+                          <>
+                            {caseItems.length > 0 && (
+                              <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', padding: '10px 16px 2px', letterSpacing: '0.06em', textTransform: 'uppercase', margin: 0 }}>Evidence</p>
+                            )}
+                            {evidenceItems.map(result => (
+                              <EvidenceRow
+                                key={result.evidence_id}
+                                result={result}
+                                isSelected={result.evidence_id === selectedId}
+                                query={query}
+                                onHover={() => setSelectedId(result.evidence_id)}
+                              />
+                            ))}
+                          </>
+                        )}
+                      </>
                   }
                 </div>
               </div>

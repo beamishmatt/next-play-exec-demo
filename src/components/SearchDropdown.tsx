@@ -14,6 +14,8 @@ import {
   Sparkles,
   FolderOpen,
   Users,
+  Car,
+  Smartphone,
 } from 'lucide-react';
 import { agentSearch } from '../engine/agentSearch';
 import { SearchOutput, SearchEvidenceResult, FilterChip, MediaClass } from '../data/types';
@@ -35,28 +37,34 @@ export const SCOPE_CHIPS: ScopeChip[] = [
     filter: () => true,
   },
   {
-    id: 'images',
-    label: 'Images',
-    icon: <Image size={13} />,
-    filter: (r) => r.media_class === 'image',
+    id: 'cases',
+    label: 'Cases',
+    icon: <FolderOpen size={13} />,
+    filter: (r) => !!r.case_id,
   },
   {
-    id: 'video',
-    label: 'Video',
-    icon: <Video size={13} />,
-    filter: (r) => r.media_class === 'video',
+    id: 'evidence',
+    label: 'Evidence',
+    icon: <FileText size={13} />,
+    filter: () => true,
   },
   {
-    id: 'audio',
-    label: 'Audio',
-    icon: <Headphones size={13} />,
-    filter: (r) => r.media_class === 'audio',
+    id: 'vehicles',
+    label: 'Vehicles',
+    icon: <Car size={13} />,
+    filter: (r) => r.category?.toLowerCase().includes('vehicle') || r.tags?.some(t => t.toLowerCase().includes('vehicle')) || false,
   },
   {
-    id: 'documents',
-    label: 'Documents',
-    icon: <FileDoc size={13} />,
-    filter: (r) => ['document', 'pdf'].includes(r.media_class),
+    id: 'people',
+    label: 'People',
+    icon: <Users size={13} />,
+    filter: (r) => r.category?.toLowerCase().includes('user') || r.officer !== undefined || false,
+  },
+  {
+    id: 'devices',
+    label: 'Devices',
+    icon: <Smartphone size={13} />,
+    filter: (r) => r.category?.toLowerCase().includes('device') || r.tags?.some(t => t.toLowerCase().includes('device')) || false,
   },
 ];
 
