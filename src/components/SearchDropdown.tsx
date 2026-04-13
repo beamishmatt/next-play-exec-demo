@@ -66,6 +66,18 @@ export const SCOPE_CHIPS: ScopeChip[] = [
     icon: <Smartphone size={13} />,
     filter: (r) => r.category?.toLowerCase().includes('device') || r.tags?.some(t => t.toLowerCase().includes('device')) || false,
   },
+  {
+    id: 'images',
+    label: 'Images',
+    icon: <Image size={13} />,
+    filter: (r) => r.media_class === 'image',
+  },
+  {
+    id: 'video',
+    label: 'Video',
+    icon: <Video size={13} />,
+    filter: (r) => r.media_class === 'video',
+  },
 ];
 
 const RECENT_SEARCHES_KEY = 'command_recent_searches';
@@ -93,6 +105,19 @@ const STOP_WORDS = new Set([
   'those', 'there', 'their', 'they', 'what', 'which', 'who', 'when',
   'where', 'how', 'any', 'all', 'some', 'than', 'then', 'into', 'about',
 ]);
+
+function SuggestionText({ text, query }: { text: string; query: string }) {
+  if (!query) return <>{text}</>;
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <strong style={{ color: 'var(--foreground)', fontWeight: 600 }}>{text.slice(idx, idx + query.length)}</strong>
+      {text.slice(idx + query.length)}
+    </>
+  );
+}
 
 function HighlightText({ text, query }: { text: string; query: string }) {
   if (!query.trim() || !text) return <>{text}</>;
@@ -347,6 +372,18 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
   const q = query.trim();
   const showRecents = q.length < 3;
 
+  const autocompleteSuggestions = q.length > 0
+    ? recentSearches
+        .filter(s => s.toLowerCase().includes(q.toLowerCase()))
+        .sort((a, b) => {
+          const aStarts = a.toLowerCase().startsWith(q.toLowerCase());
+          const bStarts = b.toLowerCase().startsWith(q.toLowerCase());
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+          return 0;
+        })
+    : [];
+
   const activeScopes = SCOPE_CHIPS.filter(s => selectedScopes.has(s.id));
   const filteredResults = output
     ? (activeScopes.length > 0
@@ -465,29 +502,57 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
                 </div>
               </div>
 
-              {/* Recent searches */}
-              {recentSearches.length > 0 && (
-                <>
-                  <div style={{ padding: '8px 14px 4px', fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Recent
-                  </div>
-                  {recentSearches.slice(0, 5).map((s, i) => (
-                    <button
-                      key={i}
-                      onClick={() => { onQueryChange(s); setIsOpen(true); }}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '5px 14px',
-                        backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
-                        fontSize: 10, color: '#9ca3af', textAlign: 'left',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
-                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                    >
-                      <Search size={10} style={{ color: '#9ca3af', flexShrink: 0 }} />
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s}</span>
-                    </button>
-                  ))}
-                </>
+              {/* Recent searches / Autocomplete suggestions */}
+              {q.length === 0 ? (
+                recentSearches.length > 0 && (
+                  <>
+                    <div style={{ padding: '8px 14px 4px', fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Recent
+                    </div>
+                    {recentSearches.slice(0, 5).map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => { onQueryChange(s); setIsOpen(true); }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '5px 14px',
+                          backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
+                          fontSize: 10, color: '#9ca3af', textAlign: 'left',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
+                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        <Search size={10} style={{ color: '#9ca3af', flexShrink: 0 }} />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s}</span>
+                      </button>
+                    ))}
+                  </>
+                )
+              ) : (
+                autocompleteSuggestions.length > 0 && (
+                  <>
+                    <div style={{ padding: '8px 14px 4px', fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Suggestions
+                    </div>
+                    {autocompleteSuggestions.slice(0, 5).map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => { onQueryChange(s); setIsOpen(true); }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '5px 14px',
+                          backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
+                          fontSize: 10, color: '#9ca3af', textAlign: 'left',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
+                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        <Search size={10} style={{ color: '#9ca3af', flexShrink: 0 }} />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <SuggestionText text={s} query={q} />
+                        </span>
+                      </button>
+                    ))}
+                  </>
+                )
               )}
             </>
           )}
