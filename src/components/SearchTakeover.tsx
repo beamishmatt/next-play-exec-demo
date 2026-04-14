@@ -654,13 +654,9 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
   const showingEvidenceScope = activeScopes.length === 0 || activeScopes.some(s => s.id !== 'cases');
 
   const matchedCases: Case[] = React.useMemo(() => {
-    if (!committedQuery.trim()) return [];
-    const terms = committedQuery.toLowerCase().split(/\s+/).filter(Boolean);
-    return mockCases.filter(c => {
-      const hay = [c.caseId, c.owner, c.description, c.status, c.accessClass].join(' ').toLowerCase();
-      return terms.some(t => hay.includes(t));
-    }).slice(0, 10);
-  }, [committedQuery]);
+    const caseIds = [...new Set(entityCases.map(e => e.id))];
+    return caseIds.map(id => mockCases.find(c => c.caseId === id)).filter(Boolean) as Case[];
+  }, [entityCases]);
 
   const evidenceItems = showingEvidenceScope && !showingCasesScope
     ? (searchOutput ? searchOutput.results.filter(r => activeScopes.length === 0 || activeScopes.some(s => s.id !== 'cases' && s.filter(r))) : [])

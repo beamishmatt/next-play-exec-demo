@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ArrowUp, ChevronDown, Clock, CircleCheck, FileText, X, Copy, Check, Tag, RefreshCw } from 'lucide-react';
+import { ArrowUp, ChevronDown, Clock, CircleCheck, FileText, X, Copy, Check, Tag, RefreshCw, ShieldCheck } from 'lucide-react';
 import { PromptInput, PromptInputTextarea, PromptInputActions } from './ui/prompt-input';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
 import { chatWithEvidenceStream, ChatMessage } from '../engine/assistantChat';
 import { AgentAction, AgentActionType } from '../data/types';
+import { DraftReport, parseDraft, DRAFT_PANEL_WIDTH } from '../utils/draftUtils';
 
 // ─── Action parsing ───────────────────────────────────────────────────────────
 
@@ -132,10 +133,151 @@ function ActionCard({
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface DraftReport {
-  title: string;
-  body: string;
+// ─── Tool call card ───────────────────────────────────────────────────────────
+
+export interface ToolCall {
+  name: string;
+  label: string;
+  description: string;
+  input: Record<string, string>;
+  status: 'pending' | 'approved' | 'denied';
 }
+
+export function ToolCallCard({
+  toolCall,
+  onApprove,
+  onDeny,
+}: {
+  toolCall: ToolCall;
+  onApprove: () => void;
+  onDeny: () => void;
+}) {
+  if (toolCall.status === 'denied') return null;
+  const isPending = toolCall.status === 'pending';
+  const isApproved = toolCall.status === 'approved';
+
+  return (
+    <div
+      style={{
+        marginTop: 10,
+        border: '1px solid var(--border)',
+        borderRadius: 8,
+        overflow: 'hidden',
+        backgroundColor: isApproved ? 'var(--fill-weaker)' : '#ffffff',
+      }}
+    >
+      {/* Card header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '8px 12px',
+          borderBottom: isPending ? '1px solid var(--border)' : 'none',
+          backgroundColor: 'var(--fill-weaker)',
+        }}
+      >
+        <ShieldCheck size={12} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+        <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', flex: 1 }}>
+          {isApproved ? 'Permission enabled' : 'Approval required'}
+        </span>
+        {isApproved && (
+          <Check size={12} style={{ color: 'var(--muted-foreground)' }} />
+        )}
+      </div>
+
+      {/* Card body */}
+      {isPending && (
+        <div style={{ padding: '10px 12px' }}>
+          <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--foreground)', marginBottom: 3 }}>
+            {toolCall.label}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 10, lineHeight: 1.5 }}>
+            {toolCall.description}
+          </div>
+
+          {/* Arguments */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 24 }}>
+            {Object.entries(toolCall.input).map(([k, v]) => (
+              <span
+                key={k}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  alignSelf: 'flex-start',
+                  borderRadius: 99,
+                  border: '1px solid var(--border)',
+                  backgroundColor: 'var(--fill-weaker)',
+                  overflow: 'hidden',
+                }}
+              >
+                <span style={{ padding: '1px 6px', color: 'var(--muted-foreground)', fontFamily: 'monospace', borderRight: '1px solid var(--border)', fontSize: 11 }}>{k}</span>
+                <span style={{ padding: '1px 6px', color: 'var(--foreground)', fontWeight: 500, fontSize: 11 }}>{v}</span>
+              </span>
+            ))}
+          </div>
+
+          {/* Actions */}
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              onClick={onDeny}
+              style={{
+                flex: 1,
+                padding: '5px 10px',
+                borderRadius: 6,
+                border: '1px solid var(--border)',
+                backgroundColor: 'transparent',
+                color: 'var(--muted-foreground)',
+                fontSize: 11,
+                fontWeight: 400,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              Deny
+            </button>
+            <button
+              onClick={onApprove}
+              style={{
+                flex: 1,
+                padding: '5px 10px',
+                borderRadius: 6,
+                border: '1px solid var(--fill-strong)',
+                backgroundColor: 'var(--fill-strong)',
+                color: 'var(--text-inverse-strong)',
+                fontSize: 11,
+                fontWeight: 500,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              Approve
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+
+interface ReportType {
+  id: string;
+  label: string;
+  prompt: string;
+}
+
+const REPORT_TYPES: ReportType[] = [
+  { id: 'incident_summary', label: 'Incident Summary', prompt: 'Write an Incident Summary report for the selected evidence.' },
+  { id: 'chain_of_custody', label: 'Chain of Custody', prompt: 'Write a Chain of Custody report documenting the handling and movement of the selected evidence.' },
+  { id: 'officer_activity', label: 'Officer Activity', prompt: 'Write an Officer Activity report detailing officer involvement based on the selected evidence.' },
+  { id: 'case_timeline', label: 'Case Timeline', prompt: 'Write a Case Timeline report reconstructing the chronological sequence of events from the selected evidence.' },
+  { id: 'evidence_inventory', label: 'Evidence Inventory', prompt: 'Write a detailed Evidence Inventory report cataloguing all selected evidence items.' },
+];
+
+const REPORT_REQUEST_RE = /\b(draft|report)\b/i;
 
 interface Message {
   id: string;
@@ -145,6 +287,8 @@ interface Message {
   sources?: AssistantItem[];
   draft?: DraftReport;
   parsedActions?: AgentAction[];
+  toolCall?: ToolCall;
+  reportChips?: boolean;
 }
 
 export interface AssistantItem {
@@ -232,7 +376,6 @@ function CitationMark({ num, label }: { num: number; label: string }) {
   );
 }
 
-const THINKING_TRUNCATE_PX = 180;
 
 function parseThinking(raw: string): { thinking: string; content: string } {
   const OPEN = '<thinking>';
@@ -250,24 +393,8 @@ function parseThinking(raw: string): { thinking: string; content: string } {
   return { thinking, content: (preamble + after).replace(/^\n+/, '') };
 }
 
-function parseDraft(content: string): { content: string; draft: DraftReport | null } {
-  const OPEN_RE = /<draft_report(?:\s+title="([^"]*)")?>/;
-  const CLOSE = '</draft_report>';
-  const openMatch = content.match(OPEN_RE);
-  if (!openMatch || openMatch.index === undefined) return { content, draft: null };
-  const openIdx = openMatch.index;
-  const closeIdx = content.indexOf(CLOSE, openIdx);
-  if (closeIdx === -1) {
-    // Draft tag open but not yet closed — hide the draft region during streaming
-    return { content: content.slice(0, openIdx).trim(), draft: null };
-  }
-  const title = openMatch[1] || 'Draft Report';
-  const body = content.slice(openIdx + openMatch[0].length, closeIdx).trim();
-  const remaining = (content.slice(0, openIdx) + content.slice(closeIdx + CLOSE.length)).trim();
-  return { content: remaining, draft: { title, body } };
-}
 
-function DraftCard({ title, onOpen }: { title: string; onOpen: () => void }) {
+export function DraftCard({ title, onOpen }: { title: string; onOpen: () => void }) {
   return (
     <div
       style={{
@@ -307,14 +434,19 @@ function DraftCard({ title, onOpen }: { title: string; onOpen: () => void }) {
   );
 }
 
-function DraftDrawer({ draft, onClose }: { draft: DraftReport; onClose: () => void }) {
-  const [value, setValue] = React.useState(draft.body);
+
+export function DraftDrawer({ draft, open, onClose }: { draft: DraftReport | null; open: boolean; onClose: () => void }) {
+  const lastDraft = React.useRef<DraftReport | null>(draft);
+  if (draft) lastDraft.current = draft;
+  const displayDraft = draft ?? lastDraft.current;
+
+  const [value, setValue] = React.useState(displayDraft?.body ?? '');
   const [editing, setEditing] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
 
   React.useEffect(() => {
-    setValue(draft.body);
-  }, [draft.body]);
+    if (draft) setValue(draft.body);
+  }, [draft?.body]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(value).then(() => {
@@ -323,13 +455,15 @@ function DraftDrawer({ draft, onClose }: { draft: DraftReport; onClose: () => vo
     });
   };
 
+  if (!open && !displayDraft) return null;
+
   return (
     <div
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 100,
-        display: 'flex',
+        display: open ? 'flex' : 'none',
         alignItems: 'stretch',
       }}
     >
@@ -370,7 +504,7 @@ function DraftDrawer({ draft, onClose }: { draft: DraftReport; onClose: () => vo
           <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>
             Draft
           </span>
-          {value !== draft.body && (
+          {displayDraft && value !== displayDraft.body && (
             <button
               onClick={() => {/* persist handled by value state */}}
               style={{
@@ -491,9 +625,8 @@ function DraftDrawer({ draft, onClose }: { draft: DraftReport; onClose: () => vo
   );
 }
 
-function ThinkingBlock({ content, isStreaming }: { content: string; isStreaming: boolean }) {
+export function ThinkingBlock({ content, isStreaming }: { content: string; isStreaming: boolean }) {
   const [open, setOpen] = React.useState(false);
-  const [showMore, setShowMore] = React.useState(false);
 
   const blankIdx = content.indexOf('\n\n');
   const summary = blankIdx !== -1 ? content.slice(0, blankIdx).trim() : '';
@@ -561,41 +694,21 @@ function ThinkingBlock({ content, isStreaming }: { content: string; isStreaming:
 
           {/* Content */}
           <div style={{ flex: 1 }}>
-            <div style={{ position: 'relative' }}>
-              <div style={{ maxHeight: showMore ? undefined : THINKING_TRUNCATE_PX, overflow: 'hidden' }}>
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    p: ({ children }) => <p style={{ margin: '0 0 6px', ...mutedText }}>{children}</p>,
-                    ul: ({ children }) => <ul style={{ paddingLeft: 16, margin: '0 0 6px', listStyleType: 'disc', ...mutedText }}>{children}</ul>,
-                    ol: ({ children }) => <ol style={{ paddingLeft: 16, margin: '0 0 6px', listStyleType: 'decimal', ...mutedText }}>{children}</ol>,
-                    li: ({ children }) => <li style={{ marginBottom: 3, display: 'list-item', ...mutedText }}>{children}</li>,
-                    strong: ({ children }) => <strong style={{ fontWeight: 600, color: 'var(--muted-foreground)' }}>{children}</strong>,
-                    h1: ({ children }) => <div style={{ fontWeight: 600, margin: '6px 0 4px', ...mutedText }}>{children}</div>,
-                    h2: ({ children }) => <div style={{ fontWeight: 600, margin: '6px 0 4px', ...mutedText }}>{children}</div>,
-                    h3: ({ children }) => <div style={{ fontWeight: 600, margin: '4px 0 2px', ...mutedText }}>{children}</div>,
-                  }}
-                >
-                  {body || (isStreaming ? '…' : '')}
-                </ReactMarkdown>
-              </div>
-              {!showMore && body.length > 300 && (
-                <div style={{
-                  position: 'absolute', bottom: 0, left: 0, right: 0, height: 56,
-                  background: 'linear-gradient(to bottom, transparent, var(--base))',
-                  pointerEvents: 'none',
-                }} />
-              )}
-            </div>
-
-            {!showMore && body.length > 300 && (
-              <button
-                onClick={() => setShowMore(true)}
-                style={{ marginTop: 2, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', ...mutedText }}
-              >
-                Show more
-              </button>
-            )}
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                p: ({ children }) => <p style={{ margin: '0 0 6px', ...mutedText }}>{children}</p>,
+                ul: ({ children }) => <ul style={{ paddingLeft: 16, margin: '0 0 6px', listStyleType: 'disc', ...mutedText }}>{children}</ul>,
+                ol: ({ children }) => <ol style={{ paddingLeft: 16, margin: '0 0 6px', listStyleType: 'decimal', ...mutedText }}>{children}</ol>,
+                li: ({ children }) => <li style={{ marginBottom: 3, display: 'list-item', ...mutedText }}>{children}</li>,
+                strong: ({ children }) => <strong style={{ fontWeight: 600, color: 'var(--muted-foreground)' }}>{children}</strong>,
+                h1: ({ children }) => <div style={{ fontWeight: 600, margin: '6px 0 4px', ...mutedText }}>{children}</div>,
+                h2: ({ children }) => <div style={{ fontWeight: 600, margin: '6px 0 4px', ...mutedText }}>{children}</div>,
+                h3: ({ children }) => <div style={{ fontWeight: 600, margin: '4px 0 2px', ...mutedText }}>{children}</div>,
+              }}
+            >
+              {body || (isStreaming ? '…' : '')}
+            </ReactMarkdown>
 
             {!isStreaming && (
               <div style={{ marginTop: 6 }}>
@@ -622,6 +735,8 @@ export function AssistantPanel({ isOpen, items, onClose, onAction }: AssistantPa
   const [streamingId, setStreamingId] = useState<string | null>(null);
   const [openDraft, setOpenDraft] = useState<DraftReport | null>(null);
   const [actionStatuses, setActionStatuses] = useState<Record<string, 'pending' | 'applied' | 'dismissed'>>({});
+  const [liveStreamId, setLiveStreamId] = useState<string | null>(null);
+  const [liveStreamContent, setLiveStreamContent] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -632,15 +747,67 @@ export function AssistantPanel({ isOpen, items, onClose, onAction }: AssistantPa
     if (items.length === 0) setMessages([]);
   }, [items.length]);
 
+  const FACIAL_MATCH_WATCHLIST_RE = /facial.?match.*watchlist|watchlist.*facial.?match|enable.*watchlist|watchlist.*permiss/i;
+
   const handleSend = async () => {
     const trimmed = input.trim();
     if (!trimmed || isLoading) return;
 
     const userMessage: Message = { id: Date.now().toString(), role: 'user', content: trimmed };
-    const history: ChatMessage[] = messages.map(m => ({ role: m.role, content: m.content }));
     const assistantId = (Date.now() + 1).toString();
 
-    setMessages(prev => [...prev, userMessage, { id: assistantId, role: 'assistant', content: '' }]);
+    if (REPORT_REQUEST_RE.test(trimmed)) {
+      setMessages(prev => [...prev, userMessage, {
+        id: assistantId,
+        role: 'assistant',
+        content: "What type of report would you like me to draft?",
+        reportChips: true,
+      }]);
+      setInput('');
+      return;
+    }
+
+    if (FACIAL_MATCH_WATCHLIST_RE.test(trimmed)) {
+      const mockText = "Sure. To grant Administrators on Pro accounts the ability to create and edit facial match watchlists, I'll update the role permission configuration. Please review and approve the change below.";
+      setMessages(prev => [...prev, userMessage, { id: assistantId, role: 'assistant', content: mockText }]);
+      setInput('');
+      setLiveStreamId(assistantId);
+      setLiveStreamContent('');
+      setIsLoading(true);
+
+      (async () => {
+        const chunkSize = 2;
+        for (let i = chunkSize; i <= mockText.length; i += chunkSize) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+          const partial = mockText.slice(0, i);
+          console.log('[mock stream]', i, partial);
+          setLiveStreamContent(partial);
+        }
+        setLiveStreamId(null);
+        setLiveStreamContent('');
+        setMessages(prev => prev.map(m => m.id === assistantId ? {
+          ...m,
+          toolCall: {
+            name: 'set_permission',
+            label: 'Enable: Create and Edit Facial Match Watchlist',
+            description: 'Grants Administrators on Pro accounts the ability to create and edit facial recognition watchlists.',
+            input: {
+              permission: 'facial_match_watchlist.create_edit',
+              role: 'Administrator',
+              account_type: 'Pro',
+              enabled: 'true',
+            },
+            status: 'pending' as const,
+          },
+        } : m));
+        setIsLoading(false);
+      })();
+      return;
+    }
+
+    const history: ChatMessage[] = messages.map(m => ({ role: m.role, content: m.content }));
+
+    setMessages(prev => [...prev, userMessage, { id: assistantId, role: 'assistant', content: '', thinking: '' }]);
     setInput('');
     setIsLoading(true);
     setStreamingId(assistantId);
@@ -672,9 +839,59 @@ export function AssistantPanel({ isOpen, items, onClose, onAction }: AssistantPa
           sources: sources.length > 0 ? sources : m.sources,
         } : m)
       );
-    } catch {
+    } catch (err) {
+      console.error('[handleSend] error:', err);
+      const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
       setMessages(prev =>
-        prev.map(m => m.id === assistantId ? { ...m, content: 'Something went wrong. Please try again.' } : m)
+        prev.map(m => m.id === assistantId ? { ...m, content: msg } : m)
+      );
+    } finally {
+      setIsLoading(false);
+      setStreamingId(null);
+    }
+  };
+
+  const handleReportChipClick = async (reportType: ReportType) => {
+    if (isLoading) return;
+    const userMessage: Message = { id: Date.now().toString(), role: 'user', content: reportType.label };
+    const assistantId = (Date.now() + 1).toString();
+    const history: ChatMessage[] = messages.map(m => ({ role: m.role, content: m.content }));
+
+    setMessages(prev => [...prev, userMessage, { id: assistantId, role: 'assistant', content: '', thinking: '' }]);
+    setIsLoading(true);
+    setStreamingId(assistantId);
+
+    try {
+      const raw = { current: '' };
+      const sources = await chatWithEvidenceStream(reportType.prompt, history, items, (chunk) => {
+        raw.current += chunk;
+        const { thinking, content: rawContent } = parseThinking(raw.current);
+        const { content: postDraft, draft } = parseDraft(rawContent);
+        const content = stripActionTags(postDraft);
+        setMessages(prev =>
+          prev.map(m => m.id === assistantId ? { ...m, thinking, content, draft: draft ?? m.draft } : m)
+        );
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      });
+
+      const { thinking: finalThinking, content: finalRawContent } = parseThinking(raw.current);
+      const { content: finalPostDraft, draft: finalDraft } = parseDraft(finalRawContent);
+      const { content: finalContent, actions } = parseActions(finalPostDraft);
+      setMessages(prev =>
+        prev.map(m => m.id === assistantId ? {
+          ...m,
+          thinking: finalThinking,
+          content: finalContent,
+          draft: finalDraft ?? m.draft,
+          parsedActions: actions.length > 0 ? actions : m.parsedActions,
+          sources: sources.length > 0 ? sources : m.sources,
+        } : m)
+      );
+    } catch (err) {
+      console.error('[handleSend] error:', err);
+      const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      setMessages(prev =>
+        prev.map(m => m.id === assistantId ? { ...m, content: msg } : m)
       );
     } finally {
       setIsLoading(false);
@@ -755,13 +972,18 @@ export function AssistantPanel({ isOpen, items, onClose, onAction }: AssistantPa
               </div>
             ) : (
               <div key={msg.id} style={{ ...mdStyles, minHeight: msg.content || msg.thinking ? undefined : '1em' }}>
-                {(msg.thinking || msg.id === streamingId) && (
+                {(msg.thinking !== undefined || msg.id === streamingId) && (
                   <ThinkingBlock
                     content={msg.thinking ?? ''}
                     isStreaming={msg.id === streamingId && (!msg.content || !msg.draft)}
                   />
                 )}
-                {msg.content ? (() => {
+                {liveStreamId === msg.id ? (
+                  <p style={{ margin: '0 0 8px', lineHeight: '1.65', fontSize: 'var(--text-caption)' }}>
+                    {liveStreamContent}
+                  </p>
+                ) : null}
+                {liveStreamId !== msg.id && msg.content ? (() => {
                   const sourcesMap = Object.fromEntries((msg.sources ?? []).map(s => [s.id, s]));
                   const citationOrder: string[] = [];
                   const citationIndex: Record<string, number> = {};
@@ -840,6 +1062,47 @@ export function AssistantPanel({ isOpen, items, onClose, onAction }: AssistantPa
                           />
                         );
                       })}
+                      {msg.reportChips && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+                          {REPORT_TYPES.map(rt => (
+                            <button
+                              key={rt.id}
+                              onClick={() => handleReportChipClick(rt)}
+                              disabled={isLoading}
+                              style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 5,
+                                padding: '5px 11px', borderRadius: 99, cursor: isLoading ? 'default' : 'pointer',
+                                fontSize: 12, fontWeight: 500, fontFamily: 'inherit',
+                                border: '1px solid var(--border)',
+                                backgroundColor: 'transparent',
+                                color: 'var(--foreground)',
+                                opacity: isLoading ? 0.5 : 1,
+                                transition: 'background-color 0.1s',
+                              }}
+                              onMouseEnter={e => { if (!isLoading) e.currentTarget.style.backgroundColor = 'var(--fill-hover)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                            >
+                              <FileText size={12} />
+                              {rt.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {msg.toolCall && (
+                        <ToolCallCard
+                          toolCall={msg.toolCall}
+                          onApprove={() => setMessages(prev => prev.map(m =>
+                            m.id === msg.id && m.toolCall
+                              ? { ...m, toolCall: { ...m.toolCall, status: 'approved' as const } }
+                              : m
+                          ))}
+                          onDeny={() => setMessages(prev => prev.map(m =>
+                            m.id === msg.id && m.toolCall
+                              ? { ...m, toolCall: { ...m.toolCall, status: 'denied' as const } }
+                              : m
+                          ))}
+                        />
+                      )}
                     </>
                   );
                 })() : null}

@@ -1,4 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   Search,
@@ -20,8 +22,122 @@ import {
   Minus,
   TrendingUp,
   TrendingDown,
+  X,
+  Plus,
+  Mic,
+  Square,
+  ChevronLeft,
+  ChevronRight,
+  ArrowRight,
 } from 'lucide-react';
 import { SCOPE_CHIPS } from '../SearchDropdown';
+import assistantIcon from '../../assets/aiera.svg';
+import { chatWithEvidenceStream, ChatMessage as EngineChatMessage } from '../../engine/assistantChat';
+import { Checkbox } from '../ui/checkbox';
+import { ThinkingBlock, DraftCard, DraftDrawer, ToolCall, ToolCallCard } from '../AssistantPanel';
+import { DraftReport, parseDraft, DRAFT_PANEL_WIDTH } from '../../utils/draftUtils';
+import { getContextGraph } from '../../storage/config';
+import { GraphNode } from '../../data/types';
+
+// ── Speech to text ────────────────────────────────────────────────────────────
+
+function useSpeechToText(onTranscript: (text: string) => void) {
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const start = useCallback(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    const r = new SR();
+    r.continuous = false;
+    r.interimResults = false;
+    r.lang = 'en-US';
+    r.onresult = (e: any) => {
+      const transcript = Array.from(e.results as any[])
+        .map((result: any) => result[0].transcript)
+        .join('');
+      onTranscript(transcript);
+    };
+    r.onend = () => setIsListening(false);
+    r.onerror = () => setIsListening(false);
+    recognitionRef.current = r;
+    r.start();
+    setIsListening(true);
+  }, [onTranscript]);
+
+  const stop = useCallback(() => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  }, []);
+
+  return { isListening, start, stop };
+}
+
+function ListeningWave() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 3, height: 28, paddingLeft: 2 }}>
+      {[0, 1, 2, 3, 4, 5, 6].map(i => (
+        <div
+          key={i}
+          style={{
+            width: 3,
+            height: 4,
+            borderRadius: 99,
+            backgroundColor: 'var(--fill-key-strong)',
+            animation: 'mic-wave 0.8s ease-in-out infinite',
+            animationDelay: `${i * 0.08}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ── Animated border button ────────────────────────────────────────────────────
+
+function AnimatedBorderButton({ onClick, style, children, animated = true }: {
+  onClick?: () => void;
+  style?: React.CSSProperties;
+  children: React.ReactNode;
+  animated?: boolean;
+}) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [dims, setDims] = useState({ w: 0, h: 0 });
+
+  useLayoutEffect(() => {
+    if (btnRef.current) {
+      const { width, height } = btnRef.current.getBoundingClientRect();
+      setDims({ w: width, h: height });
+    }
+  }, []);
+
+  const rx = 5;
+  const perimeter = dims.w > 0 ? 2 * (dims.w + dims.h) : 0;
+  const dashLen = 28;
+
+  return (
+    <button ref={btnRef} onClick={onClick} style={{ position: 'relative', ...style }}>
+      {animated && dims.w > 0 && (
+        <svg
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}
+        >
+          <motion.rect
+            x={0.5} y={0.5}
+            width={dims.w - 1} height={dims.h - 1}
+            rx={rx} ry={rx}
+            fill="none"
+            stroke="#3b82f6"
+            strokeWidth={1.5}
+            strokeDasharray={`${dashLen} ${perimeter - dashLen}`}
+            animate={{ strokeDashoffset: [0, -perimeter] }}
+            transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
+          />
+        </svg>
+      )}
+      {children}
+    </button>
+  );
+}
 
 // ── Skills dropdown ───────────────────────────────────────────────────────────
 
@@ -30,10 +146,26 @@ const SKILLS = [
   { id: 'policy', label: 'Policy', icon: <Shield size={13} /> },
 ];
 
-function SkillsDropdown() {
+function SkillsDropdown({
+  onSelectEvidence,
+  evidenceCount = 0,
+  value,
+  onChange,
+}: {
+  onSelectEvidence?: () => void;
+  evidenceCount?: number;
+  value?: string | null;
+  onChange?: (skill: string | null) => void;
+}) {
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [internalSelected, setInternalSelected] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+
+  const selected = value !== undefined ? value : internalSelected;
+  const setSelected = (s: string | null) => {
+    if (onChange) onChange(s);
+    else setInternalSelected(s);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -47,6 +179,7 @@ function SkillsDropdown() {
   const active = SKILLS.find(s => s.id === selected);
 
   return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
     <div ref={ref} style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen(p => !p)}
@@ -111,6 +244,21 @@ function SkillsDropdown() {
           ))}
         </div>
       )}
+    </div>
+    {selected === 'deep-research' && (
+      <AnimatedBorderButton
+        onClick={onSelectEvidence}
+        animated={evidenceCount === 0}
+        style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 500, color: 'var(--text-strong)', background: 'none', border: '1px solid var(--border)', borderRadius: 5, cursor: 'pointer', padding: '2px 8px', fontFamily: 'inherit', whiteSpace: 'nowrap', height: 28 }}
+      >
+        Evidence
+        {evidenceCount > 0 && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 16, height: 16, borderRadius: 99, backgroundColor: 'var(--fill-key-strong)', color: 'var(--text-inverse-strong)', fontSize: 10, fontWeight: 700, padding: '0 4px' }}>
+            {evidenceCount}
+          </span>
+        )}
+      </AnimatedBorderButton>
+    )}
     </div>
   );
 }
@@ -181,11 +329,35 @@ function AnimatedSubtitle() {
 
 // ── Chat / Search input ───────────────────────────────────────────────────────
 
-function HomeSearch({ onSearch }: { onSearch: (q: string) => void }) {
+function HomeSearch({
+  onSearch,
+  onChat,
+  onSelectEvidence,
+  evidenceCount = 0,
+  skill,
+  onSkillChange,
+}: {
+  onSearch: (q: string) => void;
+  onChat: (q: string) => void;
+  onSelectEvidence?: () => void;
+  evidenceCount?: number;
+  skill?: string | null;
+  onSkillChange?: (s: string | null) => void;
+}) {
   const [tab, setTab] = useState<'chat' | 'search'>('chat');
   const [value, setValue] = useState('');
-  const [activeScopes, setActiveScopes] = useState<Set<string>>(new Set());
+  const [activeScopes, setActiveScopes] = useState<Set<string>>(new Set(['all']));
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const { isListening, start: startListening, stop: stopListening } = useSpeechToText(
+    useCallback((t: string) => setValue(prev => prev ? prev + ' ' + t : t), [])
+  );
+
+  const handleChatSubmit = () => {
+    if (!value.trim()) return;
+    onChat(value.trim());
+    setValue('');
+  };
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -196,8 +368,15 @@ function HomeSearch({ onSearch }: { onSearch: (q: string) => void }) {
 
   const toggleScope = useCallback((id: string) => {
     setActiveScopes(prev => {
+      if (id === 'all') return new Set(['all']);
       const next = new Set(prev);
-      if (next.has(id)) { next.delete(id); } else { next.add(id); }
+      next.delete('all');
+      if (next.has(id)) {
+        next.delete(id);
+        if (next.size === 0) return new Set(['all']);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   }, []);
@@ -220,7 +399,7 @@ function HomeSearch({ onSearch }: { onSearch: (q: string) => void }) {
           {(['chat', 'search'] as const).map((t) => (
             <button
               key={t}
-              onClick={() => setTab(t)}
+              onClick={() => { setTab(t); if (t === 'search') setActiveScopes(new Set(['all'])); }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '5px 12px',
@@ -248,21 +427,40 @@ function HomeSearch({ onSearch }: { onSearch: (q: string) => void }) {
       </div>
 
       {tab === 'chat' && (
-        <div style={{ borderRadius: 10, border: '1px solid var(--border)', backgroundColor: 'var(--base)', padding: '12px 14px 10px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder="Explore a topic..."
-            rows={1}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) e.preventDefault(); }}
-            style={{ width: '100%', background: 'none', border: 'none', outline: 'none', resize: 'none', fontSize: 16, color: 'var(--text-strong)', fontFamily: 'inherit', lineHeight: 1.5, minHeight: 28, overflow: 'hidden' }}
-          />
+        <div style={{ borderRadius: 10, border: `1px solid ${isListening ? 'var(--fill-key-strong)' : 'var(--border)'}`, backgroundColor: 'var(--base)', padding: '12px 14px 10px', display: 'flex', flexDirection: 'column', gap: 10, transition: 'border-color 0.15s' }}>
+          {isListening ? (
+            <ListeningWave />
+          ) : (
+            <textarea
+              ref={textareaRef}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="Ask me anything..."
+              rows={1}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSubmit(); } }}
+              style={{ width: '100%', background: 'none', border: 'none', outline: 'none', resize: 'none', fontSize: 16, color: 'var(--text-strong)', fontFamily: 'inherit', lineHeight: 1.5, minHeight: 28, overflow: 'hidden' }}
+            />
+          )}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><SkillsDropdown /></div>
-            <button style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 8, border: 'none', backgroundColor: value.trim() ? 'var(--fill-key-strong)' : 'var(--fill-weak)', color: value.trim() ? 'var(--text-inverse-strong)' : 'var(--muted-foreground)', cursor: value.trim() ? 'pointer' : 'default', transition: 'background-color 0.15s' }}>
-              <ArrowUp size={16} />
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <SkillsDropdown
+                value={skill}
+                onChange={onSkillChange}
+                onSelectEvidence={onSelectEvidence}
+                evidenceCount={evidenceCount}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button
+                onClick={isListening ? stopListening : startListening}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 8, border: 'none', background: 'none', color: isListening ? 'var(--fill-key-strong)' : 'var(--muted-foreground)', cursor: 'pointer' }}
+              >
+                {isListening ? <Square size={13} fill="currentColor" /> : <Mic size={15} />}
+              </button>
+              <button onClick={handleChatSubmit} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 8, border: 'none', backgroundColor: value.trim() ? 'var(--fill-key-strong)' : 'var(--fill-weak)', color: value.trim() ? 'var(--text-inverse-strong)' : 'var(--muted-foreground)', cursor: value.trim() ? 'pointer' : 'default', transition: 'background-color 0.15s' }}>
+                <ArrowUp size={16} />
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -332,20 +530,18 @@ function Widget({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ backgroundColor: 'rgba(255,255,255,0.035)', padding: 4, borderRadius: 16 }}>
-      <div
-        style={{
-          position: 'relative',
-          borderRadius: 12,
-          border: '1px solid var(--border)',
-          backgroundColor: 'var(--overlay)',
-          padding: '18px 20px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 16,
-          boxShadow: '0 1px 4px rgba(0,0,0,0.12), inset 0 -1px 0 rgba(255,255,255,0.05)',
-        }}
-      >
+    <div
+      style={{
+        position: 'relative',
+        borderRadius: 12,
+        border: '1px solid var(--border)',
+        backgroundColor: '#ffffff',
+        padding: '18px 20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+      }}
+    >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 14, marginLeft: -20, marginRight: -20, paddingLeft: 20, paddingRight: 20, borderBottom: '1px solid var(--border)' }}>
           <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-strong)' }}>{title}</span>
           <button style={{ fontSize: 13, color: 'var(--text-key)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
@@ -353,7 +549,6 @@ function Widget({
           </button>
         </div>
         {children}
-      </div>
     </div>
   );
 }
@@ -385,48 +580,38 @@ function taskStatusStyle(s: TaskStatus): React.CSSProperties {
 }
 
 function actionBtnStyle(): React.CSSProperties {
-  return { fontSize: 12, fontWeight: 500, padding: '5px 14px', borderRadius: 7, cursor: 'pointer', border: '1px solid var(--border)', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0, backgroundColor: 'transparent', color: 'var(--text-strong)' };
+  return { fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 5, cursor: 'pointer', border: '1px solid var(--border)', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0, backgroundColor: 'transparent', color: 'var(--text-strong)' };
 }
 
 function MyTasks() {
   return (
     <Widget title="My Tasks">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {TASKS.map((t) => (
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {TASKS.map((t, i) => (
           <div
             key={t.id}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              gap: 12, padding: '11px 14px',
-              borderRadius: 10, border: '1px solid var(--border)',
-              backgroundColor: 'var(--base)',
+              gap: 12, paddingTop: i === 0 ? 0 : 12, paddingBottom: i === TASKS.length - 1 ? 0 : 12,
+              marginLeft: -20, marginRight: -20, paddingLeft: 20, paddingRight: 20,
+              borderBottom: i < TASKS.length - 1 ? '1px solid var(--border)' : 'none',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
               <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
                 {t.icon === 'alert'
-                  ? <AlertCircle size={15} style={{ color: '#f87171' }} />
+                  ? <AlertCircle size={14} style={{ color: '#f87171' }} />
                   : t.icon === 'video'
-                  ? <Video size={15} style={{ color: 'var(--muted-foreground)' }} />
-                  : <Circle size={15} style={{ color: 'var(--muted-foreground)' }} />}
+                  ? <Video size={14} style={{ color: 'var(--muted-foreground)' }} />
+                  : <Circle size={14} style={{ color: 'var(--muted-foreground)' }} />}
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 5, ...taskStatusStyle(t.status) }}>
-                    {t.status}
-                  </span>
-                  <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
-                    {t.category}
-                  </span>
-                </div>
-                <p style={{ fontSize: 13, color: 'var(--text-strong)', margin: 0, fontWeight: 500, lineHeight: 1.3 }}>
+                <p style={{ fontSize: 13, color: 'var(--text-strong)', margin: 0, fontWeight: 400, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {t.title}
                 </p>
-                {t.subtitle && (
-                  <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '2px 0 0', lineHeight: 1.3 }}>
-                    {t.subtitle}
-                  </p>
-                )}
+                <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: '1px 0 0' }}>
+                  {t.status} · {t.category}
+                </p>
               </div>
             </div>
             <button style={actionBtnStyle()}>{t.action}</button>
@@ -460,42 +645,31 @@ function DeviceIcon({ type }: { type: string }) {
 function AssignedDevices() {
   return (
     <Widget title="Assigned Devices">
-      <div style={{ display: 'flex', gap: 10 }}>
-        {DEVICES.map((d) => (
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {DEVICES.map((d, i) => (
           <div
             key={d.id}
             style={{
-              flex: 1, minWidth: 0,
-              border: '1px solid var(--border)',
-              borderRadius: 10,
-              backgroundColor: 'var(--base)',
-              padding: '12px 14px',
-              display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              gap: 12, paddingTop: i === 0 ? 0 : 12, paddingBottom: i === DEVICES.length - 1 ? 0 : 12,
+              marginLeft: -20, marginRight: -20, paddingLeft: 20, paddingRight: 20,
+              borderBottom: i < DEVICES.length - 1 ? '1px solid var(--border)' : 'none',
             }}
           >
-            <div style={{ position: 'relative', flexShrink: 0 }}>
-              <div
-                style={{
-                  width: 38, height: 38, borderRadius: '50%',
-                  backgroundColor: 'rgba(255,255,255,0.05)',
-                  border: `2.5px solid ${d.ring}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--text-strong)',
-                }}
-              >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+              <span style={{ flexShrink: 0, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center' }}>
                 <DeviceIcon type={d.icon} />
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 13, color: 'var(--text-strong)', margin: 0, fontWeight: 400, lineHeight: 1.4 }}>
+                  {d.name}
+                </p>
+                <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: '1px 0 0' }}>
+                  {d.id} · {d.status}
+                </p>
               </div>
-              {d.warning && (
-                <span style={{ position: 'absolute', bottom: -2, right: -2, backgroundColor: 'var(--overlay)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16 }}>
-                  <AlertTriangle size={10} style={{ color: '#f59e0b' }} />
-                </span>
-              )}
             </div>
-            <div style={{ minWidth: 0 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-strong)', margin: 0, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</p>
-              <p style={{ fontSize: 10, color: 'var(--muted-foreground)', margin: '1px 0 3px', lineHeight: 1.3 }}>{d.id}</p>
-              <p style={{ fontSize: 11, fontWeight: 600, color: d.pctColor, margin: 0, lineHeight: 1.2 }}>{d.pct}% <span style={{ fontWeight: 400, fontSize: 10, color: 'var(--muted-foreground)' }}>{d.status}</span></p>
-            </div>
+            <span style={{ fontSize: 13, fontWeight: 600, color: d.pctColor, flexShrink: 0 }}>{d.pct}%</span>
           </div>
         ))}
       </div>
@@ -530,33 +704,30 @@ function TrendIcon({ trend, color }: { trend: Trend; color: string }) {
 function MyPerformance() {
   return (
     <Widget title="My Performance" viewAllLabel="View full dashboard →">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
         {PERF_METRICS.map((m) => (
-          <div key={m.label}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
-              <span style={{ fontSize: 12, color: 'var(--text-strong)' }}>{m.label}</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <TrendIcon trend={m.trend} color={m.color} />
-                <span style={{ fontSize: 15, fontWeight: 700, color: m.color, lineHeight: 1 }}>{m.value}%</span>
-              </div>
+          <div
+            key={m.label}
+            style={{
+              borderRadius: 12,
+              border: '1px solid var(--border)',
+              backgroundColor: 'transparent',
+              padding: '14px 16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 11, color: 'var(--muted-foreground)', fontWeight: 500 }}>{m.label}</span>
+              <TrendIcon trend={m.trend} color={m.color} />
             </div>
-            <div style={{ height: 5, borderRadius: 99, backgroundColor: 'var(--fill-weak)', overflow: 'hidden', position: 'relative' }}>
-              <div style={{ height: '100%', width: `${m.value}%`, backgroundColor: m.color, borderRadius: 99 }} />
+            <div style={{ fontSize: 22, fontWeight: 700, color: '#2a2a2a', marginBottom: 8, lineHeight: 1 }}>{m.value}%</div>
+            <div style={{ height: 5, borderRadius: 99, backgroundColor: '#e0e0e0', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${m.value}%`, backgroundColor: '#888888', borderRadius: 99 }} />
             </div>
-            <div style={{ textAlign: 'right', marginTop: 2 }}>
+            <div style={{ marginTop: 4 }}>
               <span style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>Target: {m.target}%</span>
             </div>
           </div>
         ))}
-
-        <div style={{ marginTop: 4, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '0 0 6px', fontWeight: 500 }}>Last Audit</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <CheckCircle2 size={14} style={{ color: '#22c55e', flexShrink: 0 }} />
-            <span style={{ fontSize: 13, color: '#22c55e', fontWeight: 500 }}>Compliant — no issues</span>
-          </div>
-          <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: '2px 0 0 20px' }}>Mar 8</p>
-        </div>
       </div>
     </Widget>
   );
@@ -590,12 +761,12 @@ function reportBadgeStyle(s: ReportStatus): React.CSSProperties {
 function MyReports() {
   return (
     <Widget title="My Reports">
-      <div style={{ overflowX: 'auto' }}>
+      <div style={{ overflowX: 'auto', marginLeft: -20, marginRight: -20 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
-              {['Title', 'Incident', 'Status', 'Source', 'Due', 'Action'].map(h => (
-                <th key={h} style={{ textAlign: h === 'Action' ? 'right' : 'left', padding: '0 10px 10px', fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+              {['Title', 'Incident', 'Status', 'Source', 'Due', 'Action'].map((h, i, arr) => (
+                <th key={h} style={{ textAlign: h === 'Action' ? 'right' : 'left', padding: '0 10px 10px', paddingLeft: i === 0 ? 20 : 10, paddingRight: i === arr.length - 1 ? 20 : 10, fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
                   {h}
                 </th>
               ))}
@@ -604,7 +775,7 @@ function MyReports() {
           <tbody>
             {REPORTS.map((r, i) => (
               <tr key={r.incident} style={{ borderBottom: i < REPORTS.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                <td style={{ padding: '12px 10px', color: 'var(--text-strong)', fontWeight: 400 }}>{r.title}</td>
+                <td style={{ padding: '12px 10px', paddingLeft: 20, color: 'var(--text-strong)', fontWeight: 400 }}>{r.title}</td>
                 <td style={{ padding: '12px 10px', color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>{r.incident}</td>
                 <td style={{ padding: '12px 10px' }}>
                   <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 5, ...reportBadgeStyle(r.status) }}>
@@ -618,8 +789,8 @@ function MyReports() {
                   </span>
                 </td>
                 <td style={{ padding: '12px 10px', color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>{r.due}</td>
-                <td style={{ padding: '12px 10px', textAlign: 'right' }}>
-                  <button style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-key)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                <td style={{ padding: '12px 10px', paddingRight: 20, textAlign: 'right' }}>
+                  <button style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-strong)', background: 'none', border: '1px solid var(--border)', borderRadius: 5, cursor: 'pointer', padding: '2px 8px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
                     {r.action}
                   </button>
                 </td>
@@ -651,19 +822,15 @@ const INCIDENTS: {
 ];
 
 function incidentStatusEl(s: IncidentStatus) {
-  if (s === 'Complete') return (
-    <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#4ade80', fontSize: 12 }}>
-      <CheckCircle2 size={13} /> Complete
-    </span>
-  );
-  if (s === 'Report returned') return (
-    <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#f87171', fontSize: 12 }}>
-      <XCircle size={13} /> Report returned
-    </span>
-  );
+  const map: Record<IncidentStatus, { label: string; style: ReportStatus }> = {
+    'Complete': { label: 'Complete', style: 'Approved' },
+    'Report returned': { label: 'Returned', style: 'Returned' },
+    'Uncategorized evidence': { label: 'Pending', style: 'Draft' },
+  };
+  const { label, style } = map[s];
   return (
-    <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#fbbf24', fontSize: 12 }}>
-      <AlertTriangle size={13} /> Uncategorized evidence
+    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 5, ...reportBadgeStyle(style) }}>
+      {label}
     </span>
   );
 }
@@ -671,12 +838,12 @@ function incidentStatusEl(s: IncidentStatus) {
 function RecentIncidents() {
   return (
     <Widget title="Recent Incidents & Evidence">
-      <div style={{ overflowX: 'auto' }}>
+      <div style={{ overflowX: 'auto', marginLeft: -20, marginRight: -20 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
-              {['Incident', 'Date', 'Type', 'Evidence', 'Report', 'Status'].map(h => (
-                <th key={h} style={{ textAlign: 'left', padding: '0 10px 10px', fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+              {['Incident', 'Date', 'Type', 'Evidence', 'Report', 'Status'].map((h, i, arr) => (
+                <th key={h} style={{ textAlign: 'left', padding: '0 10px 10px', paddingLeft: i === 0 ? 20 : 10, paddingRight: i === arr.length - 1 ? 20 : 10, fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
                   {h}
                 </th>
               ))}
@@ -685,7 +852,7 @@ function RecentIncidents() {
           <tbody>
             {INCIDENTS.map((inc, i) => (
               <tr key={inc.id} style={{ borderBottom: i < INCIDENTS.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                <td style={{ padding: '12px 10px' }}>
+                <td style={{ padding: '12px 10px', paddingLeft: 20 }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-strong)', fontWeight: 500 }}>
                     <ChevronDown size={13} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
                     {inc.id}
@@ -695,7 +862,7 @@ function RecentIncidents() {
                 <td style={{ padding: '12px 10px', color: 'var(--text-strong)' }}>{inc.type}</td>
                 <td style={{ padding: '12px 10px', color: 'var(--muted-foreground)' }}>{inc.evidence}</td>
                 <td style={{ padding: '12px 10px', color: 'var(--muted-foreground)' }}>{inc.report}</td>
-                <td style={{ padding: '12px 10px' }}>{incidentStatusEl(inc.status)}</td>
+                <td style={{ padding: '12px 10px', paddingRight: 20 }}>{incidentStatusEl(inc.status)}</td>
               </tr>
             ))}
           </tbody>
@@ -705,10 +872,1134 @@ function RecentIncidents() {
   );
 }
 
+// ── Evidence Drawer ───────────────────────────────────────────────────────────
+
+const EVIDENCE_DRAWER_WIDTH = 420;
+
+const EVIDENCE_TYPE_ICON: Record<string, React.ReactNode> = {
+  video: <Video size={15} />,
+  image: <Smartphone size={15} />,
+  audio: <Wind size={15} />,
+  document: <FileText size={15} />,
+  text: <FileText size={15} />,
+  pdf: <FileText size={15} />,
+};
+
+function EvidenceDrawer({
+  open,
+  onClose,
+  onSelectionChange,
+  onConfirm,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSelectionChange: (items: GraphNode[]) => void;
+  onConfirm: (items: GraphNode[]) => void;
+}) {
+  const [nodes, setNodes] = useState<GraphNode[]>([]);
+  const [selectedCase, setSelectedCase] = useState<{ id: string; label: string } | null>(null);
+  const [caseQuery, setCaseQuery] = useState('');
+  const [caseDropdownOpen, setCaseDropdownOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const caseInputRef = useRef<HTMLInputElement>(null);
+  const caseDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Load from graph, reload on updates
+  useEffect(() => {
+    const load = () => {
+      const graph = getContextGraph();
+      setNodes(Object.values(graph.nodes).filter(n => n.status !== 'deleted' && !!n.vector_file_id));
+    };
+    load();
+    window.addEventListener('evidenceGraphUpdated', load);
+    return () => window.removeEventListener('evidenceGraphUpdated', load);
+  }, []);
+
+  useEffect(() => {
+    if (!caseDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (caseDropdownRef.current && !caseDropdownRef.current.contains(e.target as Node)) {
+        setCaseDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [caseDropdownOpen]);
+
+  // Derive cases from loaded nodes
+  const caseMap = useMemo(() => {
+    const graph = getContextGraph();
+    const map = new Map<string, string>();
+    nodes.forEach(n => {
+      if (n.case_id && !map.has(n.case_id)) {
+        const meta = graph.cases?.[n.case_id];
+        map.set(n.case_id, meta?.title ? `${n.case_id} — ${meta.title}` : n.case_id);
+      }
+    });
+    return map;
+  }, [nodes]);
+
+  const filteredCases = Array.from(caseMap.entries())
+    .filter(([, label]) => label.toLowerCase().includes(caseQuery.toLowerCase()))
+    .map(([id, label]) => ({ id, label }));
+
+  const filtered = nodes.filter(e => {
+    if (selectedCase && e.case_id !== selectedCase.id) return false;
+    if (typeFilter && e.media_class !== typeFilter) return false;
+    return true;
+  });
+
+  const toggleItem = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      onSelectionChange(nodes.filter(n => next.has(n.id)));
+      return next;
+    });
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: EVIDENCE_DRAWER_WIDTH,
+        backgroundColor: 'var(--overlay)',
+        borderLeft: '1px solid var(--border)',
+        boxShadow: '-4px 0 20px rgba(0,0,0,0.06)',
+        transform: open ? 'translateX(0)' : 'translateX(100%)',
+        transition: 'transform 0.25s cubic-bezier(0.4,0,0.2,1)',
+        display: 'flex',
+        flexDirection: 'column',
+        zIndex: 101,
+      }}
+    >
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-strong)' }}>Select Evidence</span>
+        <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, border: 'none', background: 'none', cursor: 'pointer', color: 'var(--muted-foreground)' }}>
+          <X size={16} />
+        </button>
+      </div>
+
+      {/* Case filter */}
+      <div ref={caseDropdownRef} style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0, position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 8, border: '1px solid var(--border)', backgroundColor: 'var(--base)', padding: '0 10px', height: 36 }}>
+          <Search size={14} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+          <input
+            ref={caseInputRef}
+            type="text"
+            value={selectedCase ? selectedCase.label : caseQuery}
+            onChange={e => { setCaseQuery(e.target.value); setSelectedCase(null); setCaseDropdownOpen(true); }}
+            onFocus={() => { setCaseDropdownOpen(true); if (selectedCase) setCaseQuery(''); }}
+            placeholder="Filter by case..."
+            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, color: 'var(--text-strong)', fontFamily: 'inherit' }}
+          />
+          {selectedCase && (
+            <button onClick={() => { setSelectedCase(null); setCaseQuery(''); }} style={{ display: 'flex', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0 }}>
+              <X size={13} />
+            </button>
+          )}
+        </div>
+        {caseDropdownOpen && (
+          <div style={{ position: 'absolute', top: '100%', left: 20, right: 20, backgroundColor: 'var(--overlay)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: 'var(--elevation-md)', zIndex: 10, overflow: 'hidden', marginTop: 4 }}>
+            <div
+              onClick={() => { setSelectedCase(null); setCaseQuery(''); setCaseDropdownOpen(false); }}
+              style={{ padding: '8px 12px', fontSize: 13, color: 'var(--muted-foreground)', cursor: 'pointer', borderBottom: filteredCases.length > 0 ? '1px solid var(--border)' : 'none' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              All Cases
+            </div>
+            {filteredCases.map(c => (
+              <div
+                key={c.id}
+                onClick={() => { setSelectedCase(c); setCaseQuery(''); setCaseDropdownOpen(false); }}
+                style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-strong)', cursor: 'pointer', backgroundColor: selectedCase?.id === c.id ? 'var(--fill-weak)' : 'transparent' }}
+                onMouseEnter={e => { if (selectedCase?.id !== c.id) e.currentTarget.style.backgroundColor = 'var(--fill-hover)'; }}
+                onMouseLeave={e => { if (selectedCase?.id !== c.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
+              >
+                {c.label}
+              </div>
+            ))}
+            {filteredCases.length === 0 && (
+              <div style={{ padding: '8px 12px', fontSize: 13, color: 'var(--muted-foreground)' }}>No cases found</div>
+            )}
+          </div>
+        )}
+
+        {/* Type filter chips */}
+        <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+          {[
+            { key: null, label: 'All', icon: null },
+            { key: 'video', label: 'Video', icon: <Video size={11} /> },
+            { key: 'image', label: 'Image', icon: <Smartphone size={11} /> },
+            { key: 'audio', label: 'Audio', icon: <Wind size={11} /> },
+            { key: 'document', label: 'Document', icon: <FileText size={11} /> },
+          ].map(({ key, label, icon }) => {
+            const active = typeFilter === key;
+            return (
+              <button
+                key={key ?? 'all'}
+                onClick={() => setTypeFilter(key)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer', border: '1px solid var(--border)', backgroundColor: active ? 'var(--fill-key-strong)' : 'transparent', color: active ? 'var(--text-inverse-strong)' : 'var(--muted-foreground)', transition: 'background-color 0.12s, color 0.12s', whiteSpace: 'nowrap' }}
+              >
+                {icon}
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Select all row */}
+      {filtered.length > 0 && (() => {
+        const allSelected = filtered.every(item => selectedIds.has(item.id));
+        const someSelected = filtered.some(item => selectedIds.has(item.id));
+        const toggleAll = () => {
+          setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (allSelected) {
+              filtered.forEach(item => next.delete(item.id));
+            } else {
+              filtered.forEach(item => next.add(item.id));
+            }
+            onSelectionChange(nodes.filter(n => next.has(n.id)));
+            return next;
+          });
+        };
+        return (
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0, backgroundColor: someSelected ? 'var(--fill-weaker)' : 'transparent' }}
+          >
+            <Checkbox
+              checked={allSelected}
+              onCheckedChange={toggleAll}
+              style={{ width: 14, height: 14, flexShrink: 0, opacity: someSelected && !allSelected ? 0.5 : 1 }}
+            />
+            <button
+              onClick={toggleAll}
+              style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}
+            >
+              {allSelected ? 'Deselect all' : 'Select all'}
+            </button>
+            {someSelected && (
+              <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--muted-foreground)' }}>
+                {selectedIds.size} selected
+              </span>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Evidence list */}
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {filtered.map((item, i) => (
+          <div
+            key={item.id}
+            onClick={() => toggleItem(item.id)}
+            style={{
+              display: 'flex', alignItems: 'flex-start', gap: 12,
+              padding: '14px 20px',
+              borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none',
+              cursor: 'pointer',
+              backgroundColor: selectedIds.has(item.id) ? 'var(--fill-weak)' : 'transparent',
+            }}
+          >
+            <Checkbox
+              checked={selectedIds.has(item.id)}
+              onCheckedChange={() => toggleItem(item.id)}
+              onClick={e => e.stopPropagation()}
+              style={{ marginTop: 3, flexShrink: 0, width: 14, height: 14 }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 13, color: 'var(--text-strong)', margin: 0, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
+              <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: '2px 0 0', lineHeight: 1.4, fontWeight: 500, letterSpacing: '0.01em' }}>{item.case_id} · {item.media_class} · {item.date_recorded ? new Date(item.date_recorded).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</p>
+              <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: '2px 0 0', lineHeight: 1.4, fontWeight: 400, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: 0.8 }}>{item.description}</p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted-foreground)', flexShrink: 0 }}>
+              {EVIDENCE_TYPE_ICON[item.media_class] ?? <FileText size={14} />}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Footer */}
+      {selectedIds.size > 0 && (
+        <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+          <button
+            onClick={() => {
+              const items = nodes.filter(e => selectedIds.has(e.id));
+              onConfirm(items);
+              onClose();
+            }}
+            style={{ width: '100%', fontSize: 13, fontWeight: 600, color: 'var(--text-inverse-strong)', backgroundColor: 'var(--fill-key-strong)', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '9px 0', fontFamily: 'inherit' }}
+          >
+            Add {selectedIds.size} item{selectedIds.size > 1 ? 's' : ''} to research
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Chat Drawer ───────────────────────────────────────────────────────────────
+
+type ChatMessage = { id: string; role: 'user' | 'assistant' | 'system'; text: string; thinking?: string; showSelectEvidence?: boolean; draft?: DraftReport; pendingDraft?: boolean; chunkMap?: Record<string, string>; evidenceSnapshot?: GraphNode[]; toolCall?: ToolCall };
+
+
+// ── Citation processing ───────────────────────────────────────────────────────
+
+// Matches single [EV-ID] or grouped [EV-ID1, EV-ID2, ...] brackets
+const CITATION_TAG_RE = /\[EV-[A-Z0-9]+(?:,\s*EV-[A-Z0-9]+)*\]/g;
+
+type CitationEntry = { num: number; id: string; title: string; mediaClass: string; chunk?: string };
+
+function processCitations(
+  text: string,
+  items: GraphNode[],
+  chunkMap?: Record<string, string>,
+): { processedText: string; citations: CitationEntry[] } {
+  const idToItem = new Map(items.map(item => [item.id, item]));
+  const idToNum = new Map<string, number>();
+  let counter = 0;
+
+  // Strip any partial citation tag at the end of text (streaming artifact)
+  const stripped = text.replace(/\[EV-[A-Z0-9,\s]*$/, '');
+
+  const processedText = stripped.replace(CITATION_TAG_RE, (match) => {
+    const ids = match.slice(1, -1).split(/,\s*/);
+    return ids.map(id => {
+      if (!idToNum.has(id)) idToNum.set(id, ++counter);
+      return `[${idToNum.get(id)}]`;
+    }).join('');
+  });
+
+  const citations: CitationEntry[] = Array.from(idToNum.entries())
+    .sort((a, b) => a[1] - b[1])
+    .map(([id, num]) => {
+      const item = idToItem.get(id);
+      const fileId = item?.vector_file_id;
+      const rawChunk = fileId && chunkMap ? chunkMap[fileId] : undefined;
+      const chunk = rawChunk ? rawChunk.slice(0, 480) + (rawChunk.length > 480 ? '…' : '') : undefined;
+      return { num, id, title: item?.title ?? 'Unknown', mediaClass: item?.media_class ?? '', chunk };
+    });
+
+  return { processedText, citations };
+}
+
+function CitationTooltip({ initialNum, citations }: { initialNum: number; citations: CitationEntry[] }) {
+  const [visible, setVisible] = useState(false);
+  const [idx, setIdx] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const anchorRef = useRef<HTMLSpanElement>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelHide = () => { if (hideTimer.current) { clearTimeout(hideTimer.current); hideTimer.current = null; } };
+  const scheduleHide = () => { cancelHide(); hideTimer.current = setTimeout(() => setVisible(false), 120); };
+
+  const handleEnter = () => {
+    cancelHide();
+    const i = citations.findIndex(c => c.num === initialNum);
+    setIdx(i >= 0 ? i : 0);
+    if (anchorRef.current) {
+      const r = anchorRef.current.getBoundingClientRect();
+      // Compute horizontal offset to keep tooltip within viewport
+      const tooltipW = 300;
+      const naturalLeft = r.left + r.width / 2 - tooltipW / 2;
+      const clampedLeft = Math.min(Math.max(naturalLeft, 8), window.innerWidth - tooltipW - 8);
+      setOffset(clampedLeft - naturalLeft);
+    }
+    setVisible(true);
+  };
+
+  const active = citations[idx] ?? citations[0];
+
+  return (
+    <span
+      ref={anchorRef}
+      style={{ position: 'relative', display: 'inline-block' }}
+      onMouseEnter={handleEnter}
+      onMouseLeave={scheduleHide}
+    >
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        minWidth: 14, height: 14, borderRadius: 3,
+        backgroundColor: 'var(--fill-weak)', border: '1px solid var(--border)',
+        fontSize: 9, fontWeight: 700, color: 'var(--muted-foreground)',
+        cursor: 'default', verticalAlign: 'super', lineHeight: 1,
+        margin: '0 1px', padding: '0 2px',
+      }}>
+        {initialNum}
+      </span>
+      {visible && (
+        <div
+          onMouseEnter={cancelHide}
+          onMouseLeave={scheduleHide}
+          style={{
+            position: 'absolute', bottom: 'calc(100% + 6px)',
+            left: '50%', transform: `translateX(calc(-50% + ${offset}px))`,
+            backgroundColor: 'var(--overlay)', border: '1px solid var(--border)',
+            borderRadius: 8, padding: '8px 10px',
+            boxShadow: 'var(--elevation-md)',
+            zIndex: 300, width: 300,
+            display: 'flex', flexDirection: 'column', gap: 5,
+            pointerEvents: 'auto',
+          }}
+        >
+          <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-strong)', lineHeight: 1.4 }}>
+            {active.title}
+          </div>
+          {active.mediaClass && (
+            <span style={{ fontSize: 10, color: 'var(--muted-foreground)', textTransform: 'capitalize' }}>
+              {active.mediaClass}
+            </span>
+          )}
+          {active.chunk && (
+            <div style={{
+              fontSize: 11, color: 'var(--muted-foreground)', lineHeight: 1.6,
+              borderTop: '1px solid var(--border)', paddingTop: 6, marginTop: 1,
+              maxHeight: 160, overflowY: 'auto',
+              whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+            }}>
+              {active.chunk}
+            </div>
+          )}
+          {citations.length > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, borderTop: '1px solid var(--border)', paddingTop: 5, marginTop: 2 }}>
+              <button
+                onMouseDown={e => { e.preventDefault(); setIdx(i => (i - 1 + citations.length) % citations.length); }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: 4, border: '1px solid var(--border)', background: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', flexShrink: 0 }}
+              >
+                <ChevronLeft size={11} />
+              </button>
+              <button
+                onMouseDown={e => { e.preventDefault(); setIdx(i => (i + 1) % citations.length); }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: 4, border: '1px solid var(--border)', background: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', flexShrink: 0 }}
+              >
+                <ChevronRight size={11} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </span>
+  );
+}
+
+function injectCitations(children: React.ReactNode, citations: CitationEntry[]): React.ReactNode {
+  if (!citations.length) return children;
+  const INLINE_CITE_RE = /(\[\d+\])/;
+  if (typeof children === 'string') {
+    const parts = children.split(INLINE_CITE_RE);
+    if (parts.length === 1) return children;
+    return parts.map((part, i) => {
+      const m = part.match(/^\[(\d+)\]$/);
+      if (m) {
+        const num = parseInt(m[1]);
+        if (citations.some(c => c.num === num)) {
+          return <CitationTooltip key={`ct-${i}`} initialNum={num} citations={citations} />;
+        }
+      }
+      return part || null;
+    });
+  }
+  if (Array.isArray(children)) {
+    return children.flatMap((child, i) => {
+      if (typeof child === 'string') {
+        const parts = child.split(INLINE_CITE_RE);
+        if (parts.length === 1) return [child];
+        return parts.map((part, j) => {
+          const m = part.match(/^\[(\d+)\]$/);
+          if (m) {
+            const num = parseInt(m[1]);
+            if (citations.some(c => c.num === num)) {
+              return <CitationTooltip key={`ct-${i}-${j}`} initialNum={num} citations={citations} />;
+            }
+          }
+          return part || null;
+        });
+      }
+      return [child];
+    });
+  }
+  return children;
+}
+
+function parseNeedsEvidence(text: string): { text: string; needsEvidence: boolean } {
+  const TAG = '<needs_evidence/>';
+  if (text.includes(TAG)) {
+    return { text: text.replace(TAG, '').trim(), needsEvidence: true };
+  }
+  return { text, needsEvidence: false };
+}
+
+
+function parseThinkingFromRaw(raw: string): { thinking: string; text: string } {
+  const OPEN = '<thinking>';
+  const CLOSE = '</thinking>';
+  const openIdx = raw.indexOf(OPEN);
+  if (openIdx === -1) return { thinking: '', text: raw };
+  const before = raw.slice(0, openIdx);
+  const closeIdx = raw.indexOf(CLOSE, openIdx);
+  if (closeIdx === -1) {
+    // Still streaming inside thinking block
+    return { thinking: raw.slice(openIdx + OPEN.length), text: before };
+  }
+  const thinking = raw.slice(openIdx + OPEN.length, closeIdx);
+  const after = raw.slice(closeIdx + CLOSE.length).replace(/^\n+/, '');
+  return { thinking, text: (before + after).trim() };
+}
+
+const MIN_DRAWER_WIDTH = 540;
+const MAX_DRAWER_WIDTH = 780;
+const LEARN_MORE_WIDTH = 380;
+
+const CONVERSATION_STARTERS = [
+  'Summarize all evidence',
+  'Create a timeline',
+  'Draft an incident report',
+  'Find common patterns',
+  'Identify key witnesses',
+  'What evidence is missing?',
+  'Draft a use-of-force report',
+  'Correlate timestamps',
+  'Flag contradictions',
+  'Suggest categories',
+  'Write an arrest summary',
+  'Find location links',
+  'Draft a vehicle pursuit report',
+  'Who are the suspects?',
+  'Build an evidence summary',
+  'Draft a witness statement',
+  'What objects were detected?',
+  'Analyze officer footage',
+  'Find duplicate entries',
+  'Draft a case overview',
+  'Prioritize evidence',
+  'Build a narrative',
+  'Compare evidence dates',
+  'Detect anomalies',
+  'Create chain of custody',
+  'Summarize body cam footage',
+  'Find geographic patterns',
+  'Draft a field interview report',
+  'What connections exist?',
+  'Flag high-priority items',
+  'Identify recurring locations',
+  'Summarize case activity',
+  'Draft a search warrant',
+  'Find officer overlap',
+  'What happened first?',
+  'Group by evidence type',
+];
+
+function ChatDrawer({
+  open,
+  messages,
+  onClose,
+  onNewChat,
+  onSend,
+  onSelectEvidence,
+  evidenceOpen,
+  evidenceCount,
+  isStreaming,
+  skill,
+  onSkillChange,
+  evidenceItems,
+  onOpenDraft,
+  draftOpen,
+  onToolCallApprove,
+  onToolCallDeny,
+}: {
+  open: boolean;
+  messages: ChatMessage[];
+  onClose: () => void;
+  onNewChat: () => void;
+  onSend: (text: string) => void;
+  onSelectEvidence: () => void;
+  evidenceOpen: boolean;
+  evidenceCount: number;
+  isStreaming: boolean;
+  skill: string | null;
+  onSkillChange: (skill: string | null) => void;
+  evidenceItems: GraphNode[];
+  onOpenDraft: (draft: DraftReport) => void;
+  draftOpen?: boolean;
+  onToolCallApprove: (msgId: string) => void;
+  onToolCallDeny: (msgId: string) => void;
+}) {
+  const [input, setInput] = useState('');
+  const [width, setWidth] = useState(540);
+  const [learnMoreOpen, setLearnMoreOpen] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+  const startX = useRef(0);
+  const startWidth = useRef(0);
+
+  const { isListening, start: startListening, stop: stopListening } = useSpeechToText(
+    useCallback((t: string) => setInput(prev => prev ? prev + ' ' + t : t), [])
+  );
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [input]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: isStreaming ? 'instant' : 'smooth' });
+  }, [messages, isStreaming]);
+
+  useEffect(() => {
+    if (open && !isStreaming && !isListening) {
+      textareaRef.current?.focus();
+    }
+  }, [open, isStreaming, isListening]);
+
+  const handleSend = () => {
+    if (!input.trim() || isStreaming) return;
+    onSend(input.trim());
+    setInput('');
+  };
+
+  const onHandleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    dragging.current = true;
+    startX.current = e.clientX;
+    startWidth.current = width;
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!dragging.current) return;
+      const delta = startX.current - ev.clientX;
+      const next = Math.min(MAX_DRAWER_WIDTH, Math.max(MIN_DRAWER_WIDTH, startWidth.current + delta));
+      setWidth(next);
+    };
+    const onMouseUp = () => {
+      dragging.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  return (
+    <>
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        right: (evidenceOpen ? EVIDENCE_DRAWER_WIDTH : 0) + (draftOpen ? DRAFT_PANEL_WIDTH : 0) + (learnMoreOpen ? LEARN_MORE_WIDTH : 0),
+        bottom: 0,
+        width,
+        backgroundColor: 'var(--overlay)',
+        borderLeft: '1px solid var(--border)',
+        boxShadow: '-8px 0 32px rgba(0,0,0,0.08)',
+        transform: open ? 'translateX(0)' : 'translateX(100%)',
+        transition: dragging.current ? 'right 0s' : 'transform 0.25s cubic-bezier(0.4,0,0.2,1), right 0.25s cubic-bezier(0.4,0,0.2,1)',
+        display: 'flex',
+        flexDirection: 'column',
+        zIndex: 100,
+      }}
+    >
+      {/* Drag handle */}
+      <div
+        onMouseDown={onHandleMouseDown}
+        style={{
+          position: 'absolute',
+          left: -12,
+          top: 0,
+          bottom: 0,
+          width: 24,
+          cursor: 'ew-resize',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1,
+        }}
+      >
+        <div style={{
+          width: 6,
+          height: 48,
+          borderRadius: 99,
+          backgroundColor: 'var(--overlay)',
+          border: '1px solid var(--border)',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.10)',
+        }} />
+      </div>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <img src={assistantIcon} alt="Assistant" style={{ width: 32, height: 32 }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            onClick={onNewChat}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '2px', aspectRatio: '1', borderRadius: 5, background: 'none', border: '1px solid var(--border)', cursor: 'pointer', color: 'var(--text-strong)', flexShrink: 0 }}
+            aria-label="New chat"
+          >
+            <Plus size={11} strokeWidth={2.5} />
+          </button>
+          <button style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-strong)', background: 'none', border: '1px solid var(--border)', borderRadius: 5, cursor: 'pointer', padding: '2px 8px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+            Chat history
+          </button>
+          <button
+            onClick={onClose}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, border: 'none', background: 'none', cursor: 'pointer', color: 'var(--muted-foreground)' }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'visible', padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {messages.map((m, i) => {
+          const isLastAssistant = m.role === 'assistant' && i === messages.length - 1 && isStreaming;
+          if (m.role === 'system') {
+            return (
+              <div key={m.id} style={{ display: 'flex', justifyContent: 'center' }}>
+                <span style={{ fontSize: 12, color: 'var(--muted-foreground)', backgroundColor: 'var(--fill-weak)', padding: '5px 12px', borderRadius: 99 }}>
+                  {m.text}
+                </span>
+              </div>
+            );
+          }
+          return (
+            <div
+              key={m.id}
+              style={{
+                display: 'flex',
+                justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
+              }}
+            >
+              {m.role === 'user' ? (
+                <div
+                  style={{
+                    maxWidth: '80%',
+                    padding: '10px 14px',
+                    borderRadius: '14px 14px 4px 14px',
+                    backgroundColor: 'var(--fill-weak)',
+                    color: 'var(--text-strong)',
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {m.text}
+                </div>
+              ) : (
+                <div style={{ width: '100%', fontSize: 14, lineHeight: 1.6, color: 'var(--text-strong)' }}>
+                  {(m.thinking || isLastAssistant) && (
+                    <ThinkingBlock content={m.thinking ?? ''} isStreaming={isLastAssistant && (!m.text || !!m.pendingDraft)} />
+                  )}
+                  {m.text ? (() => {
+                    const { processedText, citations } = processCitations(m.text, m.evidenceSnapshot ?? evidenceItems, m.chunkMap);
+                    return (
+                      <>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            p: ({ children }) => <p style={{ margin: '0 0 8px', fontSize: 14, lineHeight: 1.6, color: 'var(--text-strong)' }}>{injectCitations(children, citations)}</p>,
+                            ul: ({ children }) => <ul style={{ paddingLeft: 18, margin: '0 0 8px' }}>{children}</ul>,
+                            ol: ({ children }) => <ol style={{ paddingLeft: 18, margin: '0 0 8px' }}>{children}</ol>,
+                            li: ({ children }) => <li style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 3, color: 'var(--text-strong)' }}>{injectCitations(children, citations)}</li>,
+                            strong: ({ children }) => <strong style={{ fontWeight: 600 }}>{injectCitations(children, citations)}</strong>,
+                            h1: ({ children }) => <div style={{ fontSize: 15, fontWeight: 600, margin: '0 0 6px', color: 'var(--text-strong)' }}>{injectCitations(children, citations)}</div>,
+                            h2: ({ children }) => <div style={{ fontSize: 14, fontWeight: 600, margin: '8px 0 4px', color: 'var(--text-strong)' }}>{injectCitations(children, citations)}</div>,
+                            h3: ({ children }) => <div style={{ fontSize: 13, fontWeight: 600, margin: '6px 0 3px', color: 'var(--text-strong)' }}>{injectCitations(children, citations)}</div>,
+                            code: ({ children }) => <code style={{ fontFamily: 'monospace', fontSize: 12, backgroundColor: 'var(--fill-weak)', padding: '1px 5px', borderRadius: 3 }}>{children}</code>,
+                            blockquote: ({ children }) => <blockquote style={{ borderLeft: '3px solid var(--border)', paddingLeft: 10, margin: '0 0 8px', color: 'var(--muted-foreground)' }}>{injectCitations(children, citations)}</blockquote>,
+                            table: ({ children }) => <div style={{ overflowX: 'auto', margin: '0 0 10px' }}><table style={{ borderCollapse: 'collapse', fontSize: 13, width: '100%', minWidth: 400 }}>{children}</table></div>,
+                            thead: ({ children }) => <thead>{children}</thead>,
+                            tbody: ({ children }) => <tbody>{children}</tbody>,
+                            tr: ({ children }) => <tr style={{ borderBottom: '1px solid var(--border)' }}>{children}</tr>,
+                            th: ({ children }) => <th style={{ padding: '6px 12px', textAlign: 'left', fontWeight: 600, fontSize: 12, color: 'var(--muted-foreground)', whiteSpace: 'nowrap', borderBottom: '2px solid var(--border)', background: 'var(--fill-weaker)' }}>{children}</th>,
+                            td: ({ children }) => <td style={{ padding: '5px 12px', fontSize: 13, color: 'var(--text-strong)', whiteSpace: 'nowrap', verticalAlign: 'top' }}>{children}</td>,
+                          }}
+                        >
+                          {processedText}
+                        </ReactMarkdown>
+                        {citations.length > 0 && (
+                          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 8px', borderRadius: 99, border: '1px solid var(--border)', backgroundColor: 'var(--fill-weaker)', maxWidth: '100%', overflow: 'hidden' }}>
+                              <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-strong)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {citations[0].title}
+                              </span>
+                              {citations.length > 1 && (
+                                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', flexShrink: 0 }}>
+                                  +{citations.length - 1}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })() : isLastAssistant ? (
+                    <span style={{ display: 'inline-block', width: 8, height: 14, backgroundColor: 'var(--muted-foreground)', borderRadius: 2, opacity: 0.6, animation: 'blink 1s step-end infinite', verticalAlign: 'text-bottom' }} />
+                  ) : null}
+                  {m.draft && (
+                    <DraftCard title={m.draft.title} onOpen={() => onOpenDraft(m.draft!)} />
+                  )}
+                  {m.toolCall && (
+                    <ToolCallCard
+                      toolCall={m.toolCall}
+                      onApprove={() => onToolCallApprove(m.id)}
+                      onDeny={() => onToolCallDeny(m.id)}
+                    />
+                  )}
+                  {m.showSelectEvidence && evidenceCount === 0 && (
+                    <div style={{ marginTop: 10 }}>
+                      <AnimatedBorderButton
+                        onClick={onSelectEvidence}
+                        animated={true}
+                        style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 500, color: 'var(--text-strong)', background: 'none', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', padding: '5px 12px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+                      >
+                        Select evidence
+                      </AnimatedBorderButton>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <div style={{ padding: '0 16px 16px', flexShrink: 0 }}>
+        {/* Contextual banner */}
+        <div
+          onClick={() => setLearnMoreOpen(p => !p)}
+          style={{
+            margin: '0 40px',
+            borderRadius: '10px 10px 0 0',
+            padding: '1px 1px 0 1px',
+            background: 'linear-gradient(90deg, #a855f7, #eab308, #f97316)',
+            cursor: 'pointer',
+          }}
+        >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '10px 14px',
+            backgroundColor: '#ffffff',
+            borderRadius: '9px 9px 0 0',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <img src={assistantIcon} alt="Assistant" style={{ width: 18, height: 18, opacity: 0.9, flexShrink: 0 }} />
+            <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--text-strong)' }}>
+              Learn more about what the Assistant can do.
+            </span>
+          </div>
+          <ArrowRight size={16} style={{ color: 'var(--text-strong)', opacity: 0.9, flexShrink: 0 }} />
+        </div>
+        </div>
+        <div style={{ borderRadius: 12, border: `1px solid ${isListening ? 'var(--fill-key-strong)' : 'var(--border)'}`, backgroundColor: 'var(--base)', padding: '10px 12px 8px', display: 'flex', flexDirection: 'column', gap: 8, transition: 'border-color 0.15s' }}>
+          {isListening ? (
+            <ListeningWave />
+          ) : (
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              placeholder={isStreaming ? 'Waiting for response…' : 'Ask me anything...'}
+              rows={1}
+              disabled={isStreaming}
+              style={{ width: '100%', background: 'none', border: 'none', outline: 'none', resize: 'none', fontSize: 14, color: 'var(--text-strong)', fontFamily: 'inherit', lineHeight: 1.5, minHeight: 56, overflow: 'hidden', opacity: isStreaming ? 0.5 : 1 }}
+            />
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <SkillsDropdown value={skill} onChange={onSkillChange} onSelectEvidence={onSelectEvidence} evidenceCount={evidenceCount} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button
+                onClick={isListening ? stopListening : startListening}
+                disabled={isStreaming}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 7, border: 'none', background: 'none', color: isListening ? 'var(--fill-key-strong)' : 'var(--muted-foreground)', cursor: isStreaming ? 'default' : 'pointer' }}
+              >
+                {isListening ? <Square size={11} fill="currentColor" /> : <Mic size={13} />}
+              </button>
+              <button
+                onClick={handleSend}
+                disabled={isStreaming}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 7, border: 'none', backgroundColor: input.trim() && !isStreaming ? 'var(--fill-key-strong)' : 'var(--fill-weak)', color: input.trim() && !isStreaming ? 'var(--text-inverse-strong)' : 'var(--muted-foreground)', cursor: input.trim() && !isStreaming ? 'pointer' : 'default', transition: 'background-color 0.15s' }}
+              >
+                <ArrowUp size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Learn More Drawer */}
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: LEARN_MORE_WIDTH,
+        backgroundColor: 'var(--overlay)',
+        borderLeft: '1px solid var(--border)',
+        boxShadow: '-8px 0 32px rgba(0,0,0,0.08)',
+        transform: learnMoreOpen ? 'translateX(0)' : 'translateX(100%)',
+        transition: 'transform 0.25s cubic-bezier(0.4,0,0.2,1)',
+        display: 'flex',
+        flexDirection: 'column',
+        zIndex: 99,
+      }}
+    >
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-strong)' }}>Try asking…</span>
+        <button
+          onClick={() => setLearnMoreOpen(false)}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, border: 'none', background: 'none', cursor: 'pointer', color: 'var(--muted-foreground)' }}
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      {/* Starters */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {CONVERSATION_STARTERS.map(starter => (
+            <button
+              key={starter}
+              onClick={() => {
+                setInput(starter);
+                setLearnMoreOpen(false);
+                setTimeout(() => textareaRef.current?.focus(), 50);
+              }}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 99,
+                border: '1px solid var(--border)',
+                backgroundColor: 'var(--base)',
+                color: 'var(--text-strong)',
+                fontSize: 12,
+                fontWeight: 400,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                whiteSpace: 'nowrap',
+                transition: 'background-color 0.12s, border-color 0.12s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--fill-weak)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--base)'; }}
+            >
+              {starter}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+    </>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatStreamingId, setChatStreamingId] = useState<string | null>(null);
+  const [chatSkill, setChatSkill] = useState<string | null>(null);
+  const [confirmedEvidenceItems, setConfirmedEvidenceItems] = useState<GraphNode[]>([]);
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [evidenceCount, setEvidenceCount] = useState(0);
+  const [evidenceSource, setEvidenceSource] = useState<'home' | 'drawer'>('home');
+  const [openDraft, setOpenDraft] = useState<DraftReport | null>(null);
+
+  const sendChatMessage = async (text: string, history: ChatMessage[], evidenceItems: GraphNode[]) => {
+    const assistantId = `asst-${Date.now()}`;
+    setChatMessages(prev => [...prev, { id: assistantId, role: 'assistant', text: '', evidenceSnapshot: evidenceItems }]);
+    setChatStreamingId(assistantId);
+
+    const apiItems = evidenceItems.map(e => ({
+      id: e.id,
+      title: e.title,
+      media_class: e.media_class,
+      date_recorded: e.date_recorded,
+      description: e.description ?? '',
+      officer: e.officer,
+      category: e.category,
+      vector_file_id: e.vector_file_id,
+    }));
+
+    const engineHistory: EngineChatMessage[] = history
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => ({ role: m.role as 'user' | 'assistant', content: m.text }));
+
+    // If evidence is now loaded but a previous assistant turn asked for it,
+    // inject a synthetic exchange so the LLM knows the context has changed.
+    const prevAskForEvidence = history.some(m => m.showSelectEvidence);
+    if (apiItems.length > 0 && prevAskForEvidence) {
+      const originalRequest = history
+        .filter(m => m.role === 'user' && m.text.trim().length > 3)
+        .at(-1);
+      engineHistory.push(
+        { role: 'user', content: `[${apiItems.length} evidence item${apiItems.length !== 1 ? 's' : ''} have now been selected and are available. Please proceed with my original request: "${originalRequest?.text ?? 'help me with this evidence'}"]` },
+        { role: 'assistant', content: `Understood — I can see the ${apiItems.length} evidence items and will proceed with your request now.` },
+      );
+    }
+
+    const raw = { current: '' };
+    let evidencePrompted = false;
+
+    try {
+      const { chunksByFileId } = await chatWithEvidenceStream(text, engineHistory, apiItems, (chunk) => {
+        raw.current += chunk;
+        const { thinking, text: afterThinking } = parseThinkingFromRaw(raw.current);
+        const { content: afterDraft, draft } = parseDraft(afterThinking);
+        const { text: displayText, needsEvidence } = parseNeedsEvidence(afterDraft);
+        // True while <draft_report> tag is open but closing tag hasn't arrived yet
+        const pendingDraft = afterThinking.includes('<draft_report') && draft === null;
+        if (needsEvidence && !evidencePrompted) {
+          evidencePrompted = true;
+          setChatSkill('deep-research');
+        }
+        setChatMessages(prev =>
+          prev.map(m => m.id === assistantId ? {
+            ...m, thinking, text: displayText,
+            draft: draft ?? m.draft,
+            pendingDraft,
+            showSelectEvidence: needsEvidence || m.showSelectEvidence,
+          } : m)
+        );
+      });
+      // attach chunk map so citation tooltips can show retrieved text
+      if (Object.keys(chunksByFileId).length > 0) {
+        setChatMessages(prev =>
+          prev.map(m => m.id === assistantId ? { ...m, chunkMap: chunksByFileId } : m)
+        );
+      }
+    } catch (err) {
+      console.error('[chat] error:', err);
+      const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      setChatMessages(prev =>
+        prev.map(m => m.id === assistantId ? { ...m, text: msg } : m)
+      );
+    } finally {
+      setChatStreamingId(null);
+    }
+  };
+
+  const handleSkillChange = (skill: string | null) => {
+    setChatSkill(skill);
+    if (skill === null) {
+      setConfirmedEvidenceItems([]);
+      setEvidenceCount(0);
+    }
+  };
+
+  const needsEvidenceGuidance = (skill: string | null, items: GraphNode[]) =>
+    skill === 'deep-research' && items.length === 0;
+
+  const evidenceGuidanceMessage = (): ChatMessage => ({
+    id: `asst-${Date.now()}`,
+    role: 'assistant',
+    text: 'To use Deep Research, please select the evidence you\'d like me to analyze first.',
+    showSelectEvidence: true,
+  });
+
+  const isSearchIntent = (text: string): boolean => {
+    const lower = text.toLowerCase().trim();
+    return /\b(find|search|look|locate|show|get|pull|retrieve)\b/.test(lower) &&
+      /\b(evidence|footage|video|clip|file|document|report|record|image|photo|body.?cam|dashcam|cctv)\b/.test(lower);
+  };
+
+  const FACIAL_MATCH_WATCHLIST_RE = /facial.?match.*watchlist|watchlist.*facial.?match|enable.*watchlist|watchlist.*permiss/i;
+
+  const handleToolCallApprove = (msgId: string) => {
+    setChatMessages(prev => prev.map(m =>
+      m.id === msgId && m.toolCall
+        ? { ...m, toolCall: { ...m.toolCall, status: 'approved' as const } }
+        : m
+    ));
+  };
+
+  const handleToolCallDeny = (msgId: string) => {
+    setChatMessages(prev => prev.map(m =>
+      m.id === msgId && m.toolCall
+        ? { ...m, toolCall: { ...m.toolCall, status: 'denied' as const } }
+        : m
+    ));
+  };
+
+  const FACIAL_MATCH_MOCK_TEXT = "Sure. To grant Administrators on Pro accounts the ability to create and edit facial match watchlists, I'll update the role permission configuration. Please review and approve the change below.";
+
+  const makeFacialMatchMock = (): ChatMessage => ({
+    id: `asst-${Date.now()}`,
+    role: 'assistant',
+    text: FACIAL_MATCH_MOCK_TEXT,
+    toolCall: {
+      name: 'set_permission',
+      label: 'Enable: Create and Edit Facial Match Watchlist',
+      description: 'Grants Administrators on Pro accounts the ability to create and edit facial recognition watchlists.',
+      input: {
+        permission: 'facial_match_watchlist.create_edit',
+        role: 'Administrator',
+        account_type: 'Pro',
+        enabled: 'true',
+      },
+      status: 'pending',
+    },
+  });
+
+  const handleChat = (text: string) => {
+    if (isSearchIntent(text)) { onSearch(text); return; }
+    const userMsg: ChatMessage = { id: `user-${Date.now()}`, role: 'user', text };
+    setChatOpen(true);
+    if (FACIAL_MATCH_WATCHLIST_RE.test(text)) {
+      setChatMessages([userMsg, makeFacialMatchMock()]);
+      return;
+    }
+    if (needsEvidenceGuidance(chatSkill, confirmedEvidenceItems)) {
+      setChatMessages([userMsg, evidenceGuidanceMessage()]);
+      return;
+    }
+    setChatMessages([userMsg]);
+    sendChatMessage(text, [], confirmedEvidenceItems);
+  };
+
+  const handleChatSend = (text: string) => {
+    if (text.startsWith('__system__')) {
+      const systemText = text.slice('__system__'.length);
+      setChatMessages(prev => [...prev, { id: `sys-${Date.now()}`, role: 'system', text: systemText }]);
+      return;
+    }
+    if (isSearchIntent(text)) { onSearch(text); return; }
+    const userMsg: ChatMessage = { id: `user-${Date.now()}`, role: 'user', text };
+    if (FACIAL_MATCH_WATCHLIST_RE.test(text)) {
+      setChatMessages(prev => [...prev, userMsg, makeFacialMatchMock()]);
+      return;
+    }
+    if (needsEvidenceGuidance(chatSkill, confirmedEvidenceItems)) {
+      setChatMessages(prev => [...prev, userMsg, evidenceGuidanceMessage()]);
+      return;
+    }
+    setChatMessages(prev => [...prev, userMsg]);
+    sendChatMessage(text, [...chatMessages, userMsg], confirmedEvidenceItems);
+  };
+
   return (
+    <>
     <div
       style={{
         minHeight: '100%',
@@ -725,18 +2016,25 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
         </h1>
 
         {/* Chat / Search */}
-        <HomeSearch onSearch={onSearch} />
+        <HomeSearch
+          onSearch={onSearch}
+          onChat={handleChat}
+          onSelectEvidence={() => { setEvidenceSource('home'); setEvidenceOpen(p => !p); }}
+          evidenceCount={evidenceCount}
+          skill={chatSkill}
+          onSkillChange={handleSkillChange}
+        />
 
         {/* Bento grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: 12, alignItems: 'start' }}>
-          {/* Row 1: Tasks + Performance */}
-          <MyTasks />
-          <MyPerformance />
-
-          {/* Row 2: Devices — full width */}
+          {/* Row 1: Performance — full width */}
           <div style={{ gridColumn: 'span 2' }}>
-            <AssignedDevices />
+            <MyPerformance />
           </div>
+
+          {/* Row 2: Tasks + Devices side by side */}
+          <MyTasks />
+          <AssignedDevices />
 
           {/* Row 3: Reports — full width */}
           <div style={{ gridColumn: 'span 2' }}>
@@ -751,5 +2049,31 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
 
       </div>
     </div>
+    <EvidenceDrawer
+      open={evidenceOpen}
+      onClose={() => setEvidenceOpen(false)}
+      onSelectionChange={(items: GraphNode[]) => { setConfirmedEvidenceItems(items); setEvidenceCount(items.length); }}
+      onConfirm={(items: GraphNode[]) => { setConfirmedEvidenceItems(items); setEvidenceCount(items.length); if (evidenceSource === 'drawer') setChatOpen(true); }}
+    />
+    <ChatDrawer
+      open={chatOpen}
+      messages={chatMessages}
+      onClose={() => { setChatOpen(false); setEvidenceOpen(false); setOpenDraft(null); }}
+      onNewChat={() => setChatMessages([])}
+      onSend={handleChatSend}
+      onSelectEvidence={() => { setEvidenceSource('drawer'); setEvidenceOpen(true); }}
+      evidenceOpen={evidenceOpen}
+      evidenceCount={evidenceCount}
+      isStreaming={chatStreamingId !== null}
+      skill={chatSkill}
+      onSkillChange={handleSkillChange}
+      evidenceItems={confirmedEvidenceItems}
+      onOpenDraft={setOpenDraft}
+      draftOpen={!!openDraft}
+      onToolCallApprove={handleToolCallApprove}
+      onToolCallDeny={handleToolCallDeny}
+    />
+    <DraftDrawer draft={openDraft} open={!!openDraft} onClose={() => setOpenDraft(null)} />
+    </>
   );
 }

@@ -109,27 +109,24 @@ export interface VectorStoreChunk {
   score: number;
 }
 
+export async function getVectorStoreStatus(storeId: string): Promise<{ status: string; fileCounts: Record<string, number> }> {
+  const openai = getOpenAIClient()!;
+  const store = await (openai.vectorStores as any).retrieve(storeId);
+  return { status: store.status, fileCounts: store.file_counts ?? {} };
+}
+
 export async function searchVectorStore(
   storeId: string,
   query: string,
-  maxResults = 10
+  maxResults = 10,
 ): Promise<VectorStoreChunk[]> {
-  const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  const res = await fetch(`${origin}/api/openai/vector_stores/${storeId}/search`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'OpenAI-Beta': 'assistants=v2',
-    },
-    body: JSON.stringify({ query, max_num_results: maxResults }),
-  });
-
-  if (!res.ok) throw new Error(`Vector store search failed: ${res.status}`);
-
-  const data = await res.json();
-  return (data.data ?? []).map((item: any) => ({
+  const openai = getOpenAIClient()!;
+  const page = await (openai.vectorStores as any).search(storeId, { query, max_num_results: maxResults });
+  const items: any[] = page.data ?? [];
+  console.log('[searchVectorStore] query:', query.slice(0, 80), '→', items.length, 'results');
+  return items.map((item: any) => ({
     fileId: item.file_id,
     score: item.score ?? 0,
-    text: item.content?.map((c: any) => (typeof c.text === 'string' ? c.text : (c.text?.value ?? ''))).join('\n') ?? '',
+    text: (item.content ?? []).map((c: any) => c.text ?? '').join('\n'),
   }));
 }

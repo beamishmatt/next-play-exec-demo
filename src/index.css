@@ -3275,7 +3275,7 @@
   --border: #36393d1f;
   --border-strong: #36393d40;
   --input: var(--overlay);
-  --input-background: var(--raised);
+  --input-background: var(--overlay);
   --ring: var(--text-key);
   --elevation-sm: 0px 2px 4px 0px #00000026;
   --elevation-md: 0px 4px 12px 0px #00000026, 0px 2px 4px 0px #00000014;
@@ -3869,6 +3869,11 @@ html {
   initial-value: "";
 }
 
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -3893,4 +3898,9 @@ html {
     opacity: var(--tw-exit-opacity, 1);
     transform: translate3d(var(--tw-exit-translate-x, 0), var(--tw-exit-translate-y, 0), 0) scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), var(--tw-exit-scale, 1)) rotate(var(--tw-exit-rotate, 0));
   }
+}
+
+@keyframes mic-wave {
+  0%, 100% { height: 4px; }
+  50% { height: 18px; }
 }
