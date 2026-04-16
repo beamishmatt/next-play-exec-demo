@@ -34,10 +34,10 @@ import { SCOPE_CHIPS } from '../SearchDropdown';
 import assistantIcon from '../../assets/aiera.svg';
 import { chatWithEvidenceStream, ChatMessage as EngineChatMessage } from '../../engine/assistantChat';
 import { Checkbox } from '../ui/checkbox';
-import { ThinkingBlock, DraftCard, DraftDrawer, ToolCall, ToolCallCard } from '../AssistantPanel';
+import { ThinkingBlock, DraftCard, DraftDrawer, ToolCall, ToolCallCard, MetadataEditCard } from '../AssistantPanel';
 import { DraftReport, parseDraft, DRAFT_PANEL_WIDTH } from '../../utils/draftUtils';
 import { getContextGraph } from '../../storage/config';
-import { GraphNode } from '../../data/types';
+import { GraphNode, MetadataEdit } from '../../data/types';
 
 // ── Speech to text ────────────────────────────────────────────────────────────
 
@@ -1148,7 +1148,7 @@ function EvidenceDrawer({
 
 // ── Chat Drawer ───────────────────────────────────────────────────────────────
 
-type ChatMessage = { id: string; role: 'user' | 'assistant' | 'system'; text: string; thinking?: string; showSelectEvidence?: boolean; draft?: DraftReport; pendingDraft?: boolean; chunkMap?: Record<string, string>; evidenceSnapshot?: GraphNode[]; toolCall?: ToolCall };
+export type ChatMessage = { id: string; role: 'user' | 'assistant' | 'system'; text: string; thinking?: string; showSelectEvidence?: boolean; draft?: DraftReport; pendingDraft?: boolean; chunkMap?: Record<string, string>; evidenceSnapshot?: GraphNode[]; toolCall?: ToolCall; metadataEdits?: MetadataEdit[] };
 
 
 // ── Citation processing ───────────────────────────────────────────────────────
@@ -1329,7 +1329,7 @@ function injectCitations(children: React.ReactNode, citations: CitationEntry[]):
   return children;
 }
 
-function parseNeedsEvidence(text: string): { text: string; needsEvidence: boolean } {
+export function parseNeedsEvidence(text: string): { text: string; needsEvidence: boolean } {
   const TAG = '<needs_evidence/>';
   if (text.includes(TAG)) {
     return { text: text.replace(TAG, '').trim(), needsEvidence: true };
@@ -1338,7 +1338,7 @@ function parseNeedsEvidence(text: string): { text: string; needsEvidence: boolea
 }
 
 
-function parseThinkingFromRaw(raw: string): { thinking: string; text: string } {
+export function parseThinkingFromRaw(raw: string): { thinking: string; text: string } {
   const OPEN = '<thinking>';
   const CLOSE = '</thinking>';
   const openIdx = raw.indexOf(OPEN);
@@ -1397,7 +1397,7 @@ const CONVERSATION_STARTERS = [
   'Group by evidence type',
 ];
 
-function ChatDrawer({
+export function ChatDrawer({
   open,
   messages,
   onClose,
@@ -1414,6 +1414,8 @@ function ChatDrawer({
   draftOpen,
   onToolCallApprove,
   onToolCallDeny,
+  onMetadataEditApply,
+  onMetadataEditDismiss,
 }: {
   open: boolean;
   messages: ChatMessage[];
@@ -1431,6 +1433,8 @@ function ChatDrawer({
   draftOpen?: boolean;
   onToolCallApprove: (msgId: string) => void;
   onToolCallDeny: (msgId: string) => void;
+  onMetadataEditApply?: (msgId: string, editId: string) => void;
+  onMetadataEditDismiss?: (msgId: string, editId: string) => void;
 }) {
   const [input, setInput] = useState('');
   const [width, setWidth] = useState(540);
@@ -1656,6 +1660,14 @@ function ChatDrawer({
                       onDeny={() => onToolCallDeny(m.id)}
                     />
                   )}
+                  {m.metadataEdits && m.metadataEdits.map(edit => (
+                    <MetadataEditCard
+                      key={edit.id}
+                      edit={edit}
+                      onApply={() => onMetadataEditApply?.(m.id, edit.id)}
+                      onDismiss={() => onMetadataEditDismiss?.(m.id, edit.id)}
+                    />
+                  ))}
                   {m.showSelectEvidence && evidenceCount === 0 && (
                     <div style={{ marginTop: 10 }}>
                       <AnimatedBorderButton

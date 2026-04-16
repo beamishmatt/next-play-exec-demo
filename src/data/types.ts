@@ -171,6 +171,18 @@ export interface AgentAction {
   value: string;
 }
 
+// ─── Metadata edits ──────────────────────────────────────────────────────────
+
+export interface MetadataEdit {
+  id: string;
+  evidence_id: string;
+  evidence_title?: string;
+  field: string;
+  current_value?: string;
+  new_value: string;
+  status: 'pending' | 'applied' | 'dismissed';
+}
+
 // Sharing policy options
 export type SharingPolicy = 'default' | 'share with Police' | 'share with attorneys';
 

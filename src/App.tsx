@@ -11,6 +11,7 @@ import { EvidencePage } from './components/pages/EvidencePage';
 import { CasesPage } from './components/pages/CasesPage';
 import { CaseDetailPage } from './components/pages/CaseDetailPage';
 import { EvidenceDetailPage } from './components/pages/EvidenceDetailPage';
+import { SearchEvidenceDetailPage } from './components/pages/SearchEvidenceDetailPage';
 import { CommunityPage } from './components/pages/CommunityPage';
 import { DevicesPage } from './components/pages/DevicesPage';
 import { AnalyticsPage } from './components/pages/AnalyticsPage';
@@ -19,6 +20,10 @@ import { ImportModal } from './components/ImportModal';
 import { getEvidenceByCaseId } from './data/mockEvidence';
 import { useIsMobile } from './components/ui/use-mobile';
 import { SearchTakeover } from './components/SearchTakeover';
+import { ChatDrawer, ChatMessage, parseThinkingFromRaw, parseNeedsEvidence } from './components/pages/HomePage';
+import { chatWithEvidenceStream, ChatMessage as EngineChatMessage } from './engine/assistantChat';
+import { parseDraft } from './utils/draftUtils';
+import { stripActionTags, ToolCall } from './components/AssistantPanel';
 import { Plus, Home } from 'lucide-react';
 import EvidenceIcon from './imports/EvidenceIcon';
 import CasesIcon from './imports/CasesIcon';
@@ -60,6 +65,9 @@ function AppContent() {
   const [sidebarVisible, setSidebarVisible] = React.useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [searchState, setSearchState] = React.useState<{ open: boolean; query?: string; selectedId?: string; output?: import('./data/types').SearchOutput }>({ open: false });
+  const [assistantOpen, setAssistantOpen] = React.useState(false);
+  const [chatMessages, setChatMessages] = React.useState<ChatMessage[]>([]);
+  const [chatStreamingId, setChatStreamingId] = React.useState<string | null>(null);
   const [importOpen, setImportOpen] = React.useState(false);
 
   // Memoized computation for back button visibility
@@ -145,6 +153,85 @@ function AppContent() {
     setSidebarVisible(false);
   }, []);
 
+  const FACIAL_MATCH_WATCHLIST_RE = /facial.?match.*watchlist|watchlist.*facial.?match|enable.*watchlist|watchlist.*permiss/i;
+
+  const makeFacialMatchMock = (): ChatMessage => ({
+    id: `asst-${Date.now()}`,
+    role: 'assistant',
+    text: "Sure. To grant Administrators on Pro accounts the ability to create and edit facial match watchlists, I'll update the role permission configuration. Please review and approve the change below.",
+    toolCall: {
+      name: 'set_permission',
+      label: 'Enable: Create and Edit Facial Match Watchlist',
+      description: 'Grants Administrators on Pro accounts the ability to create and edit facial recognition watchlists.',
+      input: {
+        permission: 'facial_match_watchlist.create_edit',
+        role: 'Administrator',
+        account_type: 'Pro',
+        enabled: 'true',
+      },
+      status: 'pending',
+    } as ToolCall,
+  });
+
+  const handleToolCallApprove = React.useCallback((msgId: string) => {
+    setChatMessages(prev => prev.map(m =>
+      m.id === msgId && m.toolCall
+        ? { ...m, toolCall: { ...m.toolCall, status: 'approved' as const } }
+        : m
+    ));
+  }, []);
+
+  const handleToolCallDeny = React.useCallback((msgId: string) => {
+    setChatMessages(prev => prev.map(m =>
+      m.id === msgId && m.toolCall
+        ? { ...m, toolCall: { ...m.toolCall, status: 'denied' as const } }
+        : m
+    ));
+  }, []);
+
+  const handleAssistantSend = React.useCallback(async (text: string) => {
+    if (text.startsWith('__system__')) {
+      const systemText = text.slice('__system__'.length);
+      setChatMessages(prev => [...prev, { id: `sys-${Date.now()}`, role: 'system', text: systemText }]);
+      return;
+    }
+
+    const userMsg: ChatMessage = { id: `user-${Date.now()}`, role: 'user', text };
+
+    if (FACIAL_MATCH_WATCHLIST_RE.test(text)) {
+      setChatMessages(prev => [...prev, userMsg, makeFacialMatchMock()]);
+      return;
+    }
+
+    const assistantId = `asst-${Date.now()}`;
+    const history: EngineChatMessage[] = [...chatMessages, userMsg]
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => ({ role: m.role as 'user' | 'assistant', content: m.text }));
+
+    setChatMessages(prev => [...prev, userMsg, { id: assistantId, role: 'assistant', text: '', evidenceSnapshot: [] }]);
+    setChatStreamingId(assistantId);
+
+    const raw = { current: '' };
+    try {
+      await chatWithEvidenceStream(text, history, [], (chunk) => {
+        raw.current += chunk;
+        const { thinking, text: afterThinking } = parseThinkingFromRaw(raw.current);
+        const { content: afterDraft, draft } = parseDraft(afterThinking);
+        const { text: afterNeedsEvidence } = parseNeedsEvidence(afterDraft);
+        const stripped = stripActionTags(afterNeedsEvidence);
+        const pendingDraft = afterThinking.includes('<draft_report') && draft === null;
+        setChatMessages(prev => prev.map(m => m.id === assistantId ? {
+          ...m, thinking, text: stripped, draft: draft ?? m.draft, pendingDraft,
+        } : m));
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      setChatMessages(prev => prev.map(m => m.id === assistantId ? { ...m, text: msg } : m));
+    } finally {
+      setChatStreamingId(null);
+    }
+  }, [chatMessages]);
+
   return (
     <TooltipProvider>
       <div className="h-screen flex bg-base">
@@ -204,6 +291,7 @@ function AppContent() {
               sidebarVisible={sidebarVisible}
               onSidebarToggle={handleSidebarToggle}
               onOpenSearch={(query, selectedId, output) => setSearchState({ open: true, query, selectedId, output })}
+              onOpenAssistant={() => setAssistantOpen(true)}
               actions={location.pathname === '/cases' ? (
                 <button
                   style={{
@@ -255,6 +343,7 @@ function AppContent() {
               <Route path="/cases" element={<CasesPage />} />
               <Route path="/cases/:caseId" element={<CaseDetailPage />} />
               <Route path="/cases/:caseId/evidence/:evidenceIndex" element={<EvidenceDetailPage />} />
+              <Route path="/search/evidence/:evidenceId" element={<SearchEvidenceDetailPage />} />
               <Route path="/community" element={<CommunityPage />} />
               <Route path="/devices" element={<DevicesPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
@@ -263,6 +352,25 @@ function AppContent() {
             </Routes>
           </div>
         </div>
+
+        {/* Global Assistant Drawer */}
+        <ChatDrawer
+          open={assistantOpen}
+          messages={chatMessages}
+          onClose={() => setAssistantOpen(false)}
+          onNewChat={() => setChatMessages([])}
+          onSend={handleAssistantSend}
+          onSelectEvidence={() => {}}
+          evidenceOpen={false}
+          evidenceCount={0}
+          isStreaming={chatStreamingId !== null}
+          skill={null}
+          onSkillChange={() => {}}
+          evidenceItems={[]}
+          onOpenDraft={() => {}}
+          onToolCallApprove={handleToolCallApprove}
+          onToolCallDeny={handleToolCallDeny}
+        />
       </div>
     </TooltipProvider>
   );

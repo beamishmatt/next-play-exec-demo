@@ -1,18 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ArrowUp, ChevronDown, Clock, CircleCheck, FileText, X, Copy, Check, Tag, RefreshCw, ShieldCheck } from 'lucide-react';
+import { ArrowUp, ChevronDown, Clock, CircleCheck, FileText, X, Copy, Check, Tag, RefreshCw, ShieldCheck, Pencil } from 'lucide-react';
 import { PromptInput, PromptInputTextarea, PromptInputActions } from './ui/prompt-input';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
 import { chatWithEvidenceStream, ChatMessage } from '../engine/assistantChat';
-import { AgentAction, AgentActionType } from '../data/types';
+import { AgentAction, AgentActionType, MetadataEdit } from '../data/types';
 import { DraftReport, parseDraft, DRAFT_PANEL_WIDTH } from '../utils/draftUtils';
 
 // ─── Action parsing ───────────────────────────────────────────────────────────
 
 const ACTION_RE = /<action\s+type="([^"]+)"\s+items="([^"]+)"\s+value="([^"]+)"\s*\/>/g;
 
-function parseActions(content: string): { content: string; actions: AgentAction[] } {
+export function parseActions(content: string): { content: string; actions: AgentAction[] } {
   const actions: AgentAction[] = [];
   const cleaned = content.replace(ACTION_RE, (_, type, items, value) => {
     actions.push({
@@ -26,7 +26,7 @@ function parseActions(content: string): { content: string; actions: AgentAction[
 }
 
 /** Strip action tags (complete or partial) from content during streaming */
-function stripActionTags(content: string): string {
+export function stripActionTags(content: string): string {
   return content
     .replace(ACTION_RE, '')
     .replace(/<action\s[^>]*$/, '') // partial tag at end of stream
@@ -256,6 +256,163 @@ export function ToolCallCard({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── Metadata edit card ───────────────────────────────────────────────────────
+
+const FIELD_LABELS: Record<string, string> = {
+  category: 'Category',
+  status: 'Status',
+  description: 'Description',
+  officer: 'Officer',
+  title: 'Title',
+  tags: 'Tag',
+};
+
+export const METADATA_EDIT_RE = /<metadata_edit\s+evidence_id="([^"]+)"\s+field="([^"]+)"\s+value="([^"]+)"\s*\/>/g;
+
+export function parseMetadataEdits(content: string, getTitle?: (id: string) => string | undefined): { content: string; edits: Omit<MetadataEdit, 'status'>[] } {
+  const edits: Omit<MetadataEdit, 'status'>[] = [];
+  const idxRef = { n: 0 };
+  const cleaned = content.replace(METADATA_EDIT_RE, (_, evidenceId, field, value) => {
+    edits.push({
+      id: `medit-${Date.now()}-${idxRef.n++}`,
+      evidence_id: evidenceId,
+      evidence_title: getTitle?.(evidenceId),
+      field,
+      new_value: value,
+    });
+    return '';
+  }).trim();
+  return { content: cleaned, edits };
+}
+
+export function stripMetadataEditTags(content: string): string {
+  return content
+    .replace(METADATA_EDIT_RE, '')
+    .replace(/<metadata_edit\s[^>]*$/, '')
+    .trim();
+}
+
+export function MetadataEditCard({
+  edit,
+  onApply,
+  onDismiss,
+}: {
+  edit: MetadataEdit;
+  onApply: () => void;
+  onDismiss: () => void;
+}) {
+  if (edit.status === 'dismissed') return null;
+
+  const isPending = edit.status === 'pending';
+  const isApplied = edit.status === 'applied';
+  const fieldLabel = FIELD_LABELS[edit.field] ?? edit.field;
+
+  return (
+    <div
+      style={{
+        marginTop: 10,
+        border: '1px solid var(--border)',
+        borderRadius: 8,
+        overflow: 'hidden',
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '8px 12px',
+          borderBottom: '1px solid var(--border)',
+          backgroundColor: 'var(--fill-weaker)',
+        }}
+      >
+        {isApplied
+          ? <Check size={12} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+          : <Pencil size={12} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+        }
+        <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', flex: 1 }}>
+          {isApplied ? 'Edit applied' : 'Edit confirmation required'}
+        </span>
+      </div>
+
+      {/* Body — shown for both pending and applied */}
+      <div style={{ padding: '10px 12px', backgroundColor: isApplied ? 'var(--fill-weaker)' : '#ffffff' }}>
+        {edit.evidence_title && (
+          <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {edit.evidence_title}
+          </div>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: isPending ? 14 : 0, flexWrap: 'wrap' }}>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              borderRadius: 99,
+              border: '1px solid var(--border)',
+              backgroundColor: 'var(--fill-weaker)',
+              overflow: 'hidden',
+            }}
+          >
+            <span style={{ padding: '2px 7px', color: 'var(--muted-foreground)', fontFamily: 'monospace', borderRight: '1px solid var(--border)', fontSize: 11 }}>
+              {fieldLabel}
+            </span>
+            <span style={{ padding: '2px 7px', color: 'var(--foreground)', fontWeight: 500, fontSize: 11 }}>
+              {edit.new_value}
+            </span>
+          </span>
+          {edit.current_value && edit.field !== 'tags' && (
+            <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+              was: {edit.current_value}
+            </span>
+          )}
+        </div>
+
+        {isPending && (
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              onClick={onDismiss}
+              style={{
+                flex: 1,
+                padding: '5px 10px',
+                borderRadius: 6,
+                border: '1px solid var(--border)',
+                backgroundColor: 'transparent',
+                color: 'var(--muted-foreground)',
+                fontSize: 11,
+                fontWeight: 400,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              Dismiss
+            </button>
+            <button
+              onClick={onApply}
+              style={{
+                flex: 1,
+                padding: '5px 10px',
+                borderRadius: 6,
+                border: '1px solid var(--fill-strong)',
+                backgroundColor: 'var(--fill-strong)',
+                color: 'var(--text-inverse-strong)',
+                fontSize: 11,
+                fontWeight: 500,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              Apply
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
