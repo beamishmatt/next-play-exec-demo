@@ -34,7 +34,7 @@ import { SCOPE_CHIPS } from '../SearchDropdown';
 import assistantIcon from '../../assets/aiera.svg';
 import { chatWithEvidenceStream, ChatMessage as EngineChatMessage } from '../../engine/assistantChat';
 import { Checkbox } from '../ui/checkbox';
-import { ThinkingBlock, DraftCard, DraftDrawer, ToolCall, ToolCallCard, MetadataEditCard } from '../AssistantPanel';
+import { ThinkingBlock, DraftCard, DraftDrawer, ToolCall, ToolCallCard, MetadataEditCard, parseActions, parseMetadataEdits, stripActionTags, stripMetadataEditTags } from '../AssistantPanel';
 import { DraftReport, parseDraft, DRAFT_PANEL_WIDTH } from '../../utils/draftUtils';
 import { getContextGraph } from '../../storage/config';
 import { GraphNode, MetadataEdit } from '../../data/types';
@@ -1879,7 +1879,8 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
         raw.current += chunk;
         const { thinking, text: afterThinking } = parseThinkingFromRaw(raw.current);
         const { content: afterDraft, draft } = parseDraft(afterThinking);
-        const { text: displayText, needsEvidence } = parseNeedsEvidence(afterDraft);
+        const { text: afterNeedsEvidence, needsEvidence } = parseNeedsEvidence(afterDraft);
+        const displayText = stripActionTags(stripMetadataEditTags(afterNeedsEvidence));
         // True while <draft_report> tag is open but closing tag hasn't arrived yet
         const pendingDraft = afterThinking.includes('<draft_report') && draft === null;
         if (needsEvidence && !evidencePrompted) {
@@ -1895,6 +1896,56 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
           } : m)
         );
       });
+      // After streaming, parse actions and metadata edits into approval cards
+      const { text: afterThinkingFinal } = parseThinkingFromRaw(raw.current);
+      const { content: afterDraftFinal } = parseDraft(afterThinkingFinal);
+      const { text: afterNeedsEvidenceFinal } = parseNeedsEvidence(afterDraftFinal);
+      const getTitle = (id: string) => evidenceItems.find(n => n.id === id)?.title;
+      const { edits: metaEdits } = parseMetadataEdits(afterNeedsEvidenceFinal, getTitle);
+      const { actions } = parseActions(afterNeedsEvidenceFinal);
+      const batchActions = actions.filter(a => a.type === 'add_to_case');
+      const perItemActions = actions.filter(a => a.type !== 'add_to_case');
+      const ACTION_FIELD_MAP: Record<string, string> = { set_category: 'category', set_status: 'status', add_tag: 'tags' };
+      const allEdits: MetadataEdit[] = [
+        ...metaEdits.map(e => {
+          const node = evidenceItems.find(n => n.id === e.evidence_id);
+          const currentValue = node ? (node as any)[e.field] as string | undefined : undefined;
+          return { ...e, current_value: currentValue, status: 'pending' as const };
+        }),
+        ...perItemActions.map(a => {
+          const field = ACTION_FIELD_MAP[a.type] ?? a.type;
+          const count = a.item_ids.length;
+          const isBatch = count > 1;
+          const firstNode = evidenceItems.find(n => n.id === a.item_ids[0]);
+          const currentValue = !isBatch && firstNode ? (firstNode as any)[field] as string | undefined : undefined;
+          return {
+            id: `medit-action-${field}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            evidence_id: a.item_ids[0] ?? '',
+            evidence_ids: a.item_ids,
+            evidence_title: isBatch ? `${count} items` : (firstNode?.title ?? getTitle(a.item_ids[0])),
+            field,
+            current_value: Array.isArray(currentValue) ? (currentValue as string[]).join(', ') : currentValue,
+            new_value: a.value,
+            status: 'pending' as const,
+          };
+        }),
+      ];
+      if (allEdits.length > 0) {
+        setChatMessages(prev => prev.map(m => m.id === assistantId ? { ...m, metadataEdits: allEdits } : m));
+      }
+      if (batchActions.length > 0) {
+        const a = batchActions[0];
+        const count = a.item_ids.length;
+        const toolCall: ToolCall = {
+          name: a.type,
+          label: `Add to case: "${a.value}"`,
+          description: `Add ${count} selected item${count !== 1 ? 's' : ''} to case "${a.value}".`,
+          input: { case: a.value, items: `${count} item${count !== 1 ? 's' : ''}` },
+          status: 'pending',
+          successLabel: `${count} item${count !== 1 ? 's' : ''} added to case`,
+        };
+        setChatMessages(prev => prev.map(m => m.id === assistantId ? { ...m, toolCall } : m));
+      }
       // attach chunk map so citation tooltips can show retrieved text
       if (Object.keys(chunksByFileId).length > 0) {
         setChatMessages(prev =>
@@ -1938,6 +1989,31 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
 
   const FACIAL_MATCH_WATCHLIST_RE = /facial.?match.*watchlist|watchlist.*facial.?match|enable.*watchlist|watchlist.*permiss/i;
 
+  const ADD_TO_CASE_RE = /\badd\b.*(to|into)\s*(a\s+)?case\b|\badd.*evidence.*to.*case|move.*to.*case|link.*to.*case/i;
+
+  const makeAddToCaseMock = (items: GraphNode[], text: string): ChatMessage => {
+    const caseMatch = text.match(/\bcase[\s:]+([A-Z0-9][\w-]*)/i);
+    const caseId = caseMatch?.[1] ?? items[0]?.case_id ?? 'CR-2024-001';
+    const itemCount = items.length;
+    const evidenceIds = items.map(e => e.id).slice(0, 3).join(', ') + (items.length > 3 ? ` +${items.length - 3} more` : '');
+    return {
+      id: `asst-${Date.now()}`,
+      role: 'assistant',
+      text: `I'll link ${itemCount} evidence item${itemCount !== 1 ? 's' : ''} to case ${caseId}. Please review and approve below.`,
+      toolCall: {
+        name: 'add_evidence_to_case',
+        label: `Add ${itemCount} item${itemCount !== 1 ? 's' : ''} to Case ${caseId}`,
+        description: `Links the selected evidence to case ${caseId} in the evidence management system.`,
+        input: {
+          case_id: caseId,
+          evidence_count: String(itemCount),
+          evidence_ids: evidenceIds,
+        },
+        status: 'pending',
+      },
+    };
+  };
+
   const handleToolCallApprove = (msgId: string) => {
     setChatMessages(prev => prev.map(m =>
       m.id === msgId && m.toolCall
@@ -1952,6 +2028,37 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
         ? { ...m, toolCall: { ...m.toolCall, status: 'denied' as const } }
         : m
     ));
+  };
+
+  const handleMetadataEditApply = (msgId: string, editId: string) => {
+    setChatMessages(prev => prev.map(m => {
+      if (m.id !== msgId || !m.metadataEdits) return m;
+      const edit = m.metadataEdits.find(e => e.id === editId);
+      if (!edit) return m;
+      const idsToUpdate = edit.evidence_ids ?? [edit.evidence_id];
+      setConfirmedEvidenceItems(items => items.map(item => {
+        if (!idsToUpdate.includes(item.id)) return item;
+        if (edit.field === 'tags') {
+          const existing: string[] = (item as any).tags ?? [];
+          return { ...item, tags: [...existing.filter((t: string) => t !== edit.new_value), edit.new_value] };
+        }
+        return { ...item, [edit.field]: edit.new_value };
+      }));
+      return {
+        ...m,
+        metadataEdits: m.metadataEdits.map(e => e.id === editId ? { ...e, status: 'applied' as const } : e),
+      };
+    }));
+  };
+
+  const handleMetadataEditDismiss = (msgId: string, editId: string) => {
+    setChatMessages(prev => prev.map(m => {
+      if (m.id !== msgId || !m.metadataEdits) return m;
+      return {
+        ...m,
+        metadataEdits: m.metadataEdits.map(e => e.id === editId ? { ...e, status: 'dismissed' as const } : e),
+      };
+    }));
   };
 
   const FACIAL_MATCH_MOCK_TEXT = "Sure. To grant Administrators on Pro accounts the ability to create and edit facial match watchlists, I'll update the role permission configuration. Please review and approve the change below.";
@@ -1982,6 +2089,10 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
       setChatMessages([userMsg, makeFacialMatchMock()]);
       return;
     }
+    if (ADD_TO_CASE_RE.test(text) && confirmedEvidenceItems.length > 0) {
+      setChatMessages([userMsg, makeAddToCaseMock(confirmedEvidenceItems, text)]);
+      return;
+    }
     if (needsEvidenceGuidance(chatSkill, confirmedEvidenceItems)) {
       setChatMessages([userMsg, evidenceGuidanceMessage()]);
       return;
@@ -2000,6 +2111,10 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
     const userMsg: ChatMessage = { id: `user-${Date.now()}`, role: 'user', text };
     if (FACIAL_MATCH_WATCHLIST_RE.test(text)) {
       setChatMessages(prev => [...prev, userMsg, makeFacialMatchMock()]);
+      return;
+    }
+    if (ADD_TO_CASE_RE.test(text) && confirmedEvidenceItems.length > 0) {
+      setChatMessages(prev => [...prev, userMsg, makeAddToCaseMock(confirmedEvidenceItems, text)]);
       return;
     }
     if (needsEvidenceGuidance(chatSkill, confirmedEvidenceItems)) {
@@ -2084,6 +2199,8 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
       draftOpen={!!openDraft}
       onToolCallApprove={handleToolCallApprove}
       onToolCallDeny={handleToolCallDeny}
+      onMetadataEditApply={handleMetadataEditApply}
+      onMetadataEditDismiss={handleMetadataEditDismiss}
     />
     <DraftDrawer draft={openDraft} open={!!openDraft} onClose={() => setOpenDraft(null)} />
     </>

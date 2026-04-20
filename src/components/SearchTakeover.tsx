@@ -32,7 +32,7 @@ import { agentSearch, generateAndSaveDescription, SearchStep } from '../engine/a
 import { chatWithEvidenceStream, ChatMessage as EngineChatMessage } from '../engine/assistantChat';
 import { parseDraft, DraftReport } from '../utils/draftUtils';
 import { ChatDrawer, ChatMessage, parseThinkingFromRaw, parseNeedsEvidence } from './pages/HomePage';
-import { parseMetadataEdits, stripMetadataEditTags, parseActions, stripActionTags } from './AssistantPanel';
+import { parseMetadataEdits, stripMetadataEditTags, parseActions, stripActionTags, ToolCall, DraftDrawer } from './AssistantPanel';
 import {
   SearchOutput,
   SearchEvidenceResult,
@@ -46,13 +46,7 @@ import { mockCases } from '../data/mockCases';
 
 const RECENT_SEARCHES_KEY = 'command_recent_searches';
 
-const PLACEHOLDER_RECENT: string[] = [
-  '088',
-  'murder in bar last week',
-  'CCTV footage',
-  'blood on floor',
-  'knocked over bar stool',
-];
+const PLACEHOLDER_RECENT: string[] = [];
 
 function loadRecentSearches(): string[] {
   try {
@@ -546,6 +540,11 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
     onClose();
     navigate(`/search/evidence/${evidenceId}`);
   };
+
+  const handleViewCase = (caseId: string) => {
+    onClose();
+    navigate(`/cases/${caseId}`);
+  };
   const [query, setQuery] = useState(initialQuery ?? '');
   const [committedQuery, setCommittedQuery] = useState(initialOutput ? (initialQuery ?? '') : '');
   const [isLoading, setIsLoading] = useState(false);
@@ -559,7 +558,7 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatStreamingId, setChatStreamingId] = useState<string | null>(null);
-  const [chatSkill, setChatSkill] = useState<string | null>('deep-research');
+  const [chatSkill, setChatSkill] = useState<string | null>(null);
   const [openDraft, setOpenDraft] = useState<DraftReport | null>(null);
 
   const checkedEvidenceItems: GraphNode[] = [...checkedIds].map(id => {
@@ -620,37 +619,55 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
       const { text: afterNeedsEvidence } = parseNeedsEvidence(afterDraft);
       const { edits: metaEdits } = parseMetadataEdits(afterNeedsEvidence, getTitle);
       const { actions } = parseActions(afterNeedsEvidence);
+      // add_to_case is a batch action — one approval card for all items
+      const batchActions = actions.filter(a => a.type === 'add_to_case');
+      const perItemActions = actions.filter(a => a.type !== 'add_to_case');
       const allEdits: MetadataEdit[] = [
         ...metaEdits.map(e => {
           const evidenceNode = items.find(n => n.id === e.evidence_id);
           const currentValue = evidenceNode ? (evidenceNode as any)[e.field] as string | undefined : undefined;
           return { ...e, current_value: currentValue, status: 'pending' as const };
         }),
-        // Convert <action> tags into per-item MetadataEdit approval cards
-        ...actions.flatMap(a => {
+        // Convert per-item <action> tags into a single batch MetadataEdit approval card per action
+        ...perItemActions.map(a => {
           const ACTION_FIELD_MAP: Record<string, string> = {
             set_category: 'category',
             set_status: 'status',
             add_tag: 'tags',
           };
           const field = ACTION_FIELD_MAP[a.type] ?? a.type;
-          return a.item_ids.map(itemId => {
-            const evidenceNode = items.find(n => n.id === itemId);
-            const currentValue = evidenceNode ? (evidenceNode as any)[field] as string | undefined : undefined;
-            return {
-              id: `medit-action-${itemId}-${field}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-              evidence_id: itemId,
-              evidence_title: evidenceNode?.title ?? getTitle(itemId),
-              field,
-              current_value: Array.isArray(currentValue) ? (currentValue as string[]).join(', ') : currentValue,
-              new_value: a.value,
-              status: 'pending' as const,
-            };
-          });
+          const count = a.item_ids.length;
+          const isBatch = count > 1;
+          const firstNode = items.find(n => n.id === a.item_ids[0]);
+          const currentValue = !isBatch && firstNode ? (firstNode as any)[field] as string | undefined : undefined;
+          return {
+            id: `medit-action-${field}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            evidence_id: a.item_ids[0] ?? '',
+            evidence_ids: a.item_ids,
+            evidence_title: isBatch ? `${count} items` : (firstNode?.title ?? getTitle(a.item_ids[0])),
+            field,
+            current_value: Array.isArray(currentValue) ? (currentValue as string[]).join(', ') : currentValue,
+            new_value: a.value,
+            status: 'pending' as const,
+          };
         }),
       ];
       if (allEdits.length > 0) {
         setChatMessages(prev => prev.map(m => m.id === assistantId ? { ...m, metadataEdits: allEdits } : m));
+      }
+      // Batch actions (add_to_case) produce a single ToolCall approval card
+      if (batchActions.length > 0) {
+        const a = batchActions[0];
+        const count = a.item_ids.length;
+        const toolCall: ToolCall = {
+          name: a.type,
+          label: `Add to case: "${a.value}"`,
+          description: `Add ${count} selected item${count !== 1 ? 's' : ''} to case "${a.value}".`,
+          input: { case: a.value, items: `${count} item${count !== 1 ? 's' : ''}` },
+          status: 'pending',
+          successLabel: `${count} item${count !== 1 ? 's' : ''} added to case`,
+        };
+        setChatMessages(prev => prev.map(m => m.id === assistantId ? { ...m, toolCall } : m));
       }
       if (Object.keys(chunksByFileId).length > 0) {
         setChatMessages(prev => prev.map(m => m.id === assistantId ? { ...m, chunkMap: chunksByFileId } : m));
@@ -674,11 +691,12 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
       if (m.id !== msgId || !m.metadataEdits) return m;
       const edit = m.metadataEdits.find(e => e.id === editId);
       if (!edit) return m;
-      // Apply the edit to searchOutput
+      // Apply the edit to searchOutput — handle both single-item and batch
+      const idsToUpdate = edit.evidence_ids ?? [edit.evidence_id];
       setSearchOutput(prevOutput => {
         if (!prevOutput) return prevOutput;
         const updatedResults = prevOutput.results.map(r => {
-          if (r.evidence_id !== edit.evidence_id) return r;
+          if (!idsToUpdate.includes(r.evidence_id)) return r;
           if (edit.field === 'tags') {
             const existing: string[] = (r as any).tags ?? [];
             return { ...r, tags: [...existing.filter(t => t !== edit.new_value), edit.new_value] };
@@ -702,6 +720,22 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
         metadataEdits: m.metadataEdits.map(e => e.id === editId ? { ...e, status: 'dismissed' as const } : e),
       };
     }));
+  };
+
+  const handleToolCallApprove = (msgId: string) => {
+    setChatMessages(prev => prev.map(m =>
+      m.id === msgId && m.toolCall
+        ? { ...m, toolCall: { ...m.toolCall, status: 'approved' as const } }
+        : m
+    ));
+  };
+
+  const handleToolCallDeny = (msgId: string) => {
+    setChatMessages(prev => prev.map(m =>
+      m.id === msgId && m.toolCall
+        ? { ...m, toolCall: { ...m.toolCall, status: 'denied' as const } }
+        : m
+    ));
   };
 
   const toggleScope = (id: string) => {
@@ -995,6 +1029,7 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
                         {matchedCases.map(c => (
                           <button
                             key={c.caseId}
+                            onClick={() => handleViewCase(c.caseId)}
                             style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 99, cursor: 'pointer', fontSize: 12, fontFamily: 'inherit', fontWeight: 500, border: '1px solid var(--border)', backgroundColor: 'transparent', color: 'var(--foreground)', transition: 'background-color 0.1s' }}
                             onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-weaker)')}
                             onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
@@ -1121,11 +1156,12 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
           evidenceItems={checkedEvidenceItems}
           onOpenDraft={setOpenDraft}
           draftOpen={!!openDraft}
-          onToolCallApprove={() => {}}
-          onToolCallDeny={() => {}}
+          onToolCallApprove={handleToolCallApprove}
+          onToolCallDeny={handleToolCallDeny}
           onMetadataEditApply={handleMetadataEditApply}
           onMetadataEditDismiss={handleMetadataEditDismiss}
         />
+        <DraftDrawer draft={openDraft} open={!!openDraft} onClose={() => setOpenDraft(null)} />
       </div>
     </div>
   );

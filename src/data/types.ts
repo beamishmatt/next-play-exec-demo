@@ -163,7 +163,7 @@ export interface SearchOutput {
 
 // ─── Agentic actions ─────────────────────────────────────────────────────────
 
-export type AgentActionType = 'set_category' | 'set_status' | 'add_tag';
+export type AgentActionType = 'set_category' | 'set_status' | 'add_tag' | 'add_to_case';
 
 export interface AgentAction {
   type: AgentActionType;
@@ -176,6 +176,7 @@ export interface AgentAction {
 export interface MetadataEdit {
   id: string;
   evidence_id: string;
+  evidence_ids?: string[];
   evidence_title?: string;
   field: string;
   current_value?: string;
