@@ -204,12 +204,12 @@ function ResultRow({ result, query, onClick }: { result: SearchEvidenceResult; q
           <HighlightText text={result.title} query={query} />
         </div>
         {metaParts && (
-          <div style={{ fontSize: 12, color: 'var(--text-weak)', marginBottom: result.relevance ? 2 : 0 }}>
+          <div style={{ fontSize: 12, color: '#a0a0a8', marginBottom: result.relevance ? 2 : 0 }}>
             {metaParts}
           </div>
         )}
         {result.relevance && (
-          <div style={{ fontSize: 12, color: 'var(--text-weak)' }}>
+          <div style={{ fontSize: 12, color: '#a0a0a8' }}>
             {result.relevance}
           </div>
         )}
@@ -334,7 +334,7 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
         : output.results)
     : [];
   const hasResults = filteredResults.length > 0;
-  const topResults = filteredResults.slice(0, 5);
+  const topResults = filteredResults.slice(0, 7);
   const totalCount = output?.graph_context.total_matched ?? filteredResults.length ?? 0;
 
   // Derive cases and people from actual results, falling back to entities
