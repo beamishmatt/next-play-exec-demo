@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTheme } from './ThemeProvider';
-import { ArrowLeft, PanelLeft, Menu, Search } from 'lucide-react';
+import { ArrowLeft, PanelLeft, Menu } from 'lucide-react';
+import { SearchDropdown } from './SearchDropdown';
 
 import { useIsMobile } from './ui/use-mobile';
 import svgPaths from '../imports/svg-d29d82xyuv';
@@ -15,6 +16,7 @@ interface UtilityBarProps {
   actions?: React.ReactNode;
   onOpenSearch: (query: string, selectedId?: string, output?: import('../data/types').SearchOutput) => void;
   onOpenAssistant: () => void;
+  searchInputRef?: React.RefObject<HTMLInputElement>;
 }
 
 function BackButton({ onBack }: { onBack: () => void }) {
@@ -188,34 +190,6 @@ function ButtonIconMode() {
   );
 }
 
-function SearchButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      data-name="search-button"
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        height: 30,
-        padding: '0 10px',
-        borderRadius: 6,
-        border: '1px solid var(--border)',
-        backgroundColor: 'var(--fill)',
-        color: 'var(--text-subtle)',
-        fontSize: 13,
-        cursor: 'pointer',
-        whiteSpace: 'nowrap',
-        fontFamily: 'inherit',
-        width: 160,
-      }}
-    >
-      <Search size={12} style={{ flexShrink: 0, opacity: 0.6 }} />
-      <span style={{ opacity: 0.6, fontSize: 12 }}>Search...</span>
-      <kbd style={{ fontSize: 11, padding: '1px 5px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--text-weak)', backgroundColor: 'transparent', fontFamily: 'inherit', lineHeight: '16px', opacity: 0.7, marginLeft: 'auto' }}>/</kbd>
-    </button>
-  );
-}
 
 function UtilityIcons({ onOpenAssistant }: { onOpenAssistant: () => void }) {
   const isMobile = useIsMobile();
@@ -248,8 +222,12 @@ export function UtilityBar({
   actions,
   onOpenSearch,
   onOpenAssistant,
+  searchInputRef,
 }: UtilityBarProps) {
   const isMobile = useIsMobile();
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const localInputRef = React.useRef<HTMLInputElement>(null);
+  const effectiveInputRef = searchInputRef ?? localInputRef;
 
   return (
     <div
@@ -267,9 +245,19 @@ export function UtilityBar({
             sidebarVisible={sidebarVisible}
             onSidebarToggle={onSidebarToggle}
           />
+          {!isMobile && (
+            <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: 560, zIndex: 10 }}>
+              <SearchDropdown
+                inputRef={effectiveInputRef}
+                query={searchQuery}
+                onQueryChange={setSearchQuery}
+                onClose={() => {}}
+                onOpenSearch={onOpenSearch}
+              />
+            </div>
+          )}
           <div className="flex-1" />
           <div className="flex items-center gap-4 shrink-0">
-            {!isMobile && <SearchButton onClick={() => onOpenSearch('')} />}
             {actions}
             <RightSection onOpenAssistant={onOpenAssistant} />
           </div>

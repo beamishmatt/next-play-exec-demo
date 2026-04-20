@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ArrowUp, ChevronDown, Clock, CircleCheck, FileText, X, Copy, Check, Tag, RefreshCw, ShieldCheck, Pencil } from 'lucide-react';
+import { ArrowUp, ChevronDown, Clock, CircleCheck, FileText, X, Copy, Check, Tag, RefreshCw, ShieldCheck, Pencil, Lightbulb } from 'lucide-react';
 import { PromptInput, PromptInputTextarea, PromptInputActions } from './ui/prompt-input';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
 import { chatWithEvidenceStream, ChatMessage } from '../engine/assistantChat';
@@ -39,6 +39,7 @@ const ACTION_LABELS: Record<AgentActionType, string> = {
   set_category: 'Set category',
   set_status: 'Set status',
   add_tag: 'Add tag',
+  add_to_case: 'Add to case',
 };
 
 function ActionCard({
@@ -141,6 +142,7 @@ export interface ToolCall {
   description: string;
   input: Record<string, string>;
   status: 'pending' | 'approved' | 'denied';
+  successLabel?: string;
 }
 
 export function ToolCallCard({
@@ -179,7 +181,7 @@ export function ToolCallCard({
       >
         <ShieldCheck size={12} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
         <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', flex: 1 }}>
-          {isApproved ? 'Permission enabled' : 'Approval required'}
+          {isApproved ? (toolCall.successLabel ?? 'Permission enabled') : 'Approval required'}
         </span>
         {isApproved && (
           <Check size={12} style={{ color: 'var(--muted-foreground)' }} />
@@ -417,6 +419,71 @@ export function MetadataEditCard({
   );
 }
 
+// ─── Feature request ─────────────────────────────────────────────────────────
+
+export function parseFeatureRequest(content: string): { title: string; description: string } | null {
+  const re = /<feature_request\b[^>]*\/>/i;
+  const tagMatch = re.exec(content);
+  if (!tagMatch) return null;
+  const titleMatch = /title="([^"]+)"/.exec(tagMatch[0]);
+  const descMatch = /description="([^"]+)"/.exec(tagMatch[0]);
+  if (!titleMatch || !descMatch) return null;
+  return { title: titleMatch[1], description: descMatch[1] };
+}
+
+export function stripFeatureRequestTags(content: string): string {
+  const OPEN = '<feature_request';
+  const CLOSE = '/>';
+  let result = content;
+  let start = result.indexOf(OPEN);
+  while (start !== -1) {
+    const end = result.indexOf(CLOSE, start);
+    if (end === -1) {
+      result = result.slice(0, start);
+      break;
+    }
+    result = result.slice(0, start) + result.slice(end + CLOSE.length);
+    start = result.indexOf(OPEN);
+  }
+  return result.trim();
+}
+
+export function FeatureRequestCard({ title, description }: { title: string; description: string }) {
+  const [submitted, setSubmitted] = React.useState(false);
+
+  return (
+    <div style={{ marginTop: 10, border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '1px solid var(--border)', backgroundColor: 'var(--fill-weaker)' }}>
+        <Lightbulb size={12} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+        <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', flex: 1 }}>Feature request</span>
+        {submitted && <Check size={12} style={{ color: 'var(--muted-foreground)' }} />}
+      </div>
+      <div style={{ padding: '10px 12px', backgroundColor: submitted ? 'var(--fill-weaker)' : '#ffffff' }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', marginBottom: 4 }}>{title}</div>
+        <div style={{ fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.5, marginBottom: submitted ? 0 : 12 }}>{description}</div>
+        {!submitted && (
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              onClick={() => setSubmitted(true)}
+              style={{
+                flex: 1, padding: '5px 10px', borderRadius: 6,
+                border: '1px solid var(--fill-strong)', backgroundColor: 'var(--fill-strong)',
+                color: 'var(--text-inverse-strong)', fontSize: 11, fontWeight: 500,
+                cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              Submit request
+            </button>
+          </div>
+        )}
+        {submitted && (
+          <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 4 }}>Request submitted — thanks for the feedback.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -446,6 +513,7 @@ interface Message {
   parsedActions?: AgentAction[];
   toolCall?: ToolCall;
   reportChips?: boolean;
+  featureRequest?: { title: string; description: string };
 }
 
 export interface AssistantItem {
@@ -975,25 +1043,28 @@ export function AssistantPanel({ isOpen, items, onClose, onAction }: AssistantPa
         raw.current += chunk;
         const { thinking, content: rawContent } = parseThinking(raw.current);
         const { content: postDraft, draft } = parseDraft(rawContent);
-        const content = stripActionTags(postDraft);
+        const content = stripFeatureRequestTags(stripActionTags(postDraft));
         setMessages(prev =>
           prev.map(m => m.id === assistantId ? { ...m, thinking, content, draft: draft ?? m.draft } : m)
         );
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       });
 
-      // Parse action tags from the final raw content
+      // Parse action tags and feature requests from the final raw content
       const { thinking: finalThinking, content: finalRawContent } = parseThinking(raw.current);
       const { content: finalPostDraft, draft: finalDraft } = parseDraft(finalRawContent);
       const { content: finalContent, actions } = parseActions(finalPostDraft);
+      const featureReq = parseFeatureRequest(finalPostDraft);
+      const cleanFinalContent = stripFeatureRequestTags(finalContent);
       setMessages(prev =>
         prev.map(m => m.id === assistantId ? {
           ...m,
           thinking: finalThinking,
-          content: finalContent,
+          content: cleanFinalContent,
           draft: finalDraft ?? m.draft,
           parsedActions: actions.length > 0 ? actions : m.parsedActions,
           sources: sources.length > 0 ? sources : m.sources,
+          ...(featureReq ? { featureRequest: featureReq } : {}),
         } : m)
       );
     } catch (err) {
@@ -1024,7 +1095,7 @@ export function AssistantPanel({ isOpen, items, onClose, onAction }: AssistantPa
         raw.current += chunk;
         const { thinking, content: rawContent } = parseThinking(raw.current);
         const { content: postDraft, draft } = parseDraft(rawContent);
-        const content = stripActionTags(postDraft);
+        const content = stripFeatureRequestTags(stripActionTags(postDraft));
         setMessages(prev =>
           prev.map(m => m.id === assistantId ? { ...m, thinking, content, draft: draft ?? m.draft } : m)
         );
@@ -1034,14 +1105,17 @@ export function AssistantPanel({ isOpen, items, onClose, onAction }: AssistantPa
       const { thinking: finalThinking, content: finalRawContent } = parseThinking(raw.current);
       const { content: finalPostDraft, draft: finalDraft } = parseDraft(finalRawContent);
       const { content: finalContent, actions } = parseActions(finalPostDraft);
+      const featureReq2 = parseFeatureRequest(finalPostDraft);
+      const cleanFinalContent2 = stripFeatureRequestTags(finalContent);
       setMessages(prev =>
         prev.map(m => m.id === assistantId ? {
           ...m,
           thinking: finalThinking,
-          content: finalContent,
+          content: cleanFinalContent2,
           draft: finalDraft ?? m.draft,
           parsedActions: actions.length > 0 ? actions : m.parsedActions,
           sources: sources.length > 0 ? sources : m.sources,
+          ...(featureReq2 ? { featureRequest: featureReq2 } : {}),
         } : m)
       );
     } catch (err) {
@@ -1259,6 +1333,9 @@ export function AssistantPanel({ isOpen, items, onClose, onAction }: AssistantPa
                               : m
                           ))}
                         />
+                      )}
+                      {msg.featureRequest && (
+                        <FeatureRequestCard title={msg.featureRequest.title} description={msg.featureRequest.description} />
                       )}
                     </>
                   );

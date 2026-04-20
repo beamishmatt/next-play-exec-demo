@@ -34,7 +34,7 @@ import { SCOPE_CHIPS } from '../SearchDropdown';
 import assistantIcon from '../../assets/aiera.svg';
 import { chatWithEvidenceStream, ChatMessage as EngineChatMessage } from '../../engine/assistantChat';
 import { Checkbox } from '../ui/checkbox';
-import { ThinkingBlock, DraftCard, DraftDrawer, ToolCall, ToolCallCard, MetadataEditCard, parseActions, parseMetadataEdits, stripActionTags, stripMetadataEditTags } from '../AssistantPanel';
+import { ThinkingBlock, DraftCard, DraftDrawer, ToolCall, ToolCallCard, MetadataEditCard, parseActions, parseMetadataEdits, stripActionTags, stripMetadataEditTags, FeatureRequestCard, parseFeatureRequest, stripFeatureRequestTags } from '../AssistantPanel';
 import { DraftReport, parseDraft, DRAFT_PANEL_WIDTH } from '../../utils/draftUtils';
 import { getContextGraph } from '../../storage/config';
 import { GraphNode, MetadataEdit } from '../../data/types';
@@ -1148,7 +1148,7 @@ function EvidenceDrawer({
 
 // ── Chat Drawer ───────────────────────────────────────────────────────────────
 
-export type ChatMessage = { id: string; role: 'user' | 'assistant' | 'system'; text: string; thinking?: string; showSelectEvidence?: boolean; draft?: DraftReport; pendingDraft?: boolean; chunkMap?: Record<string, string>; evidenceSnapshot?: GraphNode[]; toolCall?: ToolCall; metadataEdits?: MetadataEdit[] };
+export type ChatMessage = { id: string; role: 'user' | 'assistant' | 'system'; text: string; thinking?: string; showSelectEvidence?: boolean; draft?: DraftReport; pendingDraft?: boolean; chunkMap?: Record<string, string>; evidenceSnapshot?: GraphNode[]; toolCall?: ToolCall; metadataEdits?: MetadataEdit[]; featureRequest?: { title: string; description: string } };
 
 
 // ── Citation processing ───────────────────────────────────────────────────────
@@ -1668,6 +1668,9 @@ export function ChatDrawer({
                       onDismiss={() => onMetadataEditDismiss?.(m.id, edit.id)}
                     />
                   ))}
+                  {m.featureRequest && (
+                    <FeatureRequestCard title={m.featureRequest.title} description={m.featureRequest.description} />
+                  )}
                   {m.showSelectEvidence && evidenceCount === 0 && (
                     <div style={{ marginTop: 10 }}>
                       <AnimatedBorderButton
@@ -1880,7 +1883,7 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
         const { thinking, text: afterThinking } = parseThinkingFromRaw(raw.current);
         const { content: afterDraft, draft } = parseDraft(afterThinking);
         const { text: afterNeedsEvidence, needsEvidence } = parseNeedsEvidence(afterDraft);
-        const displayText = stripActionTags(stripMetadataEditTags(afterNeedsEvidence));
+        const displayText = stripFeatureRequestTags(stripActionTags(stripMetadataEditTags(afterNeedsEvidence)));
         // True while <draft_report> tag is open but closing tag hasn't arrived yet
         const pendingDraft = afterThinking.includes('<draft_report') && draft === null;
         if (needsEvidence && !evidencePrompted) {
@@ -1896,10 +1899,17 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
           } : m)
         );
       });
-      // After streaming, parse actions and metadata edits into approval cards
+      // After streaming, parse actions, metadata edits, and feature requests into cards
       const { text: afterThinkingFinal } = parseThinkingFromRaw(raw.current);
       const { content: afterDraftFinal } = parseDraft(afterThinkingFinal);
       const { text: afterNeedsEvidenceFinal } = parseNeedsEvidence(afterDraftFinal);
+      const featureReq = parseFeatureRequest(afterNeedsEvidenceFinal);
+      const finalDisplayText = stripFeatureRequestTags(stripActionTags(stripMetadataEditTags(afterNeedsEvidenceFinal)));
+      setChatMessages(prev => prev.map(m => m.id === assistantId ? {
+        ...m,
+        text: finalDisplayText,
+        ...(featureReq ? { featureRequest: featureReq } : {}),
+      } : m));
       const getTitle = (id: string) => evidenceItems.find(n => n.id === id)?.title;
       const { edits: metaEdits } = parseMetadataEdits(afterNeedsEvidenceFinal, getTitle);
       const { actions } = parseActions(afterNeedsEvidenceFinal);

@@ -68,6 +68,7 @@ function AppContent() {
   const [assistantOpen, setAssistantOpen] = React.useState(false);
   const [chatMessages, setChatMessages] = React.useState<ChatMessage[]>([]);
   const [chatStreamingId, setChatStreamingId] = React.useState<string | null>(null);
+  const [chatSkill, setChatSkill] = React.useState<string | null>(null);
   const [importOpen, setImportOpen] = React.useState(false);
 
   // Memoized computation for back button visibility
@@ -99,14 +100,20 @@ function AppContent() {
     }
   }, [isMobile, isEvidenceDetailPage]);
 
-  // Open search modal on '/' keypress (when not in an input)
+  const utilitySearchRef = React.useRef<HTMLInputElement>(null);
+
+  // Focus utility bar search on '/' keypress (when not in an input), fall back to takeover on home
   React.useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== '/') return;
       const tag = (e.target as HTMLElement).tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return;
       e.preventDefault();
-      setSearchState({ open: true });
+      if (utilitySearchRef.current) {
+        utilitySearchRef.current.focus();
+      } else {
+        setSearchState({ open: true });
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -292,6 +299,7 @@ function AppContent() {
               onSidebarToggle={handleSidebarToggle}
               onOpenSearch={(query, selectedId, output) => setSearchState({ open: true, query, selectedId, output })}
               onOpenAssistant={() => setAssistantOpen(true)}
+              searchInputRef={utilitySearchRef}
               actions={location.pathname === '/cases' ? (
                 <button
                   style={{
@@ -364,8 +372,8 @@ function AppContent() {
           evidenceOpen={false}
           evidenceCount={0}
           isStreaming={chatStreamingId !== null}
-          skill={null}
-          onSkillChange={() => {}}
+          skill={chatSkill}
+          onSkillChange={setChatSkill}
           evidenceItems={[]}
           onOpenDraft={() => {}}
           onToolCallApprove={handleToolCallApprove}

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Search,
   X,
@@ -8,17 +9,13 @@ import {
   File,
   Loader2,
   LayoutGrid,
-  ChevronRight,
-  Headphones,
-  FileText as FileDoc,
-  Sparkles,
   FolderOpen,
   Users,
   Car,
   Smartphone,
 } from 'lucide-react';
 import { agentSearch } from '../engine/agentSearch';
-import { SearchOutput, SearchEvidenceResult, FilterChip, MediaClass } from '../data/types';
+import { SearchOutput, SearchEvidenceResult, MediaClass } from '../data/types';
 
 // ─── Scope chips ──────────────────────────────────────────────────────────────
 
@@ -131,7 +128,7 @@ function HighlightText({ text, query }: { text: string; query: string }) {
     <>
       {parts.map((part, i) =>
         matchRe.test(part)
-          ? <mark key={i} style={{ backgroundColor: 'var(--color-brand-subtle, #dbeafe)', color: 'inherit', borderRadius: 2, padding: '0 1px' }}>{part}</mark>
+          ? <mark key={i} style={{ backgroundColor: 'rgba(254,198,46,0.5)', color: 'inherit', borderRadius: 2, padding: '0 1px' }}>{part}</mark>
           : part
       )}
     </>
@@ -148,11 +145,6 @@ function MediaIcon({ mediaClass }: { mediaClass: MediaClass | string }) {
   }
 }
 
-function confidenceLabel(confidence: string): string {
-  if (confidence === 'high') return 'Strong match';
-  if (confidence === 'medium') return 'Medium match';
-  return 'Weak match';
-}
 
 function formatDate(dateStr?: string): string {
   if (!dateStr) return '';
@@ -193,7 +185,7 @@ function ResultRow({ result, query, onClick }: { result: SearchEvidenceResult; q
   const metaParts = [
     result.evidence_id ? `ID: ${result.evidence_id}` : null,
     formatDate(result.date_recorded) || null,
-    result.confidence ? confidenceLabel(result.confidence) : null,
+    result.officer || null,
   ].filter(Boolean).join(' • ');
 
   return (
@@ -219,47 +211,15 @@ function ResultRow({ result, query, onClick }: { result: SearchEvidenceResult; q
 
       {/* Matched on */}
       {result.relevance && (
-        <div style={{ fontSize: 12, color: 'var(--text-weak)', marginBottom: result.excerpt ? 2 : 0 }}>
+        <div style={{ fontSize: 12, color: 'var(--text-weak)' }}>
           {result.relevance}
         </div>
       )}
 
-      {/* Excerpt */}
-      {result.excerpt && (
-        <div
-          style={{
-            fontSize: 12, color: '#9ca3af', fontWeight: 300, lineHeight: 1.5,
-            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-          }}
-        >
-          <HighlightText text={result.excerpt} query={query} />
-        </div>
-      )}
     </button>
   );
 }
 
-// ─── Entity row ───────────────────────────────────────────────────────────────
-
-function EntityRow({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 14px',
-        backgroundColor: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
-      }}
-      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
-      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-    >
-      <span style={{ color: 'var(--text-weak)', flexShrink: 0 }}>{icon}</span>
-      <span style={{ flex: 1, fontSize: 13, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        {label}
-      </span>
-      <ChevronRight size={14} style={{ color: 'var(--text-weak)', flexShrink: 0 }} />
-    </button>
-  );
-}
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
@@ -272,22 +232,14 @@ interface SearchDropdownProps {
 }
 
 export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpenSearch }: SearchDropdownProps) {
+  const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [output, setOutput] = useState<SearchOutput | null>(null);
-  const [chips, setChips] = useState<FilterChip[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>(loadRecentSearches);
-  const [selectedScopes, setSelectedScopes] = useState<Set<string>>(new Set());
+  const [selectedScopes] = useState<Set<string>>(new Set());
   const searchVersion = useRef(0);
-
-  const toggleScope = (id: string) => {
-    setSelectedScopes(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
 
   // Close on outside click
   useEffect(() => {
@@ -316,7 +268,6 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
   useEffect(() => {
     if (query.trim().length < 3) {
       setOutput(null);
-      setChips([]);
       setIsLoading(false);
     }
   }, [query]);
@@ -345,7 +296,6 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
         });
         if (version !== searchVersion.current) return;
         setOutput(result);
-        setChips(result.chips);
         const saved = saveRecentSearch(q, recentSearches);
         setRecentSearches(saved);
       } catch {
@@ -361,12 +311,7 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
   const handleClear = () => {
     onQueryChange('');
     setOutput(null);
-    setChips([]);
     inputRef.current?.focus();
-  };
-
-  const handleRemoveChip = (id: string) => {
-    setChips(prev => prev.filter(c => c.id !== id));
   };
 
   const q = query.trim();
@@ -391,7 +336,7 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
         : output.results)
     : [];
   const hasResults = filteredResults.length > 0;
-  const topResults = filteredResults.slice(0, 3);
+  const topResults = filteredResults.slice(0, 5);
   const totalCount = output?.graph_context.total_matched ?? filteredResults.length ?? 0;
 
   // Derive cases and people from actual results, falling back to entities
@@ -404,10 +349,10 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
   const caseEntities = output?.entities.filter(e => e.type === 'case') ?? [];
   const officerEntities = output?.entities.filter(e => e.type === 'officer') ?? [];
 
-  const dropdownVisible = isOpen && (showRecents ? true : (isLoading || hasResults));
+  const dropdownVisible = isOpen && (showRecents ? true : (isLoading || hasResults || output !== null));
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', flex: '1 1 0', minWidth: 0, maxWidth: 480 }}>
+    <div ref={containerRef} style={{ position: 'relative', flex: '1 1 0', minWidth: 0, maxWidth: 600 }}>
 
       {/* ── Input ── */}
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -426,7 +371,7 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
             paddingRight: query ? 32 : 12,
             borderRadius: 6,
             border: '1px solid var(--border)',
-            backgroundColor: 'var(--fill-weaker)',
+            backgroundColor: 'transparent',
             color: 'var(--foreground)',
             fontSize: 13,
             outline: 'none',
@@ -467,41 +412,9 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
           }}
         >
 
-          {/* ── Scope chips + Recent searches ── */}
+          {/* ── Recent searches / Autocomplete suggestions ── */}
           {showRecents && (
             <>
-              {/* Scope chips */}
-              <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
-                  Browse by
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {SCOPE_CHIPS.map(chip => {
-                    const active = selectedScopes.has(chip.id);
-                    return (
-                      <button
-                        key={chip.id}
-                        onClick={() => toggleScope(chip.id)}
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 5,
-                          padding: '4px 10px', borderRadius: 99, cursor: 'pointer',
-                          fontSize: 12, fontWeight: 500,
-                          border: `1px solid ${active ? 'transparent' : 'var(--border)'}`,
-                          backgroundColor: active ? 'var(--foreground)' : 'transparent',
-                          color: active ? 'var(--raised)' : 'var(--foreground)',
-                          transition: 'all 0.1s',
-                        }}
-                        onMouseEnter={e => { if (!active) e.currentTarget.style.backgroundColor = 'var(--fill-hover)'; }}
-                        onMouseLeave={e => { if (!active) e.currentTarget.style.backgroundColor = 'transparent'; }}
-                      >
-                        {chip.icon}
-                        {chip.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
               {/* Recent searches / Autocomplete suggestions */}
               {q.length === 0 ? (
                 recentSearches.length > 0 && (
@@ -560,61 +473,18 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
           {/* ── Results view ── */}
           {!showRecents && (
             <>
-              {/* Scope chips + AI filter chips — same row */}
-              <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {SCOPE_CHIPS.map(chip => {
-                    const active = selectedScopes.has(chip.id);
-                    return (
-                      <button
-                        key={chip.id}
-                        onClick={() => toggleScope(chip.id)}
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 5,
-                          padding: '4px 10px', borderRadius: 99, cursor: 'pointer',
-                          fontSize: 12, fontWeight: 500,
-                          border: `1px solid ${active ? 'transparent' : 'var(--border)'}`,
-                          backgroundColor: active ? 'var(--foreground)' : 'transparent',
-                          color: active ? 'var(--raised)' : 'var(--foreground)',
-                          transition: 'all 0.1s',
-                        }}
-                        onMouseEnter={e => { if (!active) e.currentTarget.style.backgroundColor = 'var(--fill-hover)'; }}
-                        onMouseLeave={e => { if (!active) e.currentTarget.style.backgroundColor = 'transparent'; }}
-                      >
-                        {chip.icon}
-                        {chip.label}
-                      </button>
-                    );
-                  })}
-                  {chips.map(chip => (
-                    <button
-                      key={chip.id}
-                      onClick={() => handleRemoveChip(chip.id)}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 5,
-                        padding: '4px 10px', borderRadius: 99, cursor: 'pointer',
-                        fontSize: 12, fontWeight: 500,
-                        border: '1px solid var(--border)',
-                        backgroundColor: 'transparent',
-                        color: 'var(--foreground)',
-                        transition: 'all 0.1s',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
-                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                    >
-                      <Sparkles size={13} />
-                      {chip.label}
-                      <X size={10} style={{ marginLeft: 2, opacity: 0.6 }} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Loading state */}
               {isLoading && topResults.length === 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px', color: 'var(--text-weak)', fontSize: 13 }}>
                   <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
                   Searching...
+                </div>
+              )}
+
+              {/* No results state */}
+              {!isLoading && output && topResults.length === 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 14px' }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)' }}>No results for "{q}"</div>
                 </div>
               )}
 
@@ -629,7 +499,7 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
                       <ResultRow
                         result={result}
                         query={q}
-                        onClick={() => { setIsOpen(false); onOpenSearch(q, result.evidence_id, output ?? undefined); }}
+                        onClick={() => { setIsOpen(false); onQueryChange(''); navigate(`/search/evidence/${result.evidence_id}`); }}
                       />
                       {i < topResults.length - 1 && (
                         <div style={{ height: 1, backgroundColor: 'var(--border)', margin: '0 14px' }} />
@@ -639,46 +509,62 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
                 </>
               )}
 
-              {/* Footer: Other Results + See all */}
+              {/* Footer: Other Results + entity chips + See all */}
               {topResults.length > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', borderTop: '1px solid var(--border)' }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-weak)' }}>Other Results</span>
-                  <button
-                    onClick={() => { setIsOpen(false); onOpenSearch(q, undefined, output ?? undefined); }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500, color: '#2563eb', padding: 0 }}
-                    onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
-                    onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
-                  >
-                    See all {totalCount > 0 ? totalCount : ''} results
-                  </button>
+                <div style={{ borderTop: '1px solid var(--border)', padding: '8px 14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-weak)' }}>Other Results</span>
+                    <button
+                      onClick={() => { setIsOpen(false); onOpenSearch(q, undefined, output ?? undefined); }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500, color: '#2563eb', padding: 0 }}
+                      onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                      onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
+                    >
+                      See all {totalCount > 0 ? totalCount : ''} results
+                    </button>
+                  </div>
+                  <div style={{ height: 1, backgroundColor: 'var(--border)', margin: '0 -14px 10px' }} />
+                  {(uniqueCases.length > 0 || caseEntities.length > 0) && (
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Cases</div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {(uniqueCases.length > 0 ? uniqueCases : caseEntities.map(e => e.name)).map((name, i) => (
+                          <button
+                            key={i}
+                            onClick={() => { setIsOpen(false); onOpenSearch(q, undefined, output ?? undefined); }}
+                            style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: 99, border: '1px solid var(--border)', backgroundColor: 'transparent', color: 'var(--foreground)', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}
+                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
+                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                          >
+                            {name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {(uniqueCases.length > 0 || caseEntities.length > 0) && (uniquePeople.length > 0 || officerEntities.length > 0) && (
+                    <div style={{ height: 1, backgroundColor: 'var(--border)', margin: '10px -14px' }} />
+                  )}
+                  {(uniquePeople.length > 0 || officerEntities.length > 0) && (
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>People</div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {(uniquePeople.length > 0 ? uniquePeople : officerEntities.map(e => e.name)).map((name, i) => (
+                          <button
+                            key={i}
+                            onClick={() => { setIsOpen(false); onOpenSearch(q, undefined, output ?? undefined); }}
+                            style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: 99, border: '1px solid var(--border)', backgroundColor: 'transparent', color: 'var(--foreground)', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}
+                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
+                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                          >
+                            {name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
-
-              {/* Entity rows — always shown, populated from results */}
-              <div style={{ height: 1, backgroundColor: 'var(--border)' }} />
-              <EntityRow
-                icon={<FolderOpen size={15} />}
-                label={
-                  uniqueCases.length > 0
-                    ? `Cases (${uniqueCases.length}) ${uniqueCases.slice(0, 3).join(' • ')}`
-                    : caseEntities.length > 0
-                      ? `Cases (${caseEntities.length}) ${caseEntities.map(e => e.name).join(' • ')}`
-                      : 'Cases'
-                }
-                onClick={() => { setIsOpen(false); onOpenSearch(q, undefined, output ?? undefined); }}
-              />
-              <div style={{ height: 1, backgroundColor: 'var(--border)' }} />
-              <EntityRow
-                icon={<Users size={15} />}
-                label={
-                  uniquePeople.length > 0
-                    ? `People (${uniquePeople.length}) ${uniquePeople.slice(0, 3).join(' • ')}`
-                    : officerEntities.length > 0
-                      ? `People (${officerEntities.length}) ${officerEntities.map(e => e.name).join(' • ')}`
-                      : 'People'
-                }
-                onClick={() => { setIsOpen(false); onOpenSearch(q, undefined, output ?? undefined); }}
-              />
             </>
           )}
         </div>
