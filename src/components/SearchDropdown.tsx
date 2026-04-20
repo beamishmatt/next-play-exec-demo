@@ -135,8 +135,8 @@ function HighlightText({ text, query }: { text: string; query: string }) {
   );
 }
 
-function MediaIcon({ mediaClass }: { mediaClass: MediaClass | string }) {
-  const style: React.CSSProperties = { color: 'var(--text-weak)', flexShrink: 0 };
+function MediaIcon({ mediaClass, style: extraStyle }: { mediaClass: MediaClass | string; style?: React.CSSProperties }) {
+  const style: React.CSSProperties = { color: 'var(--text-weak)', flexShrink: 0, ...extraStyle };
   switch (mediaClass) {
     case 'video': return <Video size={13} style={style} />;
     case 'image': return <Image size={13} style={style} />;
@@ -192,30 +192,28 @@ function ResultRow({ result, query, onClick }: { result: SearchEvidenceResult; q
     <button
       onClick={onClick}
       style={{
-        display: 'block', width: '100%', textAlign: 'left',
+        display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left',
         padding: '10px 14px', backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
       }}
       onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
       onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
     >
-      {/* Title */}
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 3 }}>
-        <HighlightText text={result.title} query={query} />
-      </div>
-
-      {/* Icon + meta */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: result.relevance ? 2 : 0 }}>
-        <MediaIcon mediaClass={result.media_class} />
-        <span style={{ fontSize: 12, color: 'var(--text-weak)' }}>{metaParts}</span>
-      </div>
-
-      {/* Matched on */}
-      {result.relevance && (
-        <div style={{ fontSize: 12, color: 'var(--text-weak)' }}>
-          {result.relevance}
+      <MediaIcon mediaClass={result.media_class} style={{ flexShrink: 0, alignSelf: 'center' }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 2 }}>
+          <HighlightText text={result.title} query={query} />
         </div>
-      )}
-
+        {metaParts && (
+          <div style={{ fontSize: 12, color: 'var(--text-weak)', marginBottom: result.relevance ? 2 : 0 }}>
+            {metaParts}
+          </div>
+        )}
+        {result.relevance && (
+          <div style={{ fontSize: 12, color: 'var(--text-weak)' }}>
+            {result.relevance}
+          </div>
+        )}
+      </div>
     </button>
   );
 }
@@ -352,65 +350,69 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
   const dropdownVisible = isOpen && (showRecents ? true : (isLoading || hasResults || output !== null));
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', flex: '1 1 0', minWidth: 0, maxWidth: 600 }}>
+    <div
+      ref={containerRef}
+      style={{ position: 'relative', flex: '1 1 0', minWidth: 0, maxWidth: 600 }}
+    >
+      {/* Spacer — holds 36px in flow so the flex-centered UtilityBar wrapper never shifts */}
+      <div style={{ height: 36, pointerEvents: 'none' }} aria-hidden="true" />
 
-      {/* ── Input ── */}
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-        <Search size={15} style={{ position: 'absolute', left: 10, color: 'var(--text-weak)', pointerEvents: 'none' }} />
-        <input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={e => onQueryChange(e.target.value)}
-          onFocus={() => setIsOpen(true)}
-          placeholder="Search evidence..."
-          style={{
-            width: '100%',
-            height: 32,
-            paddingLeft: 32,
-            paddingRight: query ? 32 : 12,
-            borderRadius: 6,
-            border: '1px solid var(--border)',
-            backgroundColor: 'transparent',
-            color: 'var(--foreground)',
-            fontSize: 13,
-            outline: 'none',
-          }}
-        />
-        {query && (
-          <button
-            onClick={handleClear}
+      {/* Unified container — always absolute so it never affects flow height */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 200,
+          backgroundColor: 'var(--raised)',
+          border: '1px solid var(--border)',
+          borderRadius: dropdownVisible ? '10px 10px 8px 8px' : 10,
+          boxShadow: dropdownVisible ? '0 6px 20px rgba(0,0,0,0.14)' : 'none',
+        }}
+      >
+        {/* Input row */}
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', height: 36 }}>
+          <Search size={15} style={{ position: 'absolute', left: 10, color: 'var(--text-weak)', pointerEvents: 'none' }} />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={e => onQueryChange(e.target.value)}
+            onFocus={() => setIsOpen(true)}
+            placeholder="Search evidence..."
             style={{
-              position: 'absolute', right: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-weak)',
-              borderRadius: 99,
+              width: '100%',
+              height: '100%',
+              paddingLeft: 32,
+              paddingRight: query ? 32 : 12,
+              border: 'none',
+              backgroundColor: 'transparent',
+              color: 'var(--foreground)',
+              fontSize: 13,
+              outline: 'none',
             }}
-          >
-            <X size={13} />
-          </button>
-        )}
-        {isLoading && !query && (
-          <Loader2 size={13} style={{ position: 'absolute', right: 10, color: 'var(--text-weak)', animation: 'spin 1s linear infinite' }} />
-        )}
-      </div>
+          />
+          {query && (
+            <button
+              onClick={handleClear}
+              style={{
+                position: 'absolute', right: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-weak)',
+                borderRadius: 99,
+              }}
+            >
+              <X size={13} />
+            </button>
+          )}
+          {isLoading && !query && (
+            <Loader2 size={13} style={{ position: 'absolute', right: 10, color: 'var(--text-weak)', animation: 'spin 1s linear infinite' }} />
+          )}
+        </div>
 
-      {/* ── Dropdown panel ── */}
-      {dropdownVisible && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 6px)',
-            left: 0,
-            right: 0,
-            backgroundColor: 'var(--raised)',
-            border: '1px solid var(--border)',
-            borderRadius: 8,
-            boxShadow: 'var(--elevation-md)',
-            zIndex: 200,
-            overflow: 'hidden',
-            paddingBottom: 12,
-          }}
-        >
+        {/* Dropdown content */}
+        {dropdownVisible && (
+        <div style={{ borderTop: '1px solid var(--border)', paddingBottom: 12 }}>
 
           {/* ── Recent searches / Autocomplete suggestions ── */}
           {showRecents && (
@@ -569,6 +571,7 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

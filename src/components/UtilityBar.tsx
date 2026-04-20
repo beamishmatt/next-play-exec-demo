@@ -246,7 +246,7 @@ export function UtilityBar({
             onSidebarToggle={onSidebarToggle}
           />
           {!isMobile && (
-            <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: 560, zIndex: 10 }}>
+            <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, transform: 'translateX(-50%)', width: 560, zIndex: 10, display: 'flex', alignItems: 'center' }}>
               <SearchDropdown
                 inputRef={effectiveInputRef}
                 query={searchQuery}
