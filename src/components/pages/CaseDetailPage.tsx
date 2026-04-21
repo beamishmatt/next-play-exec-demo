@@ -487,7 +487,7 @@ export function CaseDetailPage() {
       {/* Tab navigation for case details */}
       <div className="mt-6">
         <Tabs defaultValue="evidence" className="w-full gap-6">
-          <TabsList className="flex w-full">
+          <TabsList variant="line" className="flex w-full">
             <TabsTrigger value="evidence">
               Evidence {caseEvidence.length}
             </TabsTrigger>

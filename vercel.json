@@ -3,6 +3,7 @@
   "outputDirectory": "build",
   "rewrites": [
     { "source": "/api/openai/:path*", "destination": "/api/openai?path=:path*" },
+    { "source": "/api/graph", "destination": "/api/graph" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

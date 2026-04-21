@@ -432,7 +432,8 @@
       "objects_detected": [],
       "vector_file_id": "file-TkiCnjimj9jgspjZGnVNZa",
       "video_processing": null,
-      "tags": []
+      "tags": [],
+      "description": "This PDF document contains a witness statement from Darnell Washington related to the homicide investigation in case PBPD-2025-088142, recorded by Officer Matt Beamish on April 15, 2026."
     },
     "EV-W8OEFO0Q": {
       "id": "EV-W8OEFO0Q",
@@ -451,7 +452,8 @@
       "objects_detected": [],
       "vector_file_id": "file-NYJUYiV9LDVTkovcdgoFJo",
       "video_processing": null,
-      "tags": []
+      "tags": [],
+      "description": "This PDF document titled \"14-witness-bar-patron-carlos-reyes\" contains witness statements related to a homicide case, PBPD-2025-088142, and was prepared by Officer Matt Beamish on April 15, 2026. The evidence is sourced from a witness who was a patron at the bar during the incident."
     }
   },
   "edges": [
