@@ -6,8 +6,11 @@ export default async function handler(req: Request) {
   }
 
   const url = new URL(req.url);
-  const openaiPath = url.pathname.replace(/^\/api\/openai/, '');
-  const targetUrl = `https://api.openai.com/v1${openaiPath}${url.search}`;
+  const path = url.searchParams.get('path') ?? '';
+  // Rebuild query string without the 'path' param
+  url.searchParams.delete('path');
+  const qs = url.searchParams.toString();
+  const targetUrl = `https://api.openai.com/v1/${path}${qs ? `?${qs}` : ''}`;
 
   const body = req.method !== 'GET' && req.method !== 'HEAD'
     ? await req.arrayBuffer()
