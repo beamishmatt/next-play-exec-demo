@@ -24,6 +24,7 @@ import { ChatDrawer, ChatMessage, parseThinkingFromRaw, parseNeedsEvidence } fro
 import { chatWithEvidenceStream, ChatMessage as EngineChatMessage } from './engine/assistantChat';
 import { parseDraft } from './utils/draftUtils';
 import { stripActionTags, ToolCall } from './components/AssistantPanel';
+import { PasswordGate } from './components/PasswordGate';
 import { Plus, Home } from 'lucide-react';
 import EvidenceIcon from './imports/EvidenceIcon';
 import CasesIcon from './imports/CasesIcon';
@@ -47,12 +48,14 @@ const headerIcon = <CustomLogo size={32} />;
 export default function App() {
   return (
     <ThemeProvider>
-      <ActionBarProvider>
-        <Router>
-          <AppContent />
-          <Toaster />
-        </Router>
-      </ActionBarProvider>
+      <PasswordGate>
+        <ActionBarProvider>
+          <Router>
+            <AppContent />
+            <Toaster />
+          </Router>
+        </ActionBarProvider>
+      </PasswordGate>
     </ThemeProvider>
   );
 }

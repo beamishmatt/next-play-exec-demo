@@ -250,12 +250,18 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  // Close on Esc
+  // Keyboard shortcuts: Esc to close, / to focus
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         setIsOpen(false);
         inputRef.current?.blur();
+      } else if (e.key === '/' && document.activeElement !== inputRef.current) {
+        const tag = (document.activeElement as HTMLElement)?.tagName;
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
+          e.preventDefault();
+          inputRef.current?.focus();
+        }
       }
     }
     window.addEventListener('keydown', handleKey);
@@ -407,6 +413,21 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
           )}
           {isLoading && !query && (
             <Loader2 size={13} style={{ position: 'absolute', right: 10, color: 'var(--text-weak)', animation: 'spin 1s linear infinite' }} />
+          )}
+          {!query && !isLoading && !isOpen && (
+            <kbd style={{
+              position: 'absolute', right: 10,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 18, height: 18,
+              border: '1px solid var(--border)',
+              borderRadius: 4,
+              fontSize: 12,
+              color: 'var(--text-weak)',
+              backgroundColor: 'var(--fill-weaker)',
+              fontFamily: 'inherit',
+              lineHeight: 1,
+              pointerEvents: 'none',
+            }}>/</kbd>
           )}
         </div>
 
