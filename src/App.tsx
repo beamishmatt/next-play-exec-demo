@@ -25,6 +25,8 @@ import { chatWithEvidenceStream, ChatMessage as EngineChatMessage } from './engi
 import { parseDraft } from './utils/draftUtils';
 import { stripActionTags, ToolCall } from './components/AssistantPanel';
 import { PasswordGate } from './components/PasswordGate';
+import { SearchDropdown } from './components/SearchDropdown';
+import { UtilityIcons } from './components/UtilityBar';
 import { Plus, Home } from 'lucide-react';
 import EvidenceIcon from './imports/EvidenceIcon';
 import CasesIcon from './imports/CasesIcon';
@@ -44,6 +46,26 @@ const navigationItems: NavItem[] = [
 
 // Define your header icon here - easily swappable
 const headerIcon = <CustomLogo size={32} />;
+
+function TopRailSearch({
+  onOpenSearch,
+  searchInputRef,
+}: {
+  onOpenSearch: (query: string, selectedId?: string, output?: import('./data/types').SearchOutput) => void;
+  searchInputRef?: React.RefObject<HTMLInputElement>;
+}) {
+  const [query, setQuery] = React.useState('');
+  const localRef = React.useRef<HTMLInputElement>(null);
+  return (
+    <SearchDropdown
+      inputRef={searchInputRef ?? localRef}
+      query={query}
+      onQueryChange={setQuery}
+      onClose={() => {}}
+      onOpenSearch={onOpenSearch}
+    />
+  );
+}
 
 export default function App() {
   return (
@@ -86,7 +108,7 @@ function AppContent() {
     // Evidence detail from cases page: /cases/caseId/evidence/index
     // Evidence detail from evidence page: /evidence/caseId/index
     return (pathSegments.length === 4 && pathSegments[2] === 'evidence') ||
-           (pathSegments.length === 3 && pathSegments[0] === 'evidence');
+           (pathSegments.length === 3 && pathSegments[0] === 'evidence' && pathSegments[1] !== 'item');
   }, [location.pathname]);
 
   // Handle sidebar visibility based on route changes
@@ -290,9 +312,32 @@ function AppContent() {
         
         {/* Main content area */}
         <div className="flex-1 h-full flex flex-col" style={{ minWidth: 0 }}>
+          {/* Top Rail */}
+          {!isMobile && !searchState.open && location.pathname !== '/home' && (
+            <div
+              className="relative shrink-0 flex items-center px-6"
+              style={{
+                height: 64,
+                backgroundColor: 'var(--raised)',
+                borderBottom: '1px solid var(--border)',
+                zIndex: 300,
+              }}
+            >
+              <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: 560 }}>
+                <TopRailSearch
+                  onOpenSearch={(query, selectedId, output) => setSearchState({ open: true, query, selectedId, output })}
+                  searchInputRef={utilitySearchRef}
+                />
+              </div>
+              <div className="ml-auto">
+                <UtilityIcons onOpenAssistant={() => setAssistantOpen(true)} />
+              </div>
+            </div>
+          )}
+
           {/* Fixed Utility Bar - hidden on home page */}
           {location.pathname !== '/home' && (
-          <div className="h-16 border-b shrink-0" style={{ borderColor: 'var(--border)' }}>
+          <div className="shrink-0">
             <UtilityBar
               title={pageTitle}
               showBackButton={shouldShowBackButton}
@@ -350,6 +395,7 @@ function AppContent() {
               <Route path="/" element={<Navigate to="/home" replace />} />
               <Route path="/home" element={<HomePage onSearch={(q) => setSearchState({ open: true, query: q })} />} />
               <Route path="/evidence" element={<EvidencePage />} />
+              <Route path="/evidence/item/:evidenceId" element={<SearchEvidenceDetailPage />} />
               <Route path="/evidence/:caseId/:evidenceIndex" element={<EvidenceDetailPage />} />
               <Route path="/cases" element={<CasesPage />} />
               <Route path="/cases/:caseId" element={<CaseDetailPage />} />

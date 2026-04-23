@@ -27,6 +27,7 @@ import {
 
 import { Badge } from './ui/badge';
 import { SCOPE_CHIPS } from './SearchDropdown';
+import { MEDIA_TYPE_CHIPS, SearchFilterBar, useSearchFilters } from './SearchFilterBar';
 import { FeedbackDrawer } from './FeedbackDrawer';
 import { agentSearch, generateAndSaveDescription, SearchStep } from '../engine/agentSearch';
 import { chatWithEvidenceStream, ChatMessage as EngineChatMessage } from '../engine/assistantChat';
@@ -554,6 +555,7 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
   );
   const [activeChips, setActiveChips] = useState<FilterChip[]>(initialOutput?.chips ?? []);
   const [selectedScopes, setSelectedScopes] = useState<Set<string>>(new Set());
+  const searchFilters = useSearchFilters();
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -863,19 +865,15 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
   })();
 
   const activeScopes = SCOPE_CHIPS.filter(s => selectedScopes.has(s.id));
-  const showingCasesScope = activeScopes.some(s => s.id === 'cases');
-  const showingEvidenceScope = activeScopes.length === 0 || activeScopes.some(s => s.id !== 'cases');
 
   const matchedCases: Case[] = React.useMemo(() => {
     const caseIds = [...new Set(entityCases.map(e => e.id))];
     return caseIds.map(id => mockCases.find(c => c.caseId === id)).filter(Boolean) as Case[];
   }, [entityCases]);
 
-  const evidenceItems = showingEvidenceScope && !showingCasesScope
-    ? (searchOutput ? searchOutput.results.filter(r => activeScopes.length === 0 || activeScopes.some(s => s.id !== 'cases' && s.filter(r))) : [])
-    : !showingCasesScope
-      ? (searchOutput ? searchOutput.results.filter(r => activeScopes.some(s => s.filter(r))) : [])
-      : [];
+  const evidenceItems = searchOutput
+    ? searchFilters.filterResults(searchOutput.results)
+    : [];
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: '#ffffff' }}>
@@ -929,34 +927,10 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
           </div>
 
 
-          {/* Scope + AI filter chips — shown when results are present */}
+          {/* Filter bar — shown when results are present */}
           {hasResults && (
             <div style={{ paddingBottom: 8, flexShrink: 0 }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {SCOPE_CHIPS.map(chip => {
-                  const active = selectedScopes.has(chip.id);
-                  return (
-                    <button
-                      key={chip.id}
-                      onClick={() => toggleScope(chip.id)}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 5,
-                        padding: '4px 10px', borderRadius: 99, cursor: 'pointer',
-                        fontSize: 12, fontWeight: 500, fontFamily: 'inherit',
-                        border: `1px solid ${active ? 'transparent' : 'var(--border)'}`,
-                        backgroundColor: active ? 'var(--foreground)' : 'transparent',
-                        color: active ? 'var(--raised)' : 'var(--foreground)',
-                        transition: 'all 0.1s',
-                      }}
-                      onMouseEnter={e => { if (!active) e.currentTarget.style.backgroundColor = 'var(--fill-hover)'; }}
-                      onMouseLeave={e => { if (!active) e.currentTarget.style.backgroundColor = 'transparent'; }}
-                    >
-                      {chip.icon}
-                      {chip.label}
-                    </button>
-                  );
-                })}
-              </div>
+              <SearchFilterBar filters={searchFilters} />
             </div>
           )}
 

@@ -1,10 +1,66 @@
 import React from 'react';
+import { useLocation, Link } from 'react-router-dom';
 import { useTheme } from './ThemeProvider';
-import { ArrowLeft, PanelLeft, Menu } from 'lucide-react';
+import { ArrowLeft, PanelLeft, Menu, ChevronDown, Check, Folder } from 'lucide-react';
 import { SearchDropdown } from './SearchDropdown';
-
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from './ui/breadcrumb';
+import { getEvidenceByCaseId } from '../data/mockEvidence';
+import { getContextGraph } from '../storage/config';
 import { useIsMobile } from './ui/use-mobile';
 import svgPaths from '../imports/svg-d29d82xyuv';
+
+interface Crumb { label: string; href?: string; }
+
+function useBreadcrumbs(): Crumb[] {
+  const { pathname } = useLocation();
+  const segs = pathname.split('/').filter(Boolean);
+
+  if (segs.length === 0 || segs[0] === 'home') return [{ label: 'Home' }];
+
+  if (segs[0] === 'evidence') {
+    if (segs[1] === 'item' && segs[2]) {
+      const graph = getContextGraph();
+      const node = graph?.nodes?.[segs[2]];
+      return [
+        { label: 'Evidence', href: '/evidence' },
+        { label: node?.title ?? 'Evidence Detail' },
+      ];
+    }
+    if (segs.length === 3) {
+      const evidence = getEvidenceByCaseId(segs[1])[parseInt(segs[2])];
+      return [
+        { label: 'Evidence', href: '/evidence' },
+        { label: evidence?.title ?? `Evidence ${parseInt(segs[2]) + 1}` },
+      ];
+    }
+    return [{ label: 'Evidence' }];
+  }
+
+  if (segs[0] === 'cases') {
+    if (segs.length === 1) return [{ label: 'Cases' }];
+    if (segs.length === 2) return [{ label: 'Cases', href: '/cases' }, { label: segs[1] }];
+    if (segs.length === 4 && segs[2] === 'evidence') {
+      const evidence = getEvidenceByCaseId(segs[1])[parseInt(segs[3])];
+      return [
+        { label: 'Cases', href: '/cases' },
+        { label: segs[1], href: `/cases/${segs[1]}` },
+        { label: evidence?.title ?? `Evidence ${parseInt(segs[3]) + 1}` },
+      ];
+    }
+  }
+
+  if (segs[0] === 'search' && segs[1] === 'evidence') return [{ label: 'Search Results' }];
+
+  const label = segs[0].charAt(0).toUpperCase() + segs[0].slice(1);
+  return [{ label }];
+}
 
 interface UtilityBarProps {
   title: string;
@@ -66,32 +122,127 @@ function SidebarToggle({ sidebarVisible, onSidebarToggle }: { sidebarVisible: bo
   );
 }
 
-function LeftSection({ 
-  title, 
-  showBackButton, 
-  onBack, 
-  showSidebarToggle, 
-  sidebarVisible, 
-  onSidebarToggle 
-}: { 
-  title: string; 
-  showBackButton?: boolean; 
+const EVIDENCE_OPTIONS = ['My evidence', 'All evidence', 'Uncategorized evidence'];
+const CASES_OPTIONS = ['My cases', 'All cases'];
+
+function BreadcrumbDropdown({ options, defaultSelected }: { options: string[]; defaultSelected: string }) {
+  const [open, setOpen] = React.useState(false);
+  const [selected, setSelected] = React.useState(defaultSelected);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(p => !p)}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          background: 'none', border: 'none', cursor: 'pointer',
+          padding: '2px 4px', borderRadius: 6,
+          fontSize: 13, fontWeight: 500, color: 'var(--foreground)',
+          fontFamily: 'inherit',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
+        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+      >
+        <Folder size={14} style={{ color: 'var(--foreground)', flexShrink: 0 }} />
+        {selected}
+        <ChevronDown size={11} style={{ opacity: 0.6 }} />
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 6px)', left: 0,
+          minWidth: 200, zIndex: 400,
+          backgroundColor: 'var(--raised)',
+          border: '1px solid var(--border)',
+          borderRadius: 10,
+          boxShadow: '0 6px 20px rgba(0,0,0,0.14)',
+          overflow: 'hidden',
+        }}>
+          <div style={{ padding: '4px 0' }}>
+            {options.map(opt => (
+              <button
+                key={opt}
+                onClick={() => { setSelected(opt); setOpen(false); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  width: '100%', padding: '7px 14px',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontFamily: 'inherit', textAlign: 'left',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                <div style={{
+                  width: 14, height: 14, borderRadius: 3, flexShrink: 0,
+                  border: `1.5px solid ${selected === opt ? 'var(--foreground)' : 'var(--border)'}`,
+                  backgroundColor: selected === opt ? 'var(--foreground)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {selected === opt && <Check size={10} style={{ color: 'var(--background)' }} strokeWidth={3} />}
+                </div>
+                <span style={{ fontSize: 13, color: 'var(--foreground)' }}>{opt}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LeftSection({
+  showBackButton,
+  onBack,
+  showSidebarToggle,
+  sidebarVisible,
+  onSidebarToggle
+}: {
+  showBackButton?: boolean;
   onBack?: () => void;
   showSidebarToggle?: boolean;
   sidebarVisible?: boolean;
   onSidebarToggle?: () => void;
 }) {
+  const crumbs = useBreadcrumbs();
+  const { pathname } = useLocation();
+  const isEvidenceOrCases = pathname === '/evidence' || pathname === '/cases' || pathname.startsWith('/evidence/') || pathname.startsWith('/cases/');
+  const isCases = pathname === '/cases' || pathname.startsWith('/cases/');
+
   return (
     <div className="flex items-center gap-2.5 h-full px-2" data-name="left section">
       {showSidebarToggle && onSidebarToggle && (
         <SidebarToggle sidebarVisible={sidebarVisible || false} onSidebarToggle={onSidebarToggle} />
       )}
-      {showBackButton && onBack && <BackButton onBack={onBack} />}
-      <div 
-        className="flex flex-col justify-center"
-      >
-        <h3 className="truncate max-w-48 sm:max-w-none">{title}</h3>
-      </div>
+      <Breadcrumb>
+        <BreadcrumbList style={{ fontSize: 13, fontWeight: 500 }}>
+          {crumbs.map((crumb, i) => (
+            <React.Fragment key={i}>
+              {i > 0 && <BreadcrumbSeparator />}
+              <BreadcrumbItem>
+                {i === 0 && isEvidenceOrCases
+                  ? <BreadcrumbDropdown
+                      key={isCases ? 'cases' : 'evidence'}
+                      options={isCases ? CASES_OPTIONS : EVIDENCE_OPTIONS}
+                      defaultSelected={isCases ? 'My cases' : 'All evidence'}
+                    />
+                  : crumb.href
+                    ? <BreadcrumbLink asChild><Link to={crumb.href} style={{ fontSize: 13, fontWeight: 500 }}>{crumb.label}</Link></BreadcrumbLink>
+                    : <BreadcrumbPage style={{ fontSize: 13, fontWeight: 500 }}>{crumb.label}</BreadcrumbPage>
+                }
+              </BreadcrumbItem>
+            </React.Fragment>
+          ))}
+        </BreadcrumbList>
+      </Breadcrumb>
     </div>
   );
 }
@@ -191,7 +342,7 @@ function ButtonIconMode() {
 }
 
 
-function UtilityIcons({ onOpenAssistant }: { onOpenAssistant: () => void }) {
+export function UtilityIcons({ onOpenAssistant }: { onOpenAssistant: () => void }) {
   const isMobile = useIsMobile();
 
   return (
@@ -225,49 +376,28 @@ export function UtilityBar({
   searchInputRef,
 }: UtilityBarProps) {
   const isMobile = useIsMobile();
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const localInputRef = React.useRef<HTMLInputElement>(null);
-  const effectiveInputRef = searchInputRef ?? localInputRef;
 
   return (
     <div
       className="relative size-full"
       data-name="utility"
-      style={{ backgroundColor: 'var(--raised)' }}
+      style={{ backgroundColor: 'var(--background)', borderBottom: '1px solid var(--border)', height: 48 }}
     >
       <div className="flex flex-row items-center min-w-inherit relative size-full">
-        <div className="box-border content-stretch flex items-center min-w-inherit px-6 py-0 relative size-full gap-4">
+        <div className="box-border content-stretch flex items-center min-w-inherit px-6 relative size-full gap-4" style={{ paddingTop: 10, paddingBottom: 10 }}>
           <LeftSection
-            title={title}
             showBackButton={showBackButton}
             onBack={onBack}
             showSidebarToggle={showSidebarToggle}
             sidebarVisible={sidebarVisible}
             onSidebarToggle={onSidebarToggle}
           />
-          {!isMobile && (
-            <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, transform: 'translateX(-50%)', width: 560, zIndex: 10, display: 'flex', alignItems: 'center' }}>
-              <SearchDropdown
-                inputRef={effectiveInputRef}
-                query={searchQuery}
-                onQueryChange={setSearchQuery}
-                onClose={() => {}}
-                onOpenSearch={onOpenSearch}
-              />
-            </div>
-          )}
           <div className="flex-1" />
           <div className="flex items-center gap-4 shrink-0">
             {actions}
-            <RightSection onOpenAssistant={onOpenAssistant} />
           </div>
         </div>
       </div>
-      <div
-        aria-hidden="true"
-        className="absolute border-[0px_0px_1px] border-solid inset-0 pointer-events-none"
-        style={{ borderColor: 'var(--border)' }}
-      />
     </div>
   );
 }

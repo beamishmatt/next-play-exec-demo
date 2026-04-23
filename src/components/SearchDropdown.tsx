@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { agentSearch } from '../engine/agentSearch';
 import { SearchOutput, SearchEvidenceResult, MediaClass } from '../data/types';
+import { SearchFilterBar, useSearchFilters, MEDIA_TYPE_CHIPS } from './SearchFilterBar';
 
 // ─── Scope chips ──────────────────────────────────────────────────────────────
 
@@ -27,12 +28,6 @@ export interface ScopeChip {
 }
 
 export const SCOPE_CHIPS: ScopeChip[] = [
-  {
-    id: 'all',
-    label: 'All',
-    icon: <LayoutGrid size={13} />,
-    filter: () => true,
-  },
   {
     id: 'cases',
     label: 'Cases',
@@ -204,12 +199,12 @@ function ResultRow({ result, query, onClick }: { result: SearchEvidenceResult; q
           <HighlightText text={result.title} query={query} />
         </div>
         {metaParts && (
-          <div style={{ fontSize: 12, color: '#a0a0a8', marginBottom: result.relevance ? 2 : 0 }}>
+          <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: result.relevance ? 2 : 0 }}>
             {metaParts}
           </div>
         )}
         {result.relevance && (
-          <div style={{ fontSize: 12, color: '#a0a0a8' }}>
+          <div style={{ fontSize: 11, color: '#9ca3af' }}>
             {result.relevance}
           </div>
         )}
@@ -217,6 +212,9 @@ function ResultRow({ result, query, onClick }: { result: SearchEvidenceResult; q
     </button>
   );
 }
+
+
+// ─── Filter section ───────────────────────────────────────────────────────────
 
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -236,7 +234,17 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
   const [isLoading, setIsLoading] = useState(false);
   const [output, setOutput] = useState<SearchOutput | null>(null);
   const [recentSearches, setRecentSearches] = useState<string[]>(loadRecentSearches);
-  const [selectedScopes] = useState<Set<string>>(new Set());
+  const [selectedScopes, setSelectedScopes] = useState<Set<string>>(new Set());
+  const searchFilters = useSearchFilters();
+  const { filterResults } = searchFilters;
+
+  const toggleScope = (id: string) => {
+    setSelectedScopes(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) { next.delete(id); } else { next.add(id); }
+      return next;
+    });
+  };
   const searchVersion = useRef(0);
 
   // Close on outside click
@@ -335,7 +343,7 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
 
   const activeScopes = SCOPE_CHIPS.filter(s => selectedScopes.has(s.id));
   const filteredResults = output
-    ? (activeScopes.length > 0
+    ? filterResults(activeScopes.length > 0
         ? output.results.filter(r => activeScopes.some(s => s.filter(r)))
         : output.results)
     : [];
@@ -371,7 +379,7 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
           left: 0,
           right: 0,
           zIndex: 200,
-          backgroundColor: 'var(--raised)',
+          backgroundColor: '#ffffff',
           border: '1px solid var(--border)',
           borderRadius: dropdownVisible ? '10px 10px 8px 8px' : 10,
           boxShadow: dropdownVisible ? '0 6px 20px rgba(0,0,0,0.14)' : 'none',
@@ -386,6 +394,12 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
             value={query}
             onChange={e => onQueryChange(e.target.value)}
             onFocus={() => setIsOpen(true)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && query.trim().length >= 3) {
+                setIsOpen(false);
+                onOpenSearch(query.trim(), undefined, output ?? undefined);
+              }
+            }}
             placeholder="Search evidence..."
             style={{
               width: '100%',
@@ -430,6 +444,13 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
             }}>/</kbd>
           )}
         </div>
+
+        {/* Filter chips — always visible when open */}
+        {isOpen && (
+          <div style={{ borderTop: '1px solid var(--border)', padding: '8px 12px' }}>
+            <SearchFilterBar filters={searchFilters} />
+          </div>
+        )}
 
         {/* Dropdown content */}
         {dropdownVisible && (
@@ -514,8 +535,16 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
               {/* Top Matches */}
               {topResults.length > 0 && (
                 <>
-                  <div style={{ padding: '8px 14px 2px', fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Top Matches
+                  <div style={{ padding: '8px 14px 2px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Top Matches</span>
+                    <button
+                      onClick={() => { setIsOpen(false); onOpenSearch(q, undefined, output ?? undefined); }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500, color: '#2563eb', padding: 0 }}
+                      onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                      onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
+                    >
+                      See all {totalCount > 0 ? `${totalCount} ` : ''}results
+                    </button>
                   </div>
                   {topResults.map((result, i) => (
                     <React.Fragment key={result.evidence_id}>
@@ -532,62 +561,6 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
                 </>
               )}
 
-              {/* Footer: Other Results + entity chips + See all */}
-              {topResults.length > 0 && (
-                <div style={{ borderTop: '1px solid var(--border)', padding: '8px 14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-weak)' }}>Other Results</span>
-                    <button
-                      onClick={() => { setIsOpen(false); onOpenSearch(q, undefined, output ?? undefined); }}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500, color: '#2563eb', padding: 0 }}
-                      onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
-                      onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
-                    >
-                      See all {totalCount > 0 ? totalCount : ''} results
-                    </button>
-                  </div>
-                  <div style={{ height: 1, backgroundColor: 'var(--border)', margin: '0 -14px 10px' }} />
-                  {(uniqueCases.length > 0 || caseEntities.length > 0) && (
-                    <div>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Cases</div>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {(uniqueCases.length > 0 ? uniqueCases : caseEntities.map(e => e.name)).map((name, i) => (
-                          <button
-                            key={i}
-                            onClick={() => { setIsOpen(false); onOpenSearch(q, undefined, output ?? undefined); }}
-                            style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: 99, border: '1px solid var(--border)', backgroundColor: 'transparent', color: 'var(--foreground)', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}
-                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
-                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                          >
-                            {name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {(uniqueCases.length > 0 || caseEntities.length > 0) && (uniquePeople.length > 0 || officerEntities.length > 0) && (
-                    <div style={{ height: 1, backgroundColor: 'var(--border)', margin: '10px -14px' }} />
-                  )}
-                  {(uniquePeople.length > 0 || officerEntities.length > 0) && (
-                    <div>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>People</div>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {(uniquePeople.length > 0 ? uniquePeople : officerEntities.map(e => e.name)).map((name, i) => (
-                          <button
-                            key={i}
-                            onClick={() => { setIsOpen(false); onOpenSearch(q, undefined, output ?? undefined); }}
-                            style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: 99, border: '1px solid var(--border)', backgroundColor: 'transparent', color: 'var(--foreground)', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}
-                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
-                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                          >
-                            {name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
             </>
           )}
         </div>

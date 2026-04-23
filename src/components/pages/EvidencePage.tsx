@@ -168,29 +168,7 @@ export function EvidencePage() {
       {/* Main content — shrinks when assistant panel opens */}
       <div className="flex-1 min-w-0 p-4 md:p-8">
         <div className="space-y-6">
-          {/* Search and Saved Filter Row */}
-          <div className="flex items-center gap-3">
-            <SearchBar
-              placeholder='Search for ID, Title, Tag, or Category. Use " " for exact match.'
-              value={searchQuery}
-              onChange={setSearchQuery}
-              className="flex-1"
-            />
-            {/* Saved filter dropdown */}
-            <button
-              className="flex items-center gap-2 px-3 py-2 rounded-md border text-sm font-medium whitespace-nowrap"
-              style={{
-                borderColor: 'var(--border-strong)',
-                backgroundColor: 'var(--fill-base)',
-                color: 'var(--text-strong)',
-              }}
-            >
-              Saved: All Evidence
-              <ChevronDown size={14} />
-            </button>
-          </div>
-
-          {/* Inline Filter Bar and View Switcher - Desktop only */}
+{/* Inline Filter Bar and View Switcher - Desktop only */}
           {!isMobile && (
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
