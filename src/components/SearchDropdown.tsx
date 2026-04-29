@@ -13,10 +13,11 @@ import {
   Users,
   Car,
   Smartphone,
+  Maximize2,
 } from 'lucide-react';
 import { agentSearch } from '../engine/agentSearch';
 import { SearchOutput, SearchEvidenceResult, MediaClass } from '../data/types';
-import { SearchFilterBar, useSearchFilters, MEDIA_TYPE_CHIPS } from './SearchFilterBar';
+import { SearchFilterBar, useSearchFilters } from './SearchFilterBar';
 
 // ─── Scope chips ──────────────────────────────────────────────────────────────
 
@@ -225,9 +226,12 @@ interface SearchDropdownProps {
   onQueryChange: (q: string) => void;
   onClose: () => void;
   onOpenSearch: (query: string, selectedId?: string, output?: SearchOutput) => void;
+  resultCount?: number;
+  onResultTagClick?: () => void;
+  onClearResults?: () => void;
 }
 
-export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpenSearch }: SearchDropdownProps) {
+export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpenSearch, resultCount, onResultTagClick, onClearResults }: SearchDropdownProps) {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -323,6 +327,7 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
   const handleClear = () => {
     onQueryChange('');
     setOutput(null);
+    onClearResults?.();
     inputRef.current?.focus();
   };
 
@@ -405,7 +410,7 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
               width: '100%',
               height: '100%',
               paddingLeft: 32,
-              paddingRight: query ? 32 : 12,
+              paddingRight: ((resultCount ?? 0) > 0 && !isOpen) ? 130 : (query ? 52 : 32),
               border: 'none',
               backgroundColor: 'transparent',
               color: 'var(--foreground)',
@@ -413,36 +418,43 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
               outline: 'none',
             }}
           />
-          {query && (
-            <button
-              onClick={handleClear}
-              style={{
-                position: 'absolute', right: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-weak)',
-                borderRadius: 99,
-              }}
-            >
-              <X size={13} />
-            </button>
-          )}
-          {isLoading && !query && (
-            <Loader2 size={13} style={{ position: 'absolute', right: 10, color: 'var(--text-weak)', animation: 'spin 1s linear infinite' }} />
-          )}
-          {!query && !isLoading && !isOpen && (
-            <kbd style={{
-              position: 'absolute', right: 10,
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: 18, height: 18,
-              border: '1px solid var(--border)',
-              borderRadius: 4,
-              fontSize: 12,
-              color: 'var(--text-weak)',
-              backgroundColor: 'var(--fill-weaker)',
-              fontFamily: 'inherit',
-              lineHeight: 1,
-              pointerEvents: 'none',
-            }}>/</kbd>
-          )}
+          {/* Right-side controls */}
+          <div style={{ position: 'absolute', right: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+            {(resultCount ?? 0) > 0 && !isOpen && onResultTagClick && (
+              <button
+                onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
+                onClick={e => { e.stopPropagation(); onResultTagClick(); }}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  height: 18, padding: '0 5px',
+                  border: '1px solid var(--border)', borderRadius: 4,
+                  backgroundColor: 'var(--fill-weaker)',
+                  color: 'var(--text-weak)', fontSize: 12,
+                  cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', lineHeight: 1,
+                }}
+              >
+                {resultCount} results
+                <Maximize2 size={11} style={{ marginLeft: 3 }} />
+              </button>
+            )}
+            {isLoading && !query && <Loader2 size={13} style={{ color: 'var(--text-weak)', animation: 'spin 1s linear infinite' }} />}
+            {!isOpen && (
+              <kbd style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 18, height: 18, border: '1px solid var(--border)', borderRadius: 4,
+                fontSize: 12, color: 'var(--text-weak)', backgroundColor: 'var(--fill-weaker)',
+                fontFamily: 'inherit', lineHeight: 1, pointerEvents: 'none',
+              }}>/</kbd>
+            )}
+            {query && (
+              <button
+                onClick={handleClear}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-weak)', borderRadius: 99 }}
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Filter chips — always visible when open */}

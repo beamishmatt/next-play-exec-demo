@@ -27,7 +27,7 @@ import {
 
 import { Badge } from './ui/badge';
 import { SCOPE_CHIPS } from './SearchDropdown';
-import { MEDIA_TYPE_CHIPS, SearchFilterBar, useSearchFilters } from './SearchFilterBar';
+import { SearchFilterBar, useSearchFilters } from './SearchFilterBar';
 import { FeedbackDrawer } from './FeedbackDrawer';
 import { agentSearch, generateAndSaveDescription, SearchStep } from '../engine/agentSearch';
 import { chatWithEvidenceStream, ChatMessage as EngineChatMessage } from '../engine/assistantChat';
@@ -1046,7 +1046,7 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
                 {/* Evidence header */}
                 {(evidenceItems.length > 0 || (isLoading && evidenceItems.length === 0)) && (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid var(--border)' }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Evidence</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Results</span>
                     {evidenceItems.length > 0 && (
                       <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                         <input

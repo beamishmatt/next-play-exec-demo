@@ -50,19 +50,31 @@ const headerIcon = <CustomLogo size={32} />;
 function TopRailSearch({
   onOpenSearch,
   searchInputRef,
+  query,
+  onQueryChange,
+  resultCount,
+  onReopenSearch,
+  onClearResults,
 }: {
   onOpenSearch: (query: string, selectedId?: string, output?: import('./data/types').SearchOutput) => void;
   searchInputRef?: React.RefObject<HTMLInputElement>;
+  query: string;
+  onQueryChange: (q: string) => void;
+  resultCount: number;
+  onReopenSearch: () => void;
+  onClearResults: () => void;
 }) {
-  const [query, setQuery] = React.useState('');
   const localRef = React.useRef<HTMLInputElement>(null);
   return (
     <SearchDropdown
       inputRef={searchInputRef ?? localRef}
       query={query}
-      onQueryChange={setQuery}
+      onQueryChange={onQueryChange}
       onClose={() => {}}
       onOpenSearch={onOpenSearch}
+      resultCount={resultCount}
+      onResultTagClick={onReopenSearch}
+      onClearResults={onClearResults}
     />
   );
 }
@@ -90,6 +102,7 @@ function AppContent() {
   const [sidebarVisible, setSidebarVisible] = React.useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [searchState, setSearchState] = React.useState<{ open: boolean; query?: string; selectedId?: string; output?: import('./data/types').SearchOutput }>({ open: false });
+  const [topRailQuery, setTopRailQuery] = React.useState('');
   const [assistantOpen, setAssistantOpen] = React.useState(false);
   const [chatMessages, setChatMessages] = React.useState<ChatMessage[]>([]);
   const [chatStreamingId, setChatStreamingId] = React.useState<string | null>(null);
@@ -270,7 +283,7 @@ function AppContent() {
         {/* Search takeover */}
         {searchState.open && (
           <SearchTakeover
-            onClose={() => setSearchState({ open: false })}
+            onClose={() => setSearchState(prev => ({ open: false, query: prev.query, output: prev.output }))}
             initialQuery={searchState.query}
             initialSelectedId={searchState.selectedId}
             initialOutput={searchState.output}
@@ -325,8 +338,13 @@ function AppContent() {
             >
               <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: 560 }}>
                 <TopRailSearch
-                  onOpenSearch={(query, selectedId, output) => setSearchState({ open: true, query, selectedId, output })}
+                  onOpenSearch={(query, selectedId, output) => { setTopRailQuery(query); setSearchState({ open: true, query, selectedId, output }); }}
                   searchInputRef={utilitySearchRef}
+                  query={topRailQuery}
+                  onQueryChange={setTopRailQuery}
+                  resultCount={topRailQuery === (searchState.query ?? '') && topRailQuery.length > 0 ? (searchState.output?.results.length ?? 0) : 0}
+                  onReopenSearch={() => setSearchState(prev => ({ ...prev, open: true }))}
+                  onClearResults={() => setSearchState(prev => ({ ...prev, query: undefined, output: undefined }))}
                 />
               </div>
               <div className="ml-auto">

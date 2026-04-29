@@ -28,7 +28,6 @@ import {
 import { Checkbox } from './ui/checkbox';
 import { ArrowUpAZ, ArrowDownAZ, ArrowDownUp, SquarePlay, Volume2, Image, FolderArchive, FileText } from 'lucide-react';
 import { Evidence } from '../data/types';
-import { mockEvidence, getEvidenceByCaseId } from '../data/mockEvidence';
 
 interface EvidenceSearchTableProps {
   evidence: Evidence[];
@@ -258,15 +257,7 @@ export function EvidenceSearchTable({
 
   // Handle row click navigation
   const handleRowClick = (evidenceItem: Evidence) => {
-    // Find the index of this evidence item within its case
-    const caseEvidence = getEvidenceByCaseId(evidenceItem.id);
-    const evidenceIndex = caseEvidence.findIndex(item => 
-      item.uuid === evidenceItem.uuid
-    );
-    
-    if (evidenceIndex !== -1) {
-      navigate(`/evidence/${evidenceItem.id}/${evidenceIndex}`);
-    }
+    navigate(`/evidence/item/${evidenceItem.uuid}`);
   };
 
   // Handle empty state

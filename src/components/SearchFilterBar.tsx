@@ -1,27 +1,28 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
-  SlidersHorizontal, ChevronDown, Search, Check,
-  Video, Image, FileText,
-} from 'lucide-react';
+import { ChevronDown, Check, Search } from 'lucide-react';
 import { SearchEvidenceResult } from '../data/types';
 
 // ─── Shared constants ─────────────────────────────────────────────────────────
 
-export const CATEGORY_OPTIONS = [
-  'Homicide', 'Burglary', 'DUI', 'Assault', 'Robbery', 'Theft',
-  'Shooting', 'Domestic Violence', 'Drug Offense', 'Traffic Stop',
-  'Vandalism', 'Police Event', 'Other',
-];
-
 export const DATE_OPTIONS = ['Last 24 hours', 'Last 7 days', 'Last 30 days', 'Last 90 days', 'Last year'];
 
-const STATUS_OPTIONS = ['Active', 'Inactive', 'Archived', 'Under Review', 'Flagged'];
-const SOURCE_OPTIONS = ['Body Worn Cameras', 'Dash Cameras', 'Drones', 'Interview Room', 'CCTV', 'Mobile', 'Doorbell', 'Surveillance', 'Laptop', 'Desktop', 'Tablet', 'Other', 'Unknown'];
+const STATUS_OPTIONS = ['Active', 'Processing', 'Queued for Deletion', 'Excluded', 'Deleted', 'Declined', 'Pending Triage'];
+const SOURCE_OPTIONS = ['Body Worn Cameras', 'Fleet', 'TASER Energy Weapons', 'Interview', 'Community Request', 'Axon Air', 'Axon App', 'Axon Investigate', 'Capture', 'API Client', 'User Upload', 'Fixed ALPR', 'Other'];
 
-export const MEDIA_TYPE_CHIPS: { id: string; label: string; Icon: React.ElementType; match: (r: SearchEvidenceResult) => boolean }[] = [
-  { id: 'videos',    label: 'Videos',    Icon: Video,    match: r => r.media_class === 'video' },
-  { id: 'images',    label: 'Images',    Icon: Image,    match: r => r.media_class === 'image' },
-  { id: 'documents', label: 'Documents', Icon: FileText, match: r => r.media_class === 'document' || r.media_class === 'pdf' || r.media_class === 'text' },
+export const FILE_TYPE_OPTIONS = ['Video', 'Audio', 'Document', 'Image', 'Weapon Logs', 'Zip', 'Other'];
+
+const CATEGORY_OPTIONS = [
+  'None / Uncategorized', '.Cold Case', '.Domestic Violence', '.Drug/Narcotics',
+  '.Felony Standard', '.Gang/Organized Crime', '.Juvenile', '.Long Term',
+  '.Permanent', '.Property Crime', '.Traffic', '.Use of Force',
+  '.Witness Statement', '1 day retention',
+];
+
+const USER_OPTIONS = [
+  'Alex Rivera', 'Bailey Kim', 'Cameron Price', 'Dana Flores', 'Elliott Nash',
+  'Finley Torres', 'Harper Okafor', 'Indira Patel', 'Jordan Mercer', 'Kai Nguyen',
+  'Lane Hoffman', 'Morgan Shaw', 'Nadia Reyes', 'Owen Castillo', 'Parker Yamamoto',
+  'Quinn Delgado', 'Reece Andersen', 'Sage Kowalski', 'Taylor Osei', 'Valentina Cruz',
 ];
 
 // ─── FilterSection (accordion) ────────────────────────────────────────────────
@@ -96,6 +97,7 @@ export function useSearchFilters() {
   const [selectedStatuses,    setSelectedStatuses]    = useState<Set<string>>(new Set());
   const [selectedSources,     setSelectedSources]     = useState<Set<string>>(new Set());
   const [selectedCategories,  setSelectedCategories]  = useState<Set<string>>(new Set());
+  const [selectedUsers,       setSelectedUsers]       = useState<Set<string>>(new Set());
   const [selectedDates,       setSelectedDates]       = useState<Set<string>>(new Set());
   const [selectedMediaTypes,  setSelectedMediaTypes]  = useState<Set<string>>(new Set());
 
@@ -109,8 +111,53 @@ export function useSearchFilters() {
 
   const filterResults = (results: SearchEvidenceResult[]) => {
     let out = results;
-    const activeMedia = MEDIA_TYPE_CHIPS.filter(c => selectedMediaTypes.has(c.id));
-    if (activeMedia.length > 0) out = out.filter(r => activeMedia.some(c => c.match(r)));
+
+    // File type
+    if (selectedMediaTypes.size > 0) {
+      const known = ['video', 'audio', 'document', 'pdf', 'text', 'image', 'weapon_log', 'zip'];
+      out = out.filter(r => {
+        const mc = (r.media_class ?? '').toLowerCase();
+        if (selectedMediaTypes.has('Video')       && mc === 'video') return true;
+        if (selectedMediaTypes.has('Audio')       && mc === 'audio') return true;
+        if (selectedMediaTypes.has('Document')    && (mc === 'document' || mc === 'pdf' || mc === 'text')) return true;
+        if (selectedMediaTypes.has('Image')       && mc === 'image') return true;
+        if (selectedMediaTypes.has('Weapon Logs') && mc === 'weapon_log') return true;
+        if (selectedMediaTypes.has('Zip')         && mc === 'zip') return true;
+        if (selectedMediaTypes.has('Other')       && !known.includes(mc)) return true;
+        return false;
+      });
+    }
+
+    // Category
+    if (selectedCategories.size > 0) {
+      out = out.filter(r => r.category && selectedCategories.has(r.category));
+    }
+
+    // User / officer
+    if (selectedUsers.size > 0) {
+      out = out.filter(r => r.officer && selectedUsers.has(r.officer));
+    }
+
+    // Sources
+    if (selectedSources.size > 0) {
+      out = out.filter(r => r.source && selectedSources.has(r.source));
+    }
+
+    // Date
+    if (selectedDates.size > 0) {
+      const now = Date.now();
+      out = out.filter(r => {
+        if (!r.date_recorded) return false;
+        const days = (now - new Date(r.date_recorded).getTime()) / 86_400_000;
+        if (selectedDates.has('Last 24 hours') && days <= 1)   return true;
+        if (selectedDates.has('Last 7 days')   && days <= 7)   return true;
+        if (selectedDates.has('Last 30 days')  && days <= 30)  return true;
+        if (selectedDates.has('Last 90 days')  && days <= 90)  return true;
+        if (selectedDates.has('Last year')     && days <= 365) return true;
+        return false;
+      });
+    }
+
     return out;
   };
 
@@ -118,6 +165,7 @@ export function useSearchFilters() {
     selectedStatuses, setSelectedStatuses,
     selectedSources, setSelectedSources,
     selectedCategories, setSelectedCategories,
+    selectedUsers, setSelectedUsers,
     selectedDates, setSelectedDates,
     selectedMediaTypes, setSelectedMediaTypes,
     toggleSet,
@@ -136,26 +184,35 @@ export function SearchFilterBar({ filters }: SearchFilterBarProps) {
     selectedStatuses, setSelectedStatuses,
     selectedSources, setSelectedSources,
     selectedCategories, setSelectedCategories,
+    selectedUsers, setSelectedUsers,
     selectedDates, setSelectedDates,
     selectedMediaTypes, setSelectedMediaTypes,
     toggleSet,
   } = filters;
 
-  const filterRef   = useRef<HTMLDivElement>(null);
-  const dateRef     = useRef<HTMLDivElement>(null);
-  const categoryRef = useRef<HTMLDivElement>(null);
-  const categorySearchRef = useRef<HTMLInputElement>(null);
-
-  const [filterOpen,   setFilterOpen]   = useState(false);
-  const [dateOpen,     setDateOpen]     = useState(false);
-  const [categoryOpen, setCategoryOpen] = useState(false);
-  const [categorySearch, setCategorySearch] = useState('');
+  const filterRef      = useRef<HTMLDivElement>(null);
+  const dateRef        = useRef<HTMLDivElement>(null);
+  const categoryRef    = useRef<HTMLDivElement>(null);
+  const catFilterRef   = useRef<HTMLDivElement>(null);
+  const fileTypeRef    = useRef<HTMLDivElement>(null);
+  const userFilterRef  = useRef<HTMLDivElement>(null);
+  const [filterOpen,    setFilterOpen]    = useState(false);
+  const [dateOpen,      setDateOpen]      = useState(false);
+  const [categoryOpen,  setCategoryOpen]  = useState(false);
+  const [catFilterOpen, setCatFilterOpen] = useState(false);
+  const [fileTypeOpen,  setFileTypeOpen]  = useState(false);
+  const [userFilterOpen, setUserFilterOpen] = useState(false);
+  const [catSearch,     setCatSearch]     = useState('');
+  const [userSearch,    setUserSearch]    = useState('');
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (filterRef.current   && !filterRef.current.contains(e.target as Node))   { setFilterOpen(false); }
-      if (dateRef.current     && !dateRef.current.contains(e.target as Node))     { setDateOpen(false); }
-      if (categoryRef.current && !categoryRef.current.contains(e.target as Node)) { setCategoryOpen(false); setCategorySearch(''); }
+      if (filterRef.current     && !filterRef.current.contains(e.target as Node))     { setFilterOpen(false); }
+      if (dateRef.current       && !dateRef.current.contains(e.target as Node))       { setDateOpen(false); }
+      if (categoryRef.current   && !categoryRef.current.contains(e.target as Node))   { setCategoryOpen(false); }
+      if (catFilterRef.current  && !catFilterRef.current.contains(e.target as Node))  { setCatFilterOpen(false); setCatSearch(''); }
+      if (fileTypeRef.current   && !fileTypeRef.current.contains(e.target as Node))   { setFileTypeOpen(false); }
+      if (userFilterRef.current && !userFilterRef.current.contains(e.target as Node)) { setUserFilterOpen(false); setUserSearch(''); }
     }
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -164,110 +221,114 @@ export function SearchFilterBar({ filters }: SearchFilterBarProps) {
   return (
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
 
-      {/* Filter dropdown */}
+      {/* Status dropdown */}
       <div ref={filterRef} style={{ position: 'relative' }}>
         <button
-          onClick={() => { setFilterOpen(p => !p); setDateOpen(false); setCategoryOpen(false); }}
+          onClick={() => { setFilterOpen(p => !p); setDateOpen(false); setCategoryOpen(false); setCatFilterOpen(false); setFileTypeOpen(false); setUserFilterOpen(false); }}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 5,
             padding: '4px 10px', borderRadius: 99,
-            border: '1px solid var(--border)', backgroundColor: 'transparent',
+            border: '1px solid var(--border)',
+            backgroundColor: selectedStatuses.size > 0 ? 'var(--fill-weaker)' : 'transparent',
             color: 'var(--foreground)', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
           }}
         >
-          <SlidersHorizontal size={12} />
-          Filter
+          {selectedStatuses.size === 0 ? 'Status' : selectedStatuses.size === 1 ? [...selectedStatuses][0] : `${selectedStatuses.size} statuses`}
           <ChevronDown size={11} style={{ opacity: 0.6 }} />
         </button>
         {filterOpen && (
           <div style={{
             position: 'absolute', top: 'calc(100% + 8px)', left: 0,
-            width: 240, zIndex: 400,
+            width: 220, zIndex: 400,
             backgroundColor: 'var(--raised)', border: '1px solid var(--border)',
-            borderRadius: 10, boxShadow: '0 6px 20px rgba(0,0,0,0.14)',
-            padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 14,
+            borderRadius: 10, boxShadow: '0 6px 20px rgba(0,0,0,0.14)', overflow: 'hidden',
           }}>
-            <FilterSection label="Status" options={STATUS_OPTIONS} selected={selectedStatuses} onToggle={v => toggleSet(selectedStatuses, setSelectedStatuses, v)} />
-            <FilterSection label="Source" options={SOURCE_OPTIONS} selected={selectedSources}  onToggle={v => toggleSet(selectedSources,  setSelectedSources,  v)} />
+            <div style={{ padding: '4px 0' }}>
+              {STATUS_OPTIONS.map(opt => (
+                <button
+                  key={opt}
+                  onClick={() => toggleSet(selectedStatuses, setSelectedStatuses, opt)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '6px 12px',
+                    backgroundColor: selectedStatuses.has(opt) ? 'var(--fill-weaker)' : 'transparent',
+                    border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = selectedStatuses.has(opt) ? 'var(--fill-weaker)' : 'transparent')}
+                >
+                  <div style={{
+                    width: 14, height: 14, borderRadius: 3, flexShrink: 0,
+                    border: `1.5px solid ${selectedStatuses.has(opt) ? 'var(--foreground)' : 'var(--border)'}`,
+                    backgroundColor: selectedStatuses.has(opt) ? 'var(--foreground)' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {selectedStatuses.has(opt) && <Check size={10} style={{ color: 'var(--background)' }} strokeWidth={3} />}
+                  </div>
+                  <span style={{ fontSize: 13, color: 'var(--foreground)' }}>{opt}</span>
+                </button>
+              ))}
+            </div>
+            {selectedStatuses.size > 0 && (
+              <div style={{ padding: '6px 12px', borderTop: '1px solid var(--border)' }}>
+                <button onClick={() => setSelectedStatuses(new Set())} style={{ fontSize: 12, color: 'var(--text-weak)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+                  Clear all
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Category dropdown */}
+      {/* Sources dropdown */}
       <div ref={categoryRef} style={{ position: 'relative' }}>
         <button
-          onClick={() => {
-            const next = !categoryOpen;
-            setCategoryOpen(next); setFilterOpen(false); setDateOpen(false);
-            if (next) { setCategorySearch(''); setTimeout(() => categorySearchRef.current?.focus(), 0); }
-          }}
+          onClick={() => { setCategoryOpen(p => !p); setFilterOpen(false); setDateOpen(false); setCatFilterOpen(false); setFileTypeOpen(false); setUserFilterOpen(false); }}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 5,
             padding: '4px 10px', borderRadius: 99,
             border: '1px solid var(--border)',
-            backgroundColor: selectedCategories.size > 0 ? 'var(--fill-weaker)' : 'transparent',
+            backgroundColor: selectedSources.size > 0 ? 'var(--fill-weaker)' : 'transparent',
             color: 'var(--foreground)', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
           }}
         >
-          {selectedCategories.size === 0 ? 'Category' : selectedCategories.size === 1 ? [...selectedCategories][0] : `${selectedCategories.size} categories`}
+          {selectedSources.size === 0 ? 'Sources' : selectedSources.size === 1 ? [...selectedSources][0] : `${selectedSources.size} sources`}
           <ChevronDown size={11} style={{ opacity: 0.6 }} />
         </button>
         {categoryOpen && (
           <div style={{
             position: 'absolute', top: 'calc(100% + 8px)', left: 0,
-            width: 200, zIndex: 400,
+            width: 220, zIndex: 400,
             backgroundColor: 'var(--raised)', border: '1px solid var(--border)',
             borderRadius: 10, boxShadow: '0 6px 20px rgba(0,0,0,0.14)', overflow: 'hidden',
           }}>
-            <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border)' }}>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <Search size={12} style={{ position: 'absolute', left: 8, color: 'var(--text-weak)', pointerEvents: 'none' }} />
-                <input
-                  ref={categorySearchRef}
-                  type="text"
-                  value={categorySearch}
-                  onChange={e => setCategorySearch(e.target.value)}
-                  placeholder="Search categories..."
-                  onKeyDown={e => e.stopPropagation()}
-                  style={{
-                    width: '100%', height: 28, paddingLeft: 26, paddingRight: 8,
-                    border: '1px solid var(--border)', borderRadius: 6,
-                    backgroundColor: 'var(--fill-weaker)', color: 'var(--foreground)',
-                    fontSize: 12, outline: 'none', fontFamily: 'inherit',
-                  }}
-                />
-              </div>
-            </div>
-            <div style={{ maxHeight: 200, overflowY: 'auto', padding: '4px 0' }}>
-              {CATEGORY_OPTIONS.filter(opt => opt.toLowerCase().includes(categorySearch.toLowerCase())).map(opt => (
+            <div style={{ maxHeight: 280, overflowY: 'auto', padding: '4px 0' }}>
+              {SOURCE_OPTIONS.map(opt => (
                 <button
                   key={opt}
-                  onClick={() => toggleSet(selectedCategories, setSelectedCategories, opt)}
+                  onClick={() => toggleSet(selectedSources, setSelectedSources, opt)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '6px 12px',
-                    backgroundColor: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                    backgroundColor: selectedSources.has(opt) ? 'var(--fill-weaker)' : 'transparent',
+                    border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
                   }}
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = selectedSources.has(opt) ? 'var(--fill-weaker)' : 'transparent')}
                 >
                   <div style={{
                     width: 14, height: 14, borderRadius: 3, flexShrink: 0,
-                    border: `1.5px solid ${selectedCategories.has(opt) ? 'var(--foreground)' : 'var(--border)'}`,
-                    backgroundColor: selectedCategories.has(opt) ? 'var(--foreground)' : 'transparent',
+                    border: `1.5px solid ${selectedSources.has(opt) ? 'var(--foreground)' : 'var(--border)'}`,
+                    backgroundColor: selectedSources.has(opt) ? 'var(--foreground)' : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    {selectedCategories.has(opt) && <Check size={10} style={{ color: 'var(--background)' }} strokeWidth={3} />}
+                    {selectedSources.has(opt) && <Check size={10} style={{ color: 'var(--background)' }} strokeWidth={3} />}
                   </div>
                   <span style={{ fontSize: 13, color: 'var(--foreground)' }}>{opt}</span>
                 </button>
               ))}
-              {categorySearch && !CATEGORY_OPTIONS.some(o => o.toLowerCase().includes(categorySearch.toLowerCase())) && (
-                <div style={{ padding: '8px 14px', fontSize: 12, color: 'var(--text-weak)' }}>No matches</div>
-              )}
             </div>
-            {selectedCategories.size > 0 && (
+            {selectedSources.size > 0 && (
               <div style={{ padding: '6px 12px', borderTop: '1px solid var(--border)' }}>
-                <button onClick={() => setSelectedCategories(new Set())} style={{ fontSize: 12, color: 'var(--text-weak)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+                <button onClick={() => setSelectedSources(new Set())} style={{ fontSize: 12, color: 'var(--text-weak)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
                   Clear all
                 </button>
               </div>
@@ -279,7 +340,7 @@ export function SearchFilterBar({ filters }: SearchFilterBarProps) {
       {/* Date dropdown */}
       <div ref={dateRef} style={{ position: 'relative' }}>
         <button
-          onClick={() => { setDateOpen(p => !p); setFilterOpen(false); setCategoryOpen(false); }}
+          onClick={() => { setDateOpen(p => !p); setFilterOpen(false); setCategoryOpen(false); setCatFilterOpen(false); setFileTypeOpen(false); setUserFilterOpen(false); }}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 5,
             padding: '4px 10px', borderRadius: 99,
@@ -333,27 +394,231 @@ export function SearchFilterBar({ filters }: SearchFilterBarProps) {
         )}
       </div>
 
-      {/* Media type toggle chips */}
-      {MEDIA_TYPE_CHIPS.map(chip => {
-        const active = selectedMediaTypes.has(chip.id);
-        const color = active ? '#fff' : 'var(--foreground)';
-        return (
-          <button
-            key={chip.id}
-            onClick={() => toggleSet(selectedMediaTypes, setSelectedMediaTypes, chip.id)}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              padding: '4px 10px', borderRadius: 99,
-              border: `1px solid ${active ? 'var(--foreground)' : 'var(--border)'}`,
-              backgroundColor: active ? 'var(--foreground)' : 'transparent',
-              color, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
-            }}
-          >
-            <chip.Icon size={12} style={{ color }} />
-            {chip.label}
-          </button>
-        );
-      })}
+      {/* File type dropdown */}
+      <div ref={fileTypeRef} style={{ position: 'relative' }}>
+        <button
+          onClick={() => { setFileTypeOpen(p => !p); setFilterOpen(false); setDateOpen(false); setCategoryOpen(false); setCatFilterOpen(false); setUserFilterOpen(false); }}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            padding: '4px 10px', borderRadius: 99,
+            border: '1px solid var(--border)',
+            backgroundColor: selectedMediaTypes.size > 0 ? 'var(--fill-weaker)' : 'transparent',
+            color: 'var(--foreground)', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          {selectedMediaTypes.size === 0
+            ? 'File type'
+            : (() => {
+                const arr = [...selectedMediaTypes];
+                if (arr.length <= 2) return arr.join('  ');
+                return `${arr[0]}  ${arr[1]}  +${arr.length - 2}`;
+              })()}
+          <ChevronDown size={11} style={{ opacity: 0.6 }} />
+        </button>
+        {fileTypeOpen && (
+          <div style={{
+            position: 'absolute', top: 'calc(100% + 8px)', left: 0,
+            width: 200, zIndex: 400,
+            backgroundColor: 'var(--raised)', border: '1px solid var(--border)',
+            borderRadius: 10, boxShadow: '0 6px 20px rgba(0,0,0,0.14)', overflow: 'hidden',
+          }}>
+            <div style={{ padding: '4px 0' }}>
+              {FILE_TYPE_OPTIONS.map(opt => (
+                <button
+                  key={opt}
+                  onClick={() => toggleSet(selectedMediaTypes, setSelectedMediaTypes, opt)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '6px 12px',
+                    backgroundColor: selectedMediaTypes.has(opt) ? 'var(--fill-weaker)' : 'transparent',
+                    border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = selectedMediaTypes.has(opt) ? 'var(--fill-weaker)' : 'transparent')}
+                >
+                  <div style={{
+                    width: 14, height: 14, borderRadius: 3, flexShrink: 0,
+                    border: `1.5px solid ${selectedMediaTypes.has(opt) ? 'var(--foreground)' : 'var(--border)'}`,
+                    backgroundColor: selectedMediaTypes.has(opt) ? 'var(--foreground)' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {selectedMediaTypes.has(opt) && <Check size={10} style={{ color: 'var(--background)' }} strokeWidth={3} />}
+                  </div>
+                  <span style={{ fontSize: 13, color: 'var(--foreground)' }}>{opt}</span>
+                </button>
+              ))}
+            </div>
+            {selectedMediaTypes.size > 0 && (
+              <div style={{ padding: '6px 12px', borderTop: '1px solid var(--border)' }}>
+                <button onClick={() => setSelectedMediaTypes(new Set())} style={{ fontSize: 12, color: 'var(--text-weak)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+                  Clear all
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Category dropdown */}
+      <div ref={catFilterRef} style={{ position: 'relative' }}>
+        <button
+          onClick={() => { setCatFilterOpen(p => !p); setFilterOpen(false); setDateOpen(false); setCategoryOpen(false); setFileTypeOpen(false); setUserFilterOpen(false); }}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            padding: '4px 10px', borderRadius: 99,
+            border: '1px solid var(--border)',
+            backgroundColor: selectedCategories.size > 0 ? 'var(--fill-weaker)' : 'transparent',
+            color: 'var(--foreground)', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          {selectedCategories.size === 0 ? 'Category' : selectedCategories.size === 1 ? [...selectedCategories][0] : `${selectedCategories.size} categories`}
+          <ChevronDown size={11} style={{ opacity: 0.6 }} />
+        </button>
+        {catFilterOpen && (
+          <div style={{
+            position: 'absolute', top: 'calc(100% + 8px)', left: 0,
+            width: 240, zIndex: 400,
+            backgroundColor: 'var(--raised)', border: '1px solid var(--border)',
+            borderRadius: 10, boxShadow: '0 6px 20px rgba(0,0,0,0.14)', overflow: 'hidden',
+          }}>
+            <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  value={catSearch}
+                  onChange={e => setCatSearch(e.target.value)}
+                  onKeyDown={e => e.stopPropagation()}
+                  autoFocus
+                  style={{
+                    width: '100%', height: 28, padding: '0 28px 0 8px',
+                    border: '1px solid var(--border)', borderRadius: 6,
+                    backgroundColor: 'var(--fill-weaker)', color: 'var(--foreground)',
+                    fontSize: 12, outline: 'none', fontFamily: 'inherit',
+                  }}
+                />
+                <Search size={12} style={{ position: 'absolute', right: 8, color: 'var(--text-weak)', pointerEvents: 'none' }} />
+              </div>
+            </div>
+            <div style={{ maxHeight: 260, overflowY: 'auto', padding: '4px 0' }}>
+              {CATEGORY_OPTIONS
+                .filter(opt => opt.toLowerCase().includes(catSearch.toLowerCase()))
+                .map(opt => (
+                  <button
+                    key={opt}
+                    onClick={() => toggleSet(selectedCategories, setSelectedCategories, opt)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '6px 12px',
+                      backgroundColor: selectedCategories.has(opt) ? 'var(--fill-weaker)' : 'transparent',
+                      border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = selectedCategories.has(opt) ? 'var(--fill-weaker)' : 'transparent')}
+                  >
+                    <div style={{
+                      width: 14, height: 14, borderRadius: 3, flexShrink: 0,
+                      border: `1.5px solid ${selectedCategories.has(opt) ? 'var(--foreground)' : 'var(--border)'}`,
+                      backgroundColor: selectedCategories.has(opt) ? 'var(--foreground)' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {selectedCategories.has(opt) && <Check size={10} style={{ color: 'var(--background)' }} strokeWidth={3} />}
+                    </div>
+                    <span style={{ fontSize: 13, color: 'var(--foreground)' }}>{opt}</span>
+                  </button>
+                ))}
+              {catSearch && !CATEGORY_OPTIONS.some(o => o.toLowerCase().includes(catSearch.toLowerCase())) && (
+                <div style={{ padding: '8px 14px', fontSize: 12, color: 'var(--text-weak)' }}>No matches</div>
+              )}
+            </div>
+            {selectedCategories.size > 0 && (
+              <div style={{ padding: '6px 12px', borderTop: '1px solid var(--border)' }}>
+                <button onClick={() => setSelectedCategories(new Set())} style={{ fontSize: 12, color: 'var(--text-weak)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+                  Clear all
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* User dropdown */}
+      <div ref={userFilterRef} style={{ position: 'relative' }}>
+        <button
+          onClick={() => { setUserFilterOpen(p => !p); setFilterOpen(false); setDateOpen(false); setCategoryOpen(false); setCatFilterOpen(false); setFileTypeOpen(false); }}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            padding: '4px 10px', borderRadius: 99,
+            border: '1px solid var(--border)',
+            backgroundColor: selectedUsers.size > 0 ? 'var(--fill-weaker)' : 'transparent',
+            color: 'var(--foreground)', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          {selectedUsers.size === 0 ? 'User' : selectedUsers.size === 1 ? [...selectedUsers][0] : `${selectedUsers.size} users`}
+          <ChevronDown size={11} style={{ opacity: 0.6 }} />
+        </button>
+        {userFilterOpen && (
+          <div style={{
+            position: 'absolute', top: 'calc(100% + 8px)', left: 0,
+            width: 220, zIndex: 400,
+            backgroundColor: 'var(--raised)', border: '1px solid var(--border)',
+            borderRadius: 10, boxShadow: '0 6px 20px rgba(0,0,0,0.14)', overflow: 'hidden',
+          }}>
+            <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  value={userSearch}
+                  onChange={e => setUserSearch(e.target.value)}
+                  onKeyDown={e => e.stopPropagation()}
+                  autoFocus
+                  style={{
+                    width: '100%', height: 28, padding: '0 28px 0 8px',
+                    border: '1px solid var(--border)', borderRadius: 6,
+                    backgroundColor: 'var(--fill-weaker)', color: 'var(--foreground)',
+                    fontSize: 12, outline: 'none', fontFamily: 'inherit',
+                  }}
+                />
+                <Search size={12} style={{ position: 'absolute', right: 8, color: 'var(--text-weak)', pointerEvents: 'none' }} />
+              </div>
+            </div>
+            <div style={{ maxHeight: 260, overflowY: 'auto', padding: '4px 0' }}>
+              {USER_OPTIONS
+                .filter(opt => opt.toLowerCase().includes(userSearch.toLowerCase()))
+                .map(opt => (
+                  <button
+                    key={opt}
+                    onClick={() => toggleSet(selectedUsers, setSelectedUsers, opt)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '6px 12px',
+                      backgroundColor: selectedUsers.has(opt) ? 'var(--fill-weaker)' : 'transparent',
+                      border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-hover)')}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = selectedUsers.has(opt) ? 'var(--fill-weaker)' : 'transparent')}
+                  >
+                    <div style={{
+                      width: 14, height: 14, borderRadius: 3, flexShrink: 0,
+                      border: `1.5px solid ${selectedUsers.has(opt) ? 'var(--foreground)' : 'var(--border)'}`,
+                      backgroundColor: selectedUsers.has(opt) ? 'var(--foreground)' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {selectedUsers.has(opt) && <Check size={10} style={{ color: 'var(--background)' }} strokeWidth={3} />}
+                    </div>
+                    <span style={{ fontSize: 13, color: 'var(--foreground)' }}>{opt}</span>
+                  </button>
+                ))}
+              {userSearch && !USER_OPTIONS.some(o => o.toLowerCase().includes(userSearch.toLowerCase())) && (
+                <div style={{ padding: '8px 14px', fontSize: 12, color: 'var(--text-weak)' }}>No matches</div>
+              )}
+            </div>
+            {selectedUsers.size > 0 && (
+              <div style={{ padding: '6px 12px', borderTop: '1px solid var(--border)' }}>
+                <button onClick={() => setSelectedUsers(new Set())} style={{ fontSize: 12, color: 'var(--text-weak)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+                  Clear all
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
     </div>
   );
