@@ -446,7 +446,7 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
                 fontFamily: 'inherit', lineHeight: 1, pointerEvents: 'none',
               }}>/</kbd>
             )}
-            {query && (
+            {query && isOpen && (
               <button
                 onClick={handleClear}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-weak)', borderRadius: 99 }}
