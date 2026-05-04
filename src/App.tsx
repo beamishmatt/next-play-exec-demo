@@ -445,6 +445,7 @@ function AppContent() {
 function usePageTitle(pathname: string): string {
   return React.useMemo(() => {
     if (pathname === '/home') return 'Home';
+    if (pathname === '/search') return 'Search Results';
     if (pathname === '/evidence') return 'Evidence';
     if (pathname === '/cases') return 'Cases';
     if (pathname === '/community') return 'Community';
