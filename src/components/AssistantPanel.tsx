@@ -687,7 +687,7 @@ export function DraftDrawer({ draft, open, onClose }: { draft: DraftReport | nul
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 100,
+        zIndex: 450,
         display: open ? 'flex' : 'none',
         alignItems: 'stretch',
       }}
@@ -1136,8 +1136,8 @@ export function AssistantPanel({ isOpen, items, onClose, onAction }: AssistantPa
         flex: isOpen ? '0 0 480px' : '0 0 0px',
         overflow: 'hidden',
         borderLeft: isOpen ? '1px solid var(--border)' : '1px solid transparent',
-        backgroundColor: 'var(--base)',
-        transition: 'flex-basis 400ms cubic-bezier(0, 0.74, 0, 1), border-color 400ms cubic-bezier(0, 0.74, 0, 1)',
+        backgroundColor: isOpen ? 'var(--base)' : 'transparent',
+        transition: 'flex-basis 400ms cubic-bezier(0, 0.74, 0, 1), border-color 400ms cubic-bezier(0, 0.74, 0, 1), background-color 400ms cubic-bezier(0, 0.74, 0, 1)',
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100%',

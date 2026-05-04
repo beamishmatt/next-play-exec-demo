@@ -1508,12 +1508,12 @@ export function ChatDrawer({
         width,
         backgroundColor: 'var(--overlay)',
         borderLeft: '1px solid var(--border)',
-        boxShadow: '-8px 0 32px rgba(0,0,0,0.08)',
+        boxShadow: open ? '-8px 0 32px rgba(0,0,0,0.08)' : 'none',
         transform: open ? 'translateX(0)' : 'translateX(100%)',
-        transition: dragging.current ? 'right 0s' : 'transform 0.25s cubic-bezier(0.4,0,0.2,1), right 0.25s cubic-bezier(0.4,0,0.2,1)',
+        transition: dragging.current ? 'right 0s' : 'transform 0.25s cubic-bezier(0.4,0,0.2,1), right 0.25s cubic-bezier(0.4,0,0.2,1), box-shadow 0.25s cubic-bezier(0.4,0,0.2,1)',
         display: 'flex',
         flexDirection: 'column',
-        zIndex: 100,
+        zIndex: 400,
       }}
     >
       {/* Drag handle */}
@@ -1526,7 +1526,7 @@ export function ChatDrawer({
           bottom: 0,
           width: 24,
           cursor: 'ew-resize',
-          display: 'flex',
+          display: open ? 'flex' : 'none',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1,
