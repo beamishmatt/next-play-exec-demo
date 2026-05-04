@@ -101,7 +101,6 @@ function AppContent() {
   const isMobile = useIsMobile();
   const [sidebarVisible, setSidebarVisible] = React.useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
-  const [searchState, setSearchState] = React.useState<{ open: boolean; query?: string; selectedId?: string; output?: import('./data/types').SearchOutput }>({ open: false });
   const [topRailQuery, setTopRailQuery] = React.useState('');
   const [assistantOpen, setAssistantOpen] = React.useState(false);
   const [chatMessages, setChatMessages] = React.useState<ChatMessage[]>([]);
@@ -150,7 +149,7 @@ function AppContent() {
       if (utilitySearchRef.current) {
         utilitySearchRef.current.focus();
       } else {
-        setSearchState({ open: true });
+        navigate('/search');
       }
     };
     window.addEventListener('keydown', handler);
@@ -280,16 +279,6 @@ function AppContent() {
   return (
     <TooltipProvider>
       <div className="h-screen flex bg-base">
-        {/* Search takeover */}
-        {searchState.open && (
-          <SearchTakeover
-            onClose={() => setSearchState(prev => ({ open: false, query: prev.query, output: prev.output }))}
-            initialQuery={searchState.query}
-            initialSelectedId={searchState.selectedId}
-            initialOutput={searchState.output}
-          />
-        )}
-
         {/* Import Evidence modal */}
         <ImportModal open={importOpen} onClose={() => setImportOpen(false)} />
 
@@ -326,7 +315,7 @@ function AppContent() {
         {/* Main content area */}
         <div className="flex-1 h-full flex flex-col" style={{ minWidth: 0 }}>
           {/* Top Rail */}
-          {!isMobile && !searchState.open && location.pathname !== '/home' && (
+          {!isMobile && location.pathname !== '/home' && (
             <div
               className="relative shrink-0 flex items-center px-6"
               style={{
@@ -338,13 +327,13 @@ function AppContent() {
             >
               <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: 560 }}>
                 <TopRailSearch
-                  onOpenSearch={(query, selectedId, output) => { setTopRailQuery(query); setSearchState({ open: true, query, selectedId, output }); }}
+                  onOpenSearch={(query, selectedId, output) => { setTopRailQuery(query); navigate('/search', { state: { query, selectedId, output } }); }}
                   searchInputRef={utilitySearchRef}
                   query={topRailQuery}
                   onQueryChange={setTopRailQuery}
-                  resultCount={topRailQuery === (searchState.query ?? '') && topRailQuery.length > 0 ? (searchState.output?.results.length ?? 0) : 0}
-                  onReopenSearch={() => setSearchState(prev => ({ ...prev, open: true }))}
-                  onClearResults={() => setSearchState(prev => ({ ...prev, query: undefined, output: undefined }))}
+                  resultCount={0}
+                  onReopenSearch={() => navigate('/search', { state: { query: topRailQuery } })}
+                  onClearResults={() => setTopRailQuery('')}
                 />
               </div>
               <div className="ml-auto">
@@ -363,7 +352,7 @@ function AppContent() {
               showSidebarToggle={isMobile || isEvidenceDetailPage}
               sidebarVisible={sidebarVisible}
               onSidebarToggle={handleSidebarToggle}
-              onOpenSearch={(query, selectedId, output) => setSearchState({ open: true, query, selectedId, output })}
+              onOpenSearch={(query, selectedId, output) => { setTopRailQuery(query ?? ''); navigate('/search', { state: { query, selectedId, output } }); }}
               onOpenAssistant={() => setAssistantOpen(true)}
               searchInputRef={utilitySearchRef}
               actions={location.pathname === '/cases' ? (
@@ -408,10 +397,11 @@ function AppContent() {
           )}
           
           {/* Scrollable content area */}
-          <div className="flex-1 overflow-y-auto" style={{ minWidth: 0 }}>
+          <div className={`flex-1 ${location.pathname === '/search' ? 'overflow-hidden h-full' : 'overflow-y-auto'}`} style={{ minWidth: 0 }}>
             <Routes>
               <Route path="/" element={<Navigate to="/home" replace />} />
-              <Route path="/home" element={<HomePage onSearch={(q) => setSearchState({ open: true, query: q })} />} />
+              <Route path="/search" element={<SearchTakeover />} />
+              <Route path="/home" element={<HomePage onSearch={(q) => { setTopRailQuery(q); navigate('/search', { state: { query: q } }); }} />} />
               <Route path="/evidence" element={<EvidencePage />} />
               <Route path="/evidence/item/:evidenceId" element={<SearchEvidenceDetailPage />} />
               <Route path="/evidence/:caseId/:evidenceIndex" element={<EvidenceDetailPage />} />

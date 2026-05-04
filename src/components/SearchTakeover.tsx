@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   X,
   Search,
@@ -526,24 +526,17 @@ function SkeletonPreview() {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-interface SearchTakeoverProps {
-  onClose: () => void;
-  initialQuery?: string;
-  initialSelectedId?: string;
-  initialOutput?: SearchOutput;
-}
-
-export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initialOutput }: SearchTakeoverProps) {
+export function SearchTakeover() {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { query: initialQuery, selectedId: initialSelectedId, output: initialOutput } = (location.state as { query?: string; selectedId?: string; output?: SearchOutput } | null) ?? {};
 
   const handleViewEvidence = (evidenceId: string) => {
-    onClose();
     navigate(`/search/evidence/${evidenceId}`);
   };
 
   const handleViewCase = (caseId: string) => {
-    onClose();
     navigate(`/cases/${caseId}`);
   };
   const [query, setQuery] = useState(initialQuery ?? '');
@@ -758,10 +751,10 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
   // Focus on mount, close on Esc
   useEffect(() => {
     inputRef.current?.focus();
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') navigate(-1); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  }, [navigate]);
 
   // Auto-run search only if no pre-loaded output was provided
   useEffect(() => {
@@ -876,18 +869,7 @@ export function SearchTakeover({ onClose, initialQuery, initialSelectedId, initi
     : [];
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: '#ffffff' }}>
-
-      {/* Header bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px', height: 52, borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-        <button
-          onClick={onClose}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, background: 'none', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', color: 'var(--foreground)', flexShrink: 0 }}
-        >
-          <X size={14} />
-        </button>
-        <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--foreground)' }}>Search</span>
-      </div>
+    <div className="h-full flex flex-col">
 
       {/* Body */}
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', minHeight: 0 }}>
