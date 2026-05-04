@@ -63,7 +63,7 @@ export function ConfigurableSidebar({
       currentPath.startsWith(item.path + '/') && item.path !== '/'
     );
     
-    return prefixMatch?.id || navItems[0]?.id || '';
+    return prefixMatch?.id ?? null;
   };
 
   const activeItem = getActiveItem();
