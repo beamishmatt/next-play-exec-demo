@@ -62,6 +62,8 @@ function useBreadcrumbs(): Crumb[] {
     return [{ label: node?.title ?? 'Evidence Detail' }];
   }
 
+  if (segs[0] === 'search') return [{ label: 'Search Results' }];
+
   const label = segs[0].charAt(0).toUpperCase() + segs[0].slice(1);
   return [{ label }];
 }
