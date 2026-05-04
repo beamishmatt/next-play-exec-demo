@@ -750,7 +750,6 @@ export function SearchTakeover() {
 
   // Focus on mount, close on Esc
   useEffect(() => {
-    inputRef.current?.focus();
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') navigate(-1); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -876,42 +875,9 @@ export function SearchTakeover() {
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div style={{ width: '100%', maxWidth: 1100, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, padding: '0 20px' }}>
 
-          {/* Bordered search input */}
-          <div style={{ paddingTop: 24, paddingBottom: 8, flexShrink: 0 }}>
-            <div style={{ position: 'relative', border: '1px solid var(--border)', borderRadius: 6, height: 38 }}>
-              <div
-                aria-hidden
-                style={{
-                  position: 'absolute', top: 0, bottom: 0, left: 12, right: 36,
-                  font: 'inherit', fontSize: 14, fontFamily: 'inherit',
-                  lineHeight: '38px',
-                  whiteSpace: 'pre', overflow: 'hidden',
-                  pointerEvents: 'none', color: 'transparent',
-                }}
-                dangerouslySetInnerHTML={{ __html: highlightInputText(query, getMatchedInputTerms(committedQuery, searchOutput?.results ?? [])) }}
-              />
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Describe what you want to find..."
-                style={{ position: 'absolute', inset: 0, width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 14, fontFamily: 'inherit', color: 'var(--foreground)', padding: '0 36px 0 12px', boxSizing: 'border-box' }}
-              />
-              <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}>
-                {isLoading
-                  ? <Loader2 size={15} className="animate-spin" style={{ color: 'var(--text-weak)' }} />
-                  : query
-                    ? <button onClick={() => { setQuery(''); setCommittedQuery(''); setSearchOutput(null); setActiveChips([]); setSelectedId(null); inputRef.current?.focus(); }} style={{ display: 'flex', alignItems: 'center', color: 'var(--text-weak)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}><X size={15} /></button>
-                    : <Search size={15} style={{ color: 'var(--text-weak)' }} />
-                }
-              </div>
-            </div>
-          </div>
-
-
           {/* Filter bar — shown when results are present */}
           {hasResults && (
-            <div style={{ paddingBottom: 8, flexShrink: 0 }}>
+            <div style={{ paddingTop: 16, paddingBottom: 8, flexShrink: 0 }}>
               <SearchFilterBar filters={searchFilters} />
             </div>
           )}

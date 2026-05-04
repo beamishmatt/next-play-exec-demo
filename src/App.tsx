@@ -400,7 +400,7 @@ function AppContent() {
           <div className={`flex-1 ${location.pathname === '/search' ? 'overflow-hidden h-full' : 'overflow-y-auto'}`} style={{ minWidth: 0 }}>
             <Routes>
               <Route path="/" element={<Navigate to="/home" replace />} />
-              <Route path="/search" element={<SearchTakeover />} />
+              <Route path="/search" element={<SearchTakeover key={location.key} />} />
               <Route path="/home" element={<HomePage onSearch={(q) => { setTopRailQuery(q); navigate('/search', { state: { query: q } }); }} />} />
               <Route path="/evidence" element={<EvidencePage />} />
               <Route path="/evidence/item/:evidenceId" element={<SearchEvidenceDetailPage />} />
