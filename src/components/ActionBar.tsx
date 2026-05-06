@@ -17,7 +17,7 @@ interface ActionButton {
   label: string;
   icon?: React.ReactNode;
   onClick?: () => void;
-  // New dropdown support
+  variant?: 'special' | 'primary';
   hasDropdown?: boolean;
   dropdownItems?: DropdownSubAction[];
 }
@@ -146,6 +146,7 @@ export function ActionBar({ selectedCount, actions, onClearSelection, pageType, 
                         size="sm"
                         variant="special"
                         className="flex items-center gap-1.5"
+                        style={{ fontSize: '12px' }}
                       >
                         {action.label}
                         <ChevronUp 
@@ -174,8 +175,9 @@ export function ActionBar({ selectedCount, actions, onClearSelection, pageType, 
                   <Button
                     key={action.key}
                     size="sm"
-                    variant="special"
+                    variant={action.variant ?? 'special'}
                     onClick={action.onClick}
+                    style={{ fontSize: '12px' }}
                   >
                     {action.label}
                   </Button>
@@ -190,6 +192,7 @@ export function ActionBar({ selectedCount, actions, onClearSelection, pageType, 
                       size="sm"
                       variant="special"
                       aria-label="More actions"
+                      style={{ fontSize: '12px' }}
                     >
                       <MoreHorizontal size={16} />
                     </Button>
@@ -216,9 +219,9 @@ export function ActionBar({ selectedCount, actions, onClearSelection, pageType, 
 
             {/* Selection count */}
             <div className="flex items-center gap-2">
-              <span 
-                className="caption whitespace-nowrap"
-                style={{ color: 'var(--text-special)' }}
+              <span
+                className="whitespace-nowrap"
+                style={{ fontSize: 'var(--text-caption)', color: 'var(--text-special)' }}
               >
                 {selectedCount} selected
               </span>
@@ -227,6 +230,7 @@ export function ActionBar({ selectedCount, actions, onClearSelection, pageType, 
                 variant="special"
                 onClick={onClearSelection}
                 aria-label="Clear selection"
+                style={{ fontSize: '12px' }}
               >
                 <X size={14} />
               </Button>

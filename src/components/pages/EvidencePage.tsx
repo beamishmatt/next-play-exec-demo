@@ -7,7 +7,6 @@ import { ActionBar } from '../ActionBar';
 import { ViewSwitcher, ViewMode } from '../ViewSwitcher';
 import { EvidenceFilters } from '../EvidenceFilters';
 import { FilterPanel } from '../FilterPanel';
-import { AssistantPanel } from '../AssistantPanel';
 import { EditCategoryDialog } from '../EditCategoryDialog';
 import { useGraphEvidence } from '../../data/graphEvidence';
 import { deleteEvidence } from '../../data/deleteEvidence';
@@ -160,8 +159,6 @@ export function EvidencePage() {
       onClick: () => console.log(`Evidence actions triggered for ${selectedItems.size} items`)
     },
   ];
-
-  const isAssistantOpen = selectedItems.size > 0;
 
   return (
     <div className="relative min-h-full flex">
@@ -354,25 +351,6 @@ export function EvidencePage() {
           )}
         </div>
       </div>
-
-      {/* Assistant Panel — slides in from the right when items are selected */}
-      <AssistantPanel
-        isOpen={isAssistantOpen}
-        items={filteredEvidence
-          .filter(e => selectedItems.has(e.uuid))
-          .map(e => ({
-            id: e.uuid,
-            title: e.title,
-            vector_file_id: e.vector_file_id,
-            description: e.description,
-            category: e.category,
-            officer: e.owner,
-            date_recorded: e.recordedOn.toISOString(),
-            media_class: e.fileType,
-            objects_detected: e.objects_detected?.map(o => `${o.color ? o.color + ' ' : ''}${o.label}`).join(', '),
-          }))}
-        onClose={() => setSelectedItems(new Set())}
-      />
 
       {/* Action Bar - appears when items are selected */}
       {selectedItems.size > 0 && (

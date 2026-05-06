@@ -405,7 +405,7 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
                 onOpenSearch(query.trim(), undefined, output ?? undefined);
               }
             }}
-            placeholder="Search evidence..."
+            placeholder="Search for anything..."
             style={{
               width: '100%',
               height: '100%',

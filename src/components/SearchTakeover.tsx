@@ -7,6 +7,8 @@ import {
   ArrowLeft,
   ArrowUpRight,
   Download,
+  Share2,
+  Bookmark,
   Video,
   FileText,
   Image,
@@ -30,6 +32,7 @@ import { SCOPE_CHIPS } from './SearchDropdown';
 import { SearchFilterBar, useSearchFilters } from './SearchFilterBar';
 import { FeedbackDrawer } from './FeedbackDrawer';
 import { agentSearch, generateAndSaveDescription, SearchStep } from '../engine/agentSearch';
+import { ActionBar } from './ActionBar';
 import { chatWithEvidenceStream, ChatMessage as EngineChatMessage } from '../engine/assistantChat';
 import { parseDraft, DraftReport } from '../utils/draftUtils';
 import { ChatDrawer, ChatMessage, parseThinkingFromRaw, parseNeedsEvidence } from './pages/HomePage';
@@ -492,32 +495,363 @@ function PreviewPanel({ result, onViewEvidence }: { result: SearchEvidenceResult
   );
 }
 
-// ─── Skeleton loaders ─────────────────────────────────────────────────────────
+// ─── Kind metadata ────────────────────────────────────────────────────────────
 
-function SkeletonRow() {
+const KIND_META: Record<string, { label: string; color: string }> = {
+  video:    { label: 'Video',    color: '#6366f1' },
+  image:    { label: 'Image',    color: '#0ea5e9' },
+  audio:    { label: 'Audio',    color: '#f59e0b' },
+  document: { label: 'Document', color: '#10b981' },
+  pdf:      { label: 'PDF',      color: '#ef4444' },
+  text:     { label: 'Text',     color: '#8b5cf6' },
+};
+
+// ─── Facet helpers ────────────────────────────────────────────────────────────
+
+const TYPE_LABEL_PLURAL: Record<string, string> = {
+  video: 'Videos', image: 'Images', audio: 'Audio',
+  document: 'Documents', pdf: 'PDFs', text: 'Text',
+};
+
+function TypeIcon({ mediaClass }: { mediaClass: string }) {
+  const s = { size: 14, style: { flexShrink: 0 as const, color: 'var(--text-weak)' } };
+  switch (mediaClass) {
+    case 'video':    return <Video      {...s} />;
+    case 'image':    return <Image      {...s} />;
+    case 'audio':    return <Headphones {...s} />;
+    case 'document': return <FileText   {...s} />;
+    case 'pdf':      return <FileText   {...s} />;
+    default:         return <File       {...s} />;
+  }
+}
+
+function PersonAvatar({ name }: { name: string }) {
+  const initials = name.split(/\s+/).map(w => w[0] ?? '').slice(0, 2).join('').toUpperCase();
   return (
-    <div className="px-4 py-3 flex gap-3 items-start">
-      <div style={{ width: 16, height: 16, borderRadius: 3, backgroundColor: 'var(--border)', marginTop: 2, flexShrink: 0 }} className="animate-pulse" />
-      <div className="flex-1 flex flex-col gap-2">
-        <div style={{ height: 13, width: '100%', borderRadius: 3, backgroundColor: 'var(--border)' }} className="animate-pulse" />
-        <div style={{ height: 11, width: '60%', borderRadius: 3, backgroundColor: 'var(--border)' }} className="animate-pulse" />
+    <div style={{ width: 18, height: 18, borderRadius: '50%', backgroundColor: 'var(--fill-weak)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <span style={{ fontSize: 7.5, fontWeight: 700, color: 'var(--text-weak)', lineHeight: 1, letterSpacing: '0.01em' }}>{initials}</span>
+    </div>
+  );
+}
+
+// ─── Facet group ──────────────────────────────────────────────────────────────
+
+function FacetGroup({
+  title,
+  items,
+  activeValue,
+  onSelect,
+  renderIcon,
+  renderLabel,
+}: {
+  title: string;
+  items: [string, number][];
+  activeValue: string | null;
+  onSelect: (value: string | null) => void;
+  renderIcon?: (value: string) => React.ReactNode;
+  renderLabel?: (value: string) => string;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  if (items.length === 0) return null;
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <button
+        onClick={() => setExpanded(e => !e)}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', padding: '4px 0', cursor: 'pointer', marginBottom: 2, fontFamily: 'inherit' }}
+      >
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{title}</span>
+        {expanded ? <ChevronDown size={11} style={{ color: 'var(--text-weak)' }} /> : <ChevronRight size={11} style={{ color: 'var(--text-weak)' }} />}
+      </button>
+      {expanded && (
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          {items.map(([value, count]) => {
+            const isActive = activeValue === value;
+            const label = renderLabel ? renderLabel(value) : value;
+            return (
+              <li key={value}>
+                <button
+                  onClick={() => onSelect(isActive ? null : value)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 7,
+                    width: '100%', padding: '5px 6px', borderRadius: 5,
+                    backgroundColor: isActive ? 'var(--fill-weak)' : 'transparent',
+                    border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                    transition: 'background-color 0.1s',
+                  }}
+                  onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--fill-weaker)'; }}
+                  onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+                >
+                  {renderIcon && <span style={{ display: 'flex', flexShrink: 0 }}>{renderIcon(value)}</span>}
+                  <span style={{ fontSize: 13, color: 'var(--foreground)', fontWeight: isActive ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left', flex: 1, minWidth: 0 }}>{label}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-weak)', flexShrink: 0 }}>{count}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// ─── Compact row ──────────────────────────────────────────────────────────────
+
+function CompactRow({
+  result,
+  isSelected,
+  query,
+  onHover,
+  onClick,
+  checked,
+  onCheck,
+}: {
+  result: SearchEvidenceResult;
+  isSelected: boolean;
+  query: string;
+  onHover: () => void;
+  onClick: () => void;
+  checked: boolean;
+  onCheck: (checked: boolean) => void;
+}) {
+  const kind = KIND_META[result.media_class] ?? { label: result.media_class, color: '#9ca3af' };
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={e => {
+        onHover();
+        (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--fill-weaker)';
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLDivElement).style.backgroundColor = isSelected ? 'var(--fill-weaker)' : 'transparent';
+      }}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '32px 40px 1fr',
+        alignItems: 'center',
+        gap: 8,
+        padding: '6px 10px 6px 10px',
+        cursor: 'pointer',
+        borderLeft: `2px solid ${isSelected ? 'var(--foreground)' : 'transparent'}`,
+        backgroundColor: isSelected ? 'var(--fill-weaker)' : 'transparent',
+        transition: 'background-color 0.1s',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={e => { e.stopPropagation(); onCheck(e.target.checked); }}
+          onClick={e => e.stopPropagation()}
+          style={{ width: 13, height: 13, cursor: 'pointer', accentColor: '#111827', flexShrink: 0 }}
+        />
+      </div>
+      <div style={{ width: 40, height: 30, borderRadius: 3, overflow: 'hidden', flexShrink: 0, backgroundColor: 'var(--fill-weak)' }}>
+        {result.thumbnailUrl ? (
+          <img src={result.thumbnailUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <MediaIcon mediaClass={result.media_class} size={14} />
+          </div>
+        )}
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <p
+          style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          dangerouslySetInnerHTML={{ __html: highlightText(result.title, query) }}
+        />
+        <p style={{ fontSize: 11, color: 'var(--text-weak)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {[result.evidence_id, result.case_id, result.officer].filter(Boolean).join(' · ')}
+        </p>
       </div>
     </div>
   );
 }
 
+// ─── Meta field ───────────────────────────────────────────────────────────────
+
+function MetaField({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+      <span style={{ fontSize: 12, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</span>
+    </div>
+  );
+}
+
+// ─── Doc preview ──────────────────────────────────────────────────────────────
+
+const SAMPLE_PDF_URL = new URL('../assets/06-officer-thibodaux-statement.pdf', import.meta.url).href;
+
+function DocPreview() {
+  return (
+    <iframe
+      src={SAMPLE_PDF_URL}
+      style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+      title="Document preview"
+    />
+  );
+}
+
+// ─── Preview pane ─────────────────────────────────────────────────────────────
+
+function PreviewPane({ result, onViewEvidence }: { result: SearchEvidenceResult; onViewEvidence: () => void }) {
+  const kind = KIND_META[result.media_class] ?? { label: result.media_class, color: '#9ca3af' };
+  const formattedDate = result.date_recorded
+    ? new Date(result.date_recorded).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
+    : undefined;
+  const tags: string[] = (result as any).tags ?? [];
+  const bodyText = result.excerpt || result.relevance || '';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', padding: '16px 20px', gap: 16 }}>
+      {/* Header: ID on left, actions on right */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <span style={{ fontSize: 12, color: 'var(--text-weak)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{result.evidence_id}</span>
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+          {(() => {
+            const btnBase: React.CSSProperties = {
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border)',
+              fontSize: 12, fontWeight: 500, fontFamily: 'inherit',
+              cursor: 'pointer', transition: 'background-color 0.1s',
+              backgroundColor: 'var(--foreground)', color: '#ffffff',
+            };
+            const btnSecondary: React.CSSProperties = {
+              ...btnBase, backgroundColor: 'transparent', color: 'var(--foreground)',
+            };
+            return (
+              <>
+                <button style={btnSecondary}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-weak)')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
+                  <Download size={12} /> Download
+                </button>
+                <button style={btnSecondary}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-weak)')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
+                  <Share2 size={12} /> Share
+                </button>
+                <button onClick={onViewEvidence} style={btnBase}
+                  onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+                  onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
+                  <ArrowUpRight size={12} /> View
+                </button>
+              </>
+            );
+          })()}
+        </div>
+      </div>
+
+      {/* Title */}
+      <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--foreground)', margin: 0, lineHeight: 1.3, flexShrink: 0 }}>{result.title}</h2>
+
+      {/* Media preview — 16:10 */}
+      {(() => {
+        const isDoc = ['document', 'pdf', 'text'].includes(result.media_class);
+        return (
+          <div style={{ flexShrink: 0, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)', backgroundColor: 'var(--fill-weak)', ...(isDoc ? { height: 520 } : { aspectRatio: '16 / 10' }) }}>
+            {isDoc ? (
+              <DocPreview />
+            ) : result.thumbnailUrl ? (
+              <img src={result.thumbnailUrl} alt={result.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <MediaIcon mediaClass={result.media_class} size={32} />
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Metadata grid — 2 columns */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px', flexShrink: 0 }}>
+        <MetaField label="Case" value={result.case_id} />
+        <MetaField label="Officer" value={result.officer} />
+        <MetaField label="Category" value={result.category} />
+        <MetaField label="Recorded" value={formattedDate} />
+      </div>
+
+      {/* Description */}
+      {bodyText && (
+        <div style={{ flexShrink: 0 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 6px' }}>Description</p>
+          <p style={{ fontSize: 13, color: 'var(--foreground)', lineHeight: 1.6, margin: 0 }}>{bodyText}</p>
+        </div>
+      )}
+
+      {/* Tags */}
+      {tags.length > 0 && (
+        <div style={{ flexShrink: 0 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 6px' }}>Tags</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {tags.map(tag => (
+              <span key={tag} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, padding: '2px 8px', borderRadius: 99, backgroundColor: 'var(--fill-weak)', color: 'var(--foreground)', border: '1px solid var(--border)' }}>
+                <Tag size={9} />
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Skeleton loaders ─────────────────────────────────────────────────────────
+
+function SkeletonRow() {
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: '32px 40px 1fr',
+      alignItems: 'center',
+      gap: 8,
+      padding: '6px 10px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 13, height: 13, borderRadius: 2, backgroundColor: 'var(--border)' }} className="animate-pulse" />
+      </div>
+      <div style={{ width: 40, height: 30, borderRadius: 3, backgroundColor: 'var(--border)' }} className="animate-pulse" />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+        <div style={{ height: 13, width: '80%', borderRadius: 3, backgroundColor: 'var(--border)' }} className="animate-pulse" />
+        <div style={{ height: 11, width: '55%', borderRadius: 3, backgroundColor: 'var(--border)' }} className="animate-pulse" />
+      </div>
+    </div>
+  );
+}
 
 function SkeletonPreview() {
   return (
-    <div className="shrink-0 flex flex-col gap-3" style={{ width: 310, maxWidth: 310 }}>
-      <div style={{ border: '1px solid var(--border)', borderRadius: 6, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ height: 13, width: '65%', borderRadius: 3, backgroundColor: 'var(--border)' }} className="animate-pulse" />
-        {[55, 40, 50].map((w, i) => (
-          <div key={i} style={{ height: 11, width: `${w}%`, borderRadius: 3, backgroundColor: 'var(--border)' }} className="animate-pulse" />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 20px', gap: 16, overflowY: 'auto' }}>
+      {/* Header: kind badge + evidence ID + action buttons */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <div style={{ width: 52, height: 22, borderRadius: 99, backgroundColor: 'var(--border)' }} className="animate-pulse" />
+        <div style={{ flex: 1, height: 13, borderRadius: 3, backgroundColor: 'var(--border)', maxWidth: 120 }} className="animate-pulse" />
+        <div style={{ display: 'flex', gap: 6 }}>
+          {[80, 72, 60].map((w, i) => (
+            <div key={i} style={{ width: w, height: 28, borderRadius: 6, backgroundColor: 'var(--border)' }} className="animate-pulse" />
+          ))}
+        </div>
+      </div>
+      {/* Title */}
+      <div style={{ height: 20, width: '65%', borderRadius: 3, backgroundColor: 'var(--border)', flexShrink: 0 }} className="animate-pulse" />
+      {/* Media preview — 16:10 */}
+      <div style={{ flexShrink: 0, borderRadius: 6, backgroundColor: 'var(--border)', aspectRatio: '16 / 10' }} className="animate-pulse" />
+      {/* Metadata grid — 2 columns matching Case / Officer / Category / Recorded */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px', flexShrink: 0 }}>
+        {[0, 1, 2, 3].map(i => (
+          <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ height: 10, width: '40%', borderRadius: 2, backgroundColor: 'var(--border)' }} className="animate-pulse" />
+            <div style={{ height: 13, width: '70%', borderRadius: 3, backgroundColor: 'var(--border)' }} className="animate-pulse" />
+          </div>
         ))}
-        <div style={{ height: 1, backgroundColor: 'var(--border)', margin: '4px 0' }} />
-        {[90, 85, 80, 70].map((w, i) => (
-          <div key={i} style={{ height: 11, width: `${w}%`, borderRadius: 3, backgroundColor: 'var(--border)' }} className="animate-pulse" />
+      </div>
+      {/* Description */}
+      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ height: 10, width: '28%', borderRadius: 2, backgroundColor: 'var(--border)' }} className="animate-pulse" />
+        {[92, 85, 60].map((w, i) => (
+          <div key={i} style={{ height: 13, width: `${w}%`, borderRadius: 3, backgroundColor: 'var(--border)' }} className="animate-pulse" />
         ))}
       </div>
     </div>
@@ -599,7 +933,6 @@ export function SearchTakeover() {
         const { thinking, text: afterThinking } = parseThinkingFromRaw(raw.current);
         const { content: afterDraft, draft } = parseDraft(afterThinking);
         const { text: afterNeedsEvidence, needsEvidence } = parseNeedsEvidence(afterDraft);
-        // Strip both <action> and <metadata_edit> tags from display text during streaming
         const stripped = stripActionTags(stripMetadataEditTags(afterNeedsEvidence));
         const pendingDraft = afterThinking.includes('<draft_report') && draft === null;
         setChatMessages(prev => prev.map(m => m.id === assistantId ? {
@@ -608,13 +941,11 @@ export function SearchTakeover() {
           showSelectEvidence: needsEvidence || m.showSelectEvidence,
         } : m));
       });
-      // After streaming completes, parse both tag types and merge into MetadataEdit approval cards
       const { text: afterThinking } = parseThinkingFromRaw(raw.current);
       const { content: afterDraft } = parseDraft(afterThinking);
       const { text: afterNeedsEvidence } = parseNeedsEvidence(afterDraft);
       const { edits: metaEdits } = parseMetadataEdits(afterNeedsEvidence, getTitle);
       const { actions } = parseActions(afterNeedsEvidence);
-      // add_to_case is a batch action — one approval card for all items
       const batchActions = actions.filter(a => a.type === 'add_to_case');
       const perItemActions = actions.filter(a => a.type !== 'add_to_case');
       const allEdits: MetadataEdit[] = [
@@ -623,7 +954,6 @@ export function SearchTakeover() {
           const currentValue = evidenceNode ? (evidenceNode as any)[e.field] as string | undefined : undefined;
           return { ...e, current_value: currentValue, status: 'pending' as const };
         }),
-        // Convert per-item <action> tags into a single batch MetadataEdit approval card per action
         ...perItemActions.map(a => {
           const ACTION_FIELD_MAP: Record<string, string> = {
             set_category: 'category',
@@ -650,7 +980,6 @@ export function SearchTakeover() {
       if (allEdits.length > 0) {
         setChatMessages(prev => prev.map(m => m.id === assistantId ? { ...m, metadataEdits: allEdits } : m));
       }
-      // Batch actions (add_to_case) produce a single ToolCall approval card
       if (batchActions.length > 0) {
         const a = batchActions[0];
         const count = a.item_ids.length;
@@ -686,7 +1015,6 @@ export function SearchTakeover() {
       if (m.id !== msgId || !m.metadataEdits) return m;
       const edit = m.metadataEdits.find(e => e.id === editId);
       if (!edit) return m;
-      // Apply the edit to searchOutput — handle both single-item and batch
       const idsToUpdate = edit.evidence_ids ?? [edit.evidence_id];
       setSearchOutput(prevOutput => {
         if (!prevOutput) return prevOutput;
@@ -867,17 +1195,72 @@ export function SearchTakeover() {
     ? searchFilters.filterResults(searchOutput.results)
     : [];
 
+  const [activeFacetType, setActiveFacetType] = useState<string | null>(null);
+  const [activeFacetCase, setActiveFacetCase] = useState<string | null>(null);
+  const [activeFacetPerson, setActiveFacetPerson] = useState<string | null>(null);
+  const [activeFacetStatus, setActiveFacetStatus] = useState<string | null>(null);
+  const [activeFacetDate, setActiveFacetDate] = useState<string | null>(null);
+
+  const typeFacets = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    evidenceItems.forEach(r => { const k = r.media_class || 'unknown'; counts[k] = (counts[k] || 0) + 1; });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]) as [string, number][];
+  }, [evidenceItems]);
+
+  const caseFacets = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    evidenceItems.forEach(r => { if (r.case_id) counts[r.case_id] = (counts[r.case_id] || 0) + 1; });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8) as [string, number][];
+  }, [evidenceItems]);
+
+  const peopleFacets = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    evidenceItems.forEach(r => { if (r.officer) counts[r.officer] = (counts[r.officer] || 0) + 1; });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8) as [string, number][];
+  }, [evidenceItems]);
+
+  const statusFacets = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    evidenceItems.forEach(r => { const s = (r as any).status; if (s) counts[s] = (counts[s] || 0) + 1; });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]) as [string, number][];
+  }, [evidenceItems]);
+
+  const dateFacets = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    evidenceItems.forEach(r => {
+      if (r.date_recorded) {
+        const d = new Date(r.date_recorded).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+        counts[d] = (counts[d] || 0) + 1;
+      }
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]) as [string, number][];
+  }, [evidenceItems]);
+
+  const facetFilteredItems = React.useMemo(() =>
+    evidenceItems.filter(r => {
+      if (activeFacetType && r.media_class !== activeFacetType) return false;
+      if (activeFacetCase && r.case_id !== activeFacetCase) return false;
+      if (activeFacetPerson && r.officer !== activeFacetPerson) return false;
+      if (activeFacetStatus && (r as any).status !== activeFacetStatus) return false;
+      if (activeFacetDate && r.date_recorded) {
+        const d = new Date(r.date_recorded).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+        if (d !== activeFacetDate) return false;
+      }
+      return true;
+    }),
+  [evidenceItems, activeFacetType, activeFacetCase, activeFacetPerson, activeFacetStatus, activeFacetDate]);
+
   return (
     <div className="h-full flex flex-col">
 
       {/* Body */}
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', minHeight: 0 }}>
-        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{ width: '100%', maxWidth: 1100, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, padding: '0 20px' }}>
+        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
 
           {/* Filter bar — shown when results are present */}
           {hasResults && (
-            <div style={{ paddingTop: 16, paddingBottom: 8, flexShrink: 0 }}>
+            <div style={{ paddingTop: 16, paddingBottom: 8, paddingLeft: 24, flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
               <SearchFilterBar filters={searchFilters} />
             </div>
           )}
@@ -935,99 +1318,81 @@ export function SearchTakeover() {
               })()}
             </div>
           ) : (
-            /* Results state */
+            /* Results state — V4 3-column layout */
             <div style={{ flex: 1, overflow: 'hidden', display: 'flex', minHeight: 0 }}>
 
-              {/* Left: results header + list */}
-              <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+              {/* Facet rail — 200px */}
+              <aside style={{ width: 200, flexShrink: 0, overflowY: 'auto', padding: '16px 12px', borderRight: '1px solid var(--border)', scrollbarWidth: 'none' }}>
+                <FacetGroup
+                  title="Type"
+                  items={typeFacets}
+                  activeValue={activeFacetType}
+                  onSelect={setActiveFacetType}
+                  renderIcon={v => <TypeIcon mediaClass={v} />}
+                  renderLabel={v => TYPE_LABEL_PLURAL[v] ?? KIND_META[v]?.label ?? v}
+                />
+                <FacetGroup
+                  title="Case"
+                  items={caseFacets}
+                  activeValue={activeFacetCase}
+                  onSelect={setActiveFacetCase}
+                />
+                <FacetGroup
+                  title="People"
+                  items={peopleFacets}
+                  activeValue={activeFacetPerson}
+                  onSelect={setActiveFacetPerson}
+                  renderIcon={v => <PersonAvatar name={v} />}
+                />
+                <FacetGroup
+                  title="Status"
+                  items={statusFacets}
+                  activeValue={activeFacetStatus}
+                  onSelect={setActiveFacetStatus}
+                />
+                <FacetGroup
+                  title="Date"
+                  items={dateFacets}
+                  activeValue={activeFacetDate}
+                  onSelect={setActiveFacetDate}
+                />
+              </aside>
 
-{/* Entity chips: cases + people */}
-                {(matchedCases.length > 0 || entityPeople.length > 0) && !isLoading && (
-                  <div style={{ padding: '8px 0', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
-                    {matchedCases.length > 0 && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, backgroundColor: 'var(--fill-weaker)', borderRadius: 8, padding: '8px 10px' }}>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cases</span>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {matchedCases.map(c => (
-                          <button
-                            key={c.caseId}
-                            onClick={() => handleViewCase(c.caseId)}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 99, cursor: 'pointer', fontSize: 12, fontFamily: 'inherit', fontWeight: 500, border: '1px solid var(--border)', backgroundColor: 'transparent', color: 'var(--foreground)', transition: 'background-color 0.1s' }}
-                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-weaker)')}
-                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                          >
-                            <FolderOpen size={11} />
-                            {c.caseId}
-                          </button>
-                        ))}
-                        </div>
-                      </div>
-                    )}
-                    {entityPeople.length > 0 && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, backgroundColor: 'var(--fill-weaker)', borderRadius: 8, padding: '8px 10px' }}>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>People</span>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {entityPeople.map(name => (
-                          <button
-                            key={name}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 99, cursor: 'pointer', fontSize: 12, fontFamily: 'inherit', fontWeight: 500, border: '1px solid var(--border)', backgroundColor: 'transparent', color: 'var(--foreground)', transition: 'background-color 0.1s' }}
-                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--fill-weaker)')}
-                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                          >
-                            <User size={11} />
-                            {name}
-                          </button>
-                        ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* No results */}
-                {evidenceItems.length === 0 && matchedCases.length === 0 && entityPeople.length === 0 && !isLoading && (
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-                    <p style={{ fontSize: 13, color: 'var(--text-weak)', margin: 0 }}>No results found.</p>
-                  </div>
-                )}
-
-                {/* Evidence header */}
-                {(evidenceItems.length > 0 || (isLoading && evidenceItems.length === 0)) && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid var(--border)' }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Results</span>
-                    {evidenceItems.length > 0 && (
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={evidenceItems.every(r => checkedIds.has(r.evidence_id))}
-                          ref={el => {
-                            if (el) el.indeterminate = checkedIds.size > 0 && !evidenceItems.every(r => checkedIds.has(r.evidence_id));
-                          }}
-                          onChange={() => {
-                            const allSelected = evidenceItems.every(r => checkedIds.has(r.evidence_id));
-                            setCheckedIds(allSelected ? new Set() : new Set(evidenceItems.map(r => r.evidence_id)));
-                            if (!allSelected) setAssistantOpen(true);
-                          }}
-                          style={{ width: 15, height: 15, cursor: 'pointer', accentColor: '#111827', flexShrink: 0 }}
-                        />
-                        <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-weak)' }}>Select all</span>
-                      </label>
-                    )}
-                  </div>
-                )}
-
-                {/* Results list */}
+              {/* Results list — 460px */}
+              <div style={{ width: 460, flexShrink: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {isLoading ? 'Searching…' : `${facetFilteredItems.length} ${facetFilteredItems.length === 1 ? 'result' : 'results'}`}
+                  </span>
+                  {facetFilteredItems.length > 0 && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={facetFilteredItems.every(r => checkedIds.has(r.evidence_id))}
+                        ref={el => {
+                          if (el) el.indeterminate = checkedIds.size > 0 && !facetFilteredItems.every(r => checkedIds.has(r.evidence_id));
+                        }}
+                        onChange={() => {
+                          const allSelected = facetFilteredItems.every(r => checkedIds.has(r.evidence_id));
+                          setCheckedIds(allSelected ? new Set() : new Set(facetFilteredItems.map(r => r.evidence_id)));
+                        }}
+                        style={{ width: 13, height: 13, cursor: 'pointer', accentColor: '#111827' }}
+                      />
+                      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-weak)' }}>Select all</span>
+                    </label>
+                  )}
+                </div>
                 <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none' }} className="[&::-webkit-scrollbar]:hidden">
-                  {isLoading && evidenceItems.length === 0
+                  {isLoading && facetFilteredItems.length === 0
                     ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
-                    : evidenceItems.map(result => (
-                        <EvidenceRow
+                    : facetFilteredItems.map(result => (
+                        <CompactRow
                           key={result.evidence_id}
                           result={result}
                           isSelected={result.evidence_id === selectedId}
                           query={query}
                           onHover={() => setSelectedId(result.evidence_id)}
-                          onClick={() => handleViewEvidence(result.evidence_id)}
+                          onClick={() => setSelectedId(result.evidence_id)}
                           checked={checkedIds.has(result.evidence_id)}
                           onCheck={c => {
                             setCheckedIds(prev => {
@@ -1035,23 +1400,30 @@ export function SearchTakeover() {
                               c ? next.add(result.evidence_id) : next.delete(result.evidence_id);
                               return next;
                             });
-                            if (c) setAssistantOpen(true);
                           }}
                         />
                       ))
                   }
+                  {facetFilteredItems.length === 0 && !isLoading && (
+                    <div style={{ padding: '40px 16px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 13, color: 'var(--text-weak)', margin: 0 }}>No results match the selected filters.</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Right: preview — starts flush with top of content area */}
-              {(isLoading || selectedEvidence) && (
-                <div style={{ width: 340, minWidth: 340, flexShrink: 0, overflowY: 'auto', padding: 12 }}>
-                  {isLoading && evidenceItems.length === 0
-                    ? <SkeletonPreview />
-                    : selectedEvidence && <PreviewPanel result={selectedEvidence} onViewEvidence={() => handleViewEvidence(selectedEvidence.evidence_id)} />
-                  }
-                </div>
-              )}
+              {/* Preview pane — flex-1 */}
+              <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                {isLoading && !selectedEvidence ? (
+                  <SkeletonPreview />
+                ) : selectedEvidence ? (
+                  <PreviewPane result={selectedEvidence} onViewEvidence={() => handleViewEvidence(selectedEvidence.evidence_id)} />
+                ) : (
+                  <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <p style={{ fontSize: 13, color: 'var(--text-weak)', margin: 0 }}>Select a result to preview</p>
+                  </div>
+                )}
+              </div>
 
             </div>
           )}
@@ -1063,6 +1435,19 @@ export function SearchTakeover() {
           />
         </div>
         </div>
+        {checkedIds.size > 0 && (
+          <ActionBar
+            selectedCount={checkedIds.size}
+            actions={[
+              { key: 'assistant', label: 'Ask Assistant', variant: 'primary' as const, onClick: () => setAssistantOpen(true) },
+              { key: 'add-to-case', label: 'Add to case', onClick: () => {} },
+              { key: 'edit-category', label: 'Edit category', onClick: () => {} },
+              { key: 'evidence-actions', label: 'Evidence actions', onClick: () => {} },
+            ]}
+            onClearSelection={() => setCheckedIds(new Set())}
+            pageType="evidence"
+          />
+        )}
         <ChatDrawer
           open={assistantOpen}
           messages={chatMessages}
