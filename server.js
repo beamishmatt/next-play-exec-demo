@@ -8,6 +8,9 @@ const PORT = process.env.PORT || 3000;
 
 const GRAPH_PATH = path.join(__dirname, 'src/data/contextGraph.json');
 const FEEDBACK_PATH = path.join(__dirname, 'src/data/feedback.json');
+const EVIDENCE_DIR = path.join(__dirname, 'public/evidence');
+
+if (!fs.existsSync(EVIDENCE_DIR)) fs.mkdirSync(EVIDENCE_DIR, { recursive: true });
 
 if (!process.env.OPENAI_API_KEY) {
   console.error('ERROR: OPENAI_API_KEY environment variable is not set.');
@@ -32,7 +35,7 @@ app.use('/api/openai', createProxyMiddleware({
 }));
 
 // ── Graph API ─────────────────────────────────────────────────────────────────
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
 
 app.get('/api/graph', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
@@ -49,6 +52,19 @@ app.post('/api/graph', (req, res) => {
     res.json({ ok: true });
   } catch {
     res.status(500).json({ error: 'Failed to write graph' });
+  }
+});
+
+// ── File upload API ───────────────────────────────────────────────────────────
+app.post('/api/upload-file', (req, res) => {
+  try {
+    const { filename, data } = req.body;
+    if (!filename || !data) return res.status(400).json({ error: 'Missing filename or data' });
+    const safeName = path.basename(filename);
+    fs.writeFileSync(path.join(EVIDENCE_DIR, safeName), Buffer.from(data, 'base64'));
+    res.json({ fileUrl: `/evidence/${safeName}` });
+  } catch {
+    res.status(500).json({ error: 'Failed to save file' });
   }
 });
 

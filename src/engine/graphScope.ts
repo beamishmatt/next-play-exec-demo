@@ -6,6 +6,18 @@ export function scopeGraph(graph: ContextGraph, analysis: QueryAnalysis): GraphN
   if (all.length === 0) return [];
 
   const { entities } = analysis;
+
+  // Direct evidence ID lookup — normalize both sides and match exactly
+  const evidenceIds = entities.evidence_ids ?? [];
+  if (evidenceIds.length > 0) {
+    const normalized = evidenceIds.map(id => id.replace(/[^a-zA-Z0-9]/g, '').toUpperCase());
+    const match = all.find(n => {
+      const nid = n.id.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+      return normalized.some(q => nid === q || nid.endsWith(q) || q.endsWith(nid.replace(/^EV/, '')));
+    });
+    if (match) return [match];
+  }
+
   const hasEntityFilters =
     entities.evidence_types.length > 0 ||
     entities.officers.length > 0 ||
@@ -17,13 +29,11 @@ export function scopeGraph(graph: ContextGraph, analysis: QueryAnalysis): GraphN
 
   const terms = queryTerms(analysis);
 
-  // No structured entities extracted — fuzzy match on keywords only, never fall back to reformulated query
+  // No structured entities extracted — fuzzy match on all query terms
   if (!hasEntityFilters) {
-    const keywordTerms = analysis.entities.keywords
-      .map(k => k.toLowerCase())
-      .filter(k => k.length > 2 && !STOP_WORDS.has(k));
-    if (keywordTerms.length === 0) return [];
-    return scoredSort(fuzzyMatch(all, keywordTerms), analysis, keywordTerms, new Set());
+    const terms = queryTerms(analysis);
+    if (terms.length === 0) return [];
+    return scoredSort(fuzzyMatch(all, terms), analysis, terms, new Set());
   }
 
   let candidates = [...all];
@@ -83,16 +93,13 @@ export function scopeGraph(graph: ContextGraph, analysis: QueryAnalysis): GraphN
     candidates = objectMatches;
   }
 
-  // If strict filters eliminated everything, fall back to keyword-only fuzzy match
-  // (avoids broad reformulated query terms like "evidence" matching everything)
+  // If strict filters eliminated everything, fall back to full query terms
   if (candidates.length === 0) {
-    const keywordTerms = analysis.entities.keywords
-      .map(k => k.toLowerCase())
-      .filter(k => k.length > 2 && !STOP_WORDS.has(k));
-    if (keywordTerms.length === 0) return [];
-    const fallback = fuzzyMatch(all, keywordTerms);
+    const terms = queryTerms(analysis);
+    if (terms.length === 0) return [];
+    const fallback = fuzzyMatch(all, terms);
     if (fallback.length === 0) return [];
-    return scoredSort(fallback, analysis, keywordTerms, new Set());
+    return scoredSort(fallback, analysis, terms, new Set());
   }
 
   // Track direct candidates before edge expansion — used for scoring
@@ -196,6 +203,7 @@ function fuzzyMatch(nodes: GraphNode[], terms: string[]): GraphNode[] {
 
   return nodes.filter(n => {
     const haystack = [
+      n.id,
       n.title,
       n.description ?? '',
       n.category,

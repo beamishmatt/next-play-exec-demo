@@ -7,6 +7,28 @@ import { getOpenAIKey } from '../utils/openaiClient';
 import { getVectorStoreId, setVectorStoreId } from '../storage/config';
 import { createVectorStore } from '../utils/openaiClient';
 
+async function saveFileToServer(file: File): Promise<string | undefined> {
+  try {
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const base64 = dataUrl.split(',')[1];
+    const res = await fetch('/api/upload-file', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: file.name, data: base64 }),
+    });
+    if (!res.ok) return undefined;
+    const { fileUrl } = await res.json();
+    return fileUrl as string;
+  } catch {
+    return undefined;
+  }
+}
+
 export interface IngestMeta extends DocumentMeta {}
 
 export interface IngestResult {
@@ -39,15 +61,17 @@ export async function ingestFiles(
       const { mediaClass, mimeType } = classifyFile(file);
       log(`Classified as ${mediaClass}`);
 
+      const fileUrl = await saveFileToServer(file);
+
       let node: GraphNode;
 
       if (mediaClass === 'image') {
-        node = await processImage(file, mimeType, meta, log);
+        node = await processImage(file, mimeType, meta, log, fileUrl);
       } else if (mediaClass === 'video') {
-        node = await processVideo(file, mimeType, meta, log);
+        node = await processVideo(file, mimeType, meta, log, fileUrl);
       } else {
         // document, pdf, text, audio
-        node = await processDocument(file, mimeType, mediaClass, meta, log);
+        node = await processDocument(file, mimeType, mediaClass, meta, log, fileUrl);
       }
 
       results.push({ file, node });

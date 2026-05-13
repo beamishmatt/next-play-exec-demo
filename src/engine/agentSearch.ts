@@ -127,6 +127,7 @@ function nodeToResult(n: GraphNode): SearchEvidenceResult {
     relevance: '',
     confidence: 'medium' as const,
     thumbnailUrl: n.thumbnailUrl,
+    fileUrl: n.fileUrl,
     date_recorded: n.date_recorded,
     source: n.source,
   };

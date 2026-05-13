@@ -21,6 +21,17 @@ import {
 function MediaPlaceholder({ node }: { node: GraphNode }) {
   const isImage = node.media_class === 'image';
   const isVideo = node.media_class === 'video';
+  const isDoc = ['pdf', 'document', 'text'].includes(node.media_class);
+
+  if (isDoc && node.fileUrl) {
+    return (
+      <iframe
+        src={`${node.fileUrl}#toolbar=0&navpanes=0`}
+        style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+        title={node.title}
+      />
+    );
+  }
 
   if (node.thumbnailUrl) {
     return (
@@ -133,6 +144,15 @@ export function SearchEvidenceDetailPage() {
   const [overviewOpen, setOverviewOpen] = React.useState(true);
   const [docSearch, setDocSearch] = React.useState('');
   const [page, setPage] = React.useState(1);
+  const [isNarrow, setIsNarrow] = React.useState(false);
+
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    setIsNarrow(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsNarrow(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const graph = getContextGraph();
   const node: GraphNode | undefined = evidenceId ? graph.nodes[evidenceId] : undefined;
@@ -179,10 +199,11 @@ export function SearchEvidenceDetailPage() {
       style={{
         height: '100%',
         display: 'flex',
+        flexDirection: isNarrow ? 'column' : 'row',
         backgroundColor: 'var(--sunken)',
         padding: 12,
         gap: 12,
-        overflow: 'hidden',
+        overflow: isNarrow ? 'auto' : 'hidden',
         boxSizing: 'border-box',
       }}
     >
@@ -196,6 +217,7 @@ export function SearchEvidenceDetailPage() {
           overflow: 'hidden',
           backgroundColor: '#1c1c1e',
           minWidth: 0,
+          minHeight: isNarrow ? 300 : 0,
         }}
       >
         {/* Document content area */}
@@ -285,7 +307,7 @@ export function SearchEvidenceDetailPage() {
       {/* ── Right: Overview Panel ─────────────────────────────── */}
       <div
         style={{
-          width: 300,
+          width: isNarrow ? '100%' : 300,
           flexShrink: 0,
           display: 'flex',
           flexDirection: 'column',
@@ -293,6 +315,7 @@ export function SearchEvidenceDetailPage() {
           overflow: 'hidden',
           backgroundColor: 'var(--raised)',
           border: '1px solid var(--border)',
+          maxHeight: isNarrow ? 400 : undefined,
         }}
       >
         {/* Overview header */}

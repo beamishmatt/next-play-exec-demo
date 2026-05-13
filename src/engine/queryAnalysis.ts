@@ -3,6 +3,7 @@ import { FilterChip, EntityResult } from '../data/types';
 
 export interface ExtractedEntities {
   case_ids: string[];
+  evidence_ids: string[];
   officers: string[];
   dates: { start: string | null; end: string | null };
   evidence_types: string[];
@@ -28,6 +29,7 @@ Return ONLY valid JSON with this exact structure (no markdown, no backticks):
   "intent": "lookup | investigation | comparison | timeline | relationship | object_search",
   "entities": {
     "case_ids": [],
+    "evidence_ids": [],
     "officers": [],
     "dates": { "start": "YYYY-MM-DD or null", "end": "YYYY-MM-DD or null" },
     "evidence_types": [],
@@ -42,7 +44,12 @@ Return ONLY valid JSON with this exact structure (no markdown, no backticks):
 
 Evidence types: video, audio, image, document, pdf, other
 Categories: Assault, Traffic Stop, Homicide, Theft, Shooting, Domestic, Drug Offense, Burglary, Police Event, Non Event, Other
-Date phrases: "last week" = past 7 days, "last month" = past 30 days, "today" = today only, etc.`;
+Date phrases: "last week" = past 7 days, "last month" = past 30 days, "today" = today only, etc.
+
+IMPORTANT rules:
+- evidence_ids: alphanumeric IDs that look like evidence item identifiers (e.g. "EV-80823F7N", "Ev 80823f7n", "80823F7N"). Normalize to uppercase, strip non-alphanumeric chars.
+- officers: ONLY named individuals (e.g. "Officer Johnson", "Martinez"). Role descriptions like "first officer on scene", "responding officer", "lead detective" are NOT officer names — put their key words in keywords instead.
+- keywords: catch-all for meaningful terms that don't fit other entity types, including role descriptions, document types, descriptive phrases.`;
 
 export async function analyzeQuery(query: string): Promise<QueryAnalysis> {
   const raw = await chatCompletion(
@@ -66,6 +73,11 @@ function fallbackAnalysis(query: string): QueryAnalysis {
   const categories: string[] = [];
   const evidence_types: string[] = [];
   const officers: string[] = [];
+  const evidence_ids: string[] = [];
+
+  // Detect evidence ID patterns: "EV-XXXXXXXX", "EV XXXXXXXX", bare alphanumeric 6-10 chars
+  const evIdMatch = query.match(/\bev[-\s]?([a-z0-9]{6,10})\b/i);
+  if (evIdMatch) evidence_ids.push('EV' + evIdMatch[1].toUpperCase());
 
   if (lower.includes('assault')) categories.push('Assault');
   if (lower.includes('traffic stop')) categories.push('Traffic Stop');
@@ -82,6 +94,7 @@ function fallbackAnalysis(query: string): QueryAnalysis {
     intent: 'lookup',
     entities: {
       case_ids: [],
+      evidence_ids,
       officers,
       dates: { start: null, end: null },
       evidence_types,

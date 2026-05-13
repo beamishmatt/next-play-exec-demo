@@ -47,6 +47,33 @@
     };
   }
 
+  function uploadFilePlugin() {
+    return {
+      name: 'upload-file-api',
+      configureServer(server: any) {
+        server.middlewares.use('/api/upload-file', (req: any, res: any) => {
+          res.setHeader('Content-Type', 'application/json');
+          if (req.method !== 'POST') { res.statusCode = 405; res.end(); return; }
+          let body = '';
+          req.on('data', (chunk: any) => { body += chunk; });
+          req.on('end', () => {
+            try {
+              const { filename, data } = JSON.parse(body);
+              const safeName = path.basename(filename);
+              const evidenceDir = path.resolve(__dirname, 'public/evidence');
+              if (!fs.existsSync(evidenceDir)) fs.mkdirSync(evidenceDir, { recursive: true });
+              fs.writeFileSync(path.join(evidenceDir, safeName), Buffer.from(data, 'base64'));
+              res.end(JSON.stringify({ fileUrl: `/evidence/${safeName}` }));
+            } catch {
+              res.statusCode = 500;
+              res.end('{"error":"failed to save file"}');
+            }
+          });
+        });
+      },
+    };
+  }
+
   function feedbackApiPlugin() {
     return {
       name: 'feedback-api',
@@ -92,7 +119,7 @@
   const openAIKey = env.OPENAI_API_KEY || process.env.OPENAI_API_KEY;
 
   return {
-    plugins: [react(), graphApiPlugin(), feedbackApiPlugin()],
+    plugins: [react(), graphApiPlugin(), feedbackApiPlugin(), uploadFilePlugin()],
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
       alias: {

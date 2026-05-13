@@ -84,6 +84,7 @@ export interface GraphNode {
   tags?: string[];
   video_processing?: string | null;
   thumbnailUrl?: string;
+  fileUrl?: string;
 }
 
 export interface GraphEdge {
@@ -142,6 +143,7 @@ export interface SearchEvidenceResult {
   excerpt?: string;
   confidence: 'high' | 'medium' | 'low';
   thumbnailUrl?: string;
+  fileUrl?: string;
   objects_matched?: ObjectDetected[];
   related_evidence?: string[];
   date_recorded?: string;

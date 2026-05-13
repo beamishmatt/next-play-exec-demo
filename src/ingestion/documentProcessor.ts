@@ -15,7 +15,8 @@ export async function processDocument(
   mimeType: string,
   mediaClass: GraphNode['media_class'],
   meta: DocumentMeta,
-  onStatus: (msg: string) => void
+  onStatus: (msg: string) => void,
+  fileUrl?: string,
 ): Promise<GraphNode> {
   onStatus(`Uploading ${file.name} to vector store…`);
 
@@ -38,6 +39,7 @@ export async function processDocument(
     category: meta.category,
     source: meta.source,
     vector_file_id: fileId,
+    fileUrl,
   } satisfies NodeInput);
 
   onStatus(`✓ ${file.name} ingested`);

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -231,16 +232,84 @@ interface SearchDropdownProps {
   onClearResults?: () => void;
 }
 
+const PLACEHOLDER_QUERIES = [
+  'body cam footage from PBPD-2025-088142…',
+  'witness statements officer Thibodaux…',
+  'traffic stop videos last 30 days…',
+  'EV-PSTDF2T9…',
+  'shooting incident photos case 088142…',
+  'drug offense documents officer Martin…',
+];
+
+const CYCLE_INTERVAL = 3400;
+
+function useCyclingPlaceholder(active: boolean): string {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (!active) return;
+    const t = setInterval(() => {
+      setIndex(i => (i + 1) % PLACEHOLDER_QUERIES.length);
+    }, CYCLE_INTERVAL);
+    return () => clearInterval(t);
+  }, [active]);
+
+  return PLACEHOLDER_QUERIES[index];
+}
+
+function AnimatedPlaceholder({ text }: { text: string }) {
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: 'absolute',
+        left: 32,
+        right: 32,
+        top: 0,
+        bottom: 0,
+        display: 'flex',
+        alignItems: 'center',
+        pointerEvents: 'none',
+        overflow: 'hidden',
+      }}
+    >
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={text}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, filter: 'blur(4px)', transition: { duration: 0.18 } }}
+          style={{ display: 'flex', overflow: 'hidden', whiteSpace: 'nowrap' }}
+        >
+          {text.split('').map((char, i) => (
+            <motion.span
+              key={i}
+              initial={{ opacity: 0, filter: 'blur(6px)' }}
+              animate={{ opacity: 1, filter: 'blur(0px)' }}
+              transition={{ duration: 0.3, delay: i * 0.018 }}
+              style={{ fontSize: '12px', color: 'rgba(0,0,0,0.35)', fontFamily: 'inherit', lineHeight: 1 }}
+            >
+              {char === ' ' ? '\u00a0' : char}
+            </motion.span>
+          ))}
+        </motion.span>
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpenSearch, resultCount, onResultTagClick, onClearResults }: SearchDropdownProps) {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [output, setOutput] = useState<SearchOutput | null>(null);
   const [recentSearches, setRecentSearches] = useState<string[]>(loadRecentSearches);
   const [selectedScopes, setSelectedScopes] = useState<Set<string>>(new Set());
   const searchFilters = useSearchFilters();
   const { filterResults } = searchFilters;
+  const cyclingPlaceholder = useCyclingPlaceholder(!query && !isFocused);
 
   const toggleScope = (id: string) => {
     setSelectedScopes(prev => {
@@ -393,19 +462,23 @@ export function SearchDropdown({ inputRef, query, onQueryChange, onClose, onOpen
         {/* Input row */}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', height: 36 }}>
           <Search size={15} style={{ position: 'absolute', left: 10, color: 'var(--text-weak)', pointerEvents: 'none' }} />
+          {!query && !isFocused && (
+            <AnimatedPlaceholder text={cyclingPlaceholder} />
+          )}
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={e => onQueryChange(e.target.value)}
-            onFocus={() => setIsOpen(true)}
+            onFocus={() => { setIsOpen(true); setIsFocused(true); }}
+            onBlur={() => setIsFocused(false)}
             onKeyDown={e => {
               if (e.key === 'Enter' && query.trim().length >= 3) {
                 setIsOpen(false);
                 onOpenSearch(query.trim(), undefined, output ?? undefined);
               }
             }}
-            placeholder="Search for anything..."
+            placeholder=""
             style={{
               width: '100%',
               height: '100%',

@@ -681,12 +681,15 @@ function MetaField({ label, value }: { label: string; value?: string | null }) {
 
 // ─── Doc preview ──────────────────────────────────────────────────────────────
 
-const SAMPLE_PDF_URL = new URL('../assets/06-officer-thibodaux-statement.pdf', import.meta.url).href;
-
-function DocPreview() {
+function DocPreview({ fileUrl }: { fileUrl?: string }) {
+  if (!fileUrl) return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <FileText size={32} style={{ color: '#4b5563', opacity: 0.5 }} />
+    </div>
+  );
   return (
     <iframe
-      src={SAMPLE_PDF_URL}
+      src={`${fileUrl}#toolbar=0&navpanes=0`}
       style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
       title="Document preview"
     />
@@ -750,9 +753,9 @@ function PreviewPane({ result, onViewEvidence }: { result: SearchEvidenceResult;
       {(() => {
         const isDoc = ['document', 'pdf', 'text'].includes(result.media_class);
         return (
-          <div style={{ flexShrink: 0, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)', backgroundColor: 'var(--fill-weak)', ...(isDoc ? { height: 520 } : { aspectRatio: '16 / 10' }) }}>
+          <div style={{ flexShrink: 0, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)', backgroundColor: 'var(--fill-weak)', ...(isDoc ? { height: 'clamp(280px, 45vh, 520px)' } : { aspectRatio: '16 / 10' }) }}>
             {isDoc ? (
-              <DocPreview />
+              <DocPreview fileUrl={result.fileUrl} />
             ) : result.thumbnailUrl ? (
               <img src={result.thumbnailUrl} alt={result.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
             ) : (

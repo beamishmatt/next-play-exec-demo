@@ -23,6 +23,7 @@ export interface NodeInput {
   text_visible?: string;
   vector_file_id?: string;
   thumbnailUrl?: string;
+  fileUrl?: string;
   video_processing?: string;
   dateRecorded?: string;
 }
@@ -54,6 +55,7 @@ export function addNodeToGraph(input: NodeInput): GraphNode {
     text_visible: input.text_visible,
     vector_file_id: input.vector_file_id,
     thumbnailUrl: input.thumbnailUrl,
+    fileUrl: input.fileUrl,
     video_processing: input.video_processing ?? null,
     tags: [],
   };

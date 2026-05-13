@@ -8,7 +8,8 @@ export async function processVideo(
   file: File,
   mimeType: string,
   meta: DocumentMeta,
-  onStatus: (msg: string) => void
+  onStatus: (msg: string) => void,
+  fileUrl?: string,
 ): Promise<GraphNode> {
   onStatus(`Processing video metadata for ${file.name}…`);
 
@@ -45,6 +46,7 @@ This entry represents the video file for search and retrieval purposes.`;
     duration: durationEstimate,
     vector_file_id: fileId,
     thumbnailUrl: thumbnailUrl ?? undefined,
+    fileUrl,
     video_processing: 'metadata_only',
   } satisfies NodeInput);
 

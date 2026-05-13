@@ -71,7 +71,8 @@ export async function processImage(
   file: File,
   mimeType: string,
   meta: DocumentMeta,
-  onStatus: (msg: string) => void
+  onStatus: (msg: string) => void,
+  fileUrl?: string,
 ): Promise<GraphNode> {
   onStatus(`Analyzing ${file.name} with vision…`);
 
@@ -142,6 +143,7 @@ ${vision.notable_details ? `Notable: ${vision.notable_details}` : ''}`;
     text_visible: vision.text_visible ?? undefined,
     vector_file_id: fileId,
     thumbnailUrl,
+    fileUrl,
   } satisfies NodeInput);
 
   onStatus(`✓ ${file.name} analyzed and ingested`);
