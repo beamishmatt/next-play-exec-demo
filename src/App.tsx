@@ -139,10 +139,11 @@ function AppContent() {
 
   const utilitySearchRef = React.useRef<HTMLInputElement>(null);
 
-  // Focus utility bar search on '/' keypress (when not in an input), fall back to takeover on home
+  // Focus utility bar search on '/' keypress (when not in an input). Disabled on home.
   React.useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== '/') return;
+      if (location.pathname === '/home') return;
       const tag = (e.target as HTMLElement).tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return;
       e.preventDefault();
@@ -154,7 +155,7 @@ function AppContent() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, []);
+  }, [location.pathname]);
 
   // Memoized handlers to prevent unnecessary re-renders
   const handleSidebarToggle = React.useCallback(() => {

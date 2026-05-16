@@ -418,12 +418,6 @@ function HomeSearch({
             </button>
           ))}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: 'var(--muted-foreground)' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            Search
-            <kbd style={{ padding: '2px 7px', borderRadius: 4, border: '1px solid var(--border)', fontSize: 11, lineHeight: '16px', fontFamily: 'inherit' }}>/</kbd>
-          </span>
-        </div>
       </div>
 
       {tab === 'chat' && (
