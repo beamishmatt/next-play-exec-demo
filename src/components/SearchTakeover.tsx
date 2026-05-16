@@ -753,7 +753,7 @@ function PreviewPane({ result, onViewEvidence }: { result: SearchEvidenceResult;
       {(() => {
         const isDoc = ['document', 'pdf', 'text'].includes(result.media_class);
         return (
-          <div style={{ flexShrink: 0, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)', backgroundColor: 'var(--fill-weak)', ...(isDoc ? { height: 'clamp(280px, 45vh, 520px)' } : { aspectRatio: '16 / 10' }) }}>
+          <div style={{ flexShrink: 0, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)', backgroundColor: 'var(--fill-weak)', ...(isDoc ? { height: 'clamp(320px, 62vh, 880px)' } : { aspectRatio: '16 / 10' }) }}>
             {isDoc ? (
               <DocPreview fileUrl={result.fileUrl} />
             ) : result.thumbnailUrl ? (
@@ -1361,8 +1361,8 @@ export function SearchTakeover() {
                 />
               </aside>
 
-              {/* Results list — 460px */}
-              <div style={{ width: 460, flexShrink: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)' }}>
+              {/* Results list — fluid, 420–580px */}
+              <div style={{ flex: '1 1 420px', minWidth: 380, maxWidth: 580, overflow: 'hidden', display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
                   <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     {isLoading ? 'Searching…' : `${facetFilteredItems.length} ${facetFilteredItems.length === 1 ? 'result' : 'results'}`}
@@ -1415,8 +1415,8 @@ export function SearchTakeover() {
                 </div>
               </div>
 
-              {/* Preview pane — flex-1 */}
-              <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+              {/* Preview pane — fully fluid, fills remaining width */}
+              <div style={{ flex: '2 1 600px', minWidth: 0, overflow: 'hidden' }}>
                 {isLoading && !selectedEvidence ? (
                   <SkeletonPreview />
                 ) : selectedEvidence ? (
