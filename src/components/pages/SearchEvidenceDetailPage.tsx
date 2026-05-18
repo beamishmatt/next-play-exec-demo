@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import { getContextGraph } from '../../storage/config';
 import { GraphNode } from '../../data/types';
+import { PdfViewer } from '../PdfViewer';
 import {
   ChevronDown,
   User,
@@ -18,10 +19,32 @@ import {
   File,
 } from 'lucide-react';
 
-function MediaPlaceholder({ node }: { node: GraphNode }) {
+function MediaPlaceholder({
+  node,
+  searchQuery,
+  page,
+  onTotalPagesChange,
+}: {
+  node: GraphNode;
+  searchQuery: string;
+  page: number;
+  onTotalPagesChange: (n: number) => void;
+}) {
   const isImage = node.media_class === 'image';
   const isVideo = node.media_class === 'video';
   const isDoc = ['pdf', 'document', 'text'].includes(node.media_class);
+  const isPdf = node.media_class === 'pdf' || (node.fileUrl?.toLowerCase().endsWith('.pdf') ?? false);
+
+  if (isDoc && node.fileUrl && isPdf) {
+    return (
+      <PdfViewer
+        fileUrl={node.fileUrl}
+        searchQuery={searchQuery}
+        page={page}
+        onTotalPagesChange={onTotalPagesChange}
+      />
+    );
+  }
 
   if (isDoc && node.fileUrl) {
     return (
@@ -144,7 +167,12 @@ export function SearchEvidenceDetailPage() {
   const [overviewOpen, setOverviewOpen] = React.useState(true);
   const [docSearch, setDocSearch] = React.useState('');
   const [page, setPage] = React.useState(1);
+  const [totalPages, setTotalPages] = React.useState(1);
   const [isNarrow, setIsNarrow] = React.useState(false);
+
+  React.useEffect(() => {
+    setPage(p => Math.min(Math.max(1, p), totalPages));
+  }, [totalPages]);
 
   React.useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
@@ -172,8 +200,6 @@ export function SearchEvidenceDetailPage() {
   const aiSummary = node?.description
     ? node.description
     : 'No AI summary available for this evidence item.';
-
-  const totalPages = 6;
 
   if (!node) {
     return (
@@ -231,7 +257,12 @@ export function SearchEvidenceDetailPage() {
             padding: 24,
           }}
         >
-          <MediaPlaceholder node={node} />
+          <MediaPlaceholder
+            node={node}
+            searchQuery={docSearch}
+            page={page}
+            onTotalPagesChange={setTotalPages}
+          />
         </div>
 
         {/* Page controls */}
@@ -298,7 +329,7 @@ export function SearchEvidenceDetailPage() {
               padding: '0 4px',
             }}
           >
-            {totalPages * 10} pages
+            {totalPages} {totalPages === 1 ? 'page' : 'pages'}
             <ChevronRight size={13} />
           </button>
         </div>

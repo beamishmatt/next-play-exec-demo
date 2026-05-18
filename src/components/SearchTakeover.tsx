@@ -47,6 +47,10 @@ import {
   MetadataEdit,
 } from '../data/types';
 import { mockCases } from '../data/mockCases';
+import { loadTextIndex, findMatches, type Match } from '../lib/pdfTextIndex';
+import { findAttributeMatches, type AttributeMatch } from '../lib/attributeIndex';
+import { PdfViewer } from './PdfViewer';
+import { getContextGraph } from '../storage/config';
 
 const RECENT_SEARCHES_KEY = 'command_recent_searches';
 
@@ -594,6 +598,68 @@ function FacetGroup({
   );
 }
 
+// ─── Match navigator (Text / Attributes) ──────────────────────────────────────
+
+function MatchNavigator({
+  title,
+  count,
+  activeIdx,
+  onPrev,
+  onNext,
+}: {
+  title: string;
+  count: number;
+  activeIdx: number;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  const disabled = count === 0;
+  const arrowBtn: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    width: 22, height: 22, borderRadius: 4, border: 'none',
+    background: 'none', color: disabled ? 'var(--border)' : 'var(--text-weak)',
+    cursor: disabled ? 'default' : 'pointer', flexShrink: 0,
+    transition: 'background-color 0.1s',
+  };
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0', marginBottom: 2 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-weak)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{title}</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 6px', borderRadius: 5, backgroundColor: 'var(--fill-weaker)' }}>
+        <span style={{ fontSize: 13, color: 'var(--foreground)', flex: 1, minWidth: 0 }}>
+          {count === 0 ? 'No matches' : `${count} ${count === 1 ? 'match' : 'matches'}`}
+        </span>
+        <button
+          onClick={onPrev}
+          disabled={disabled}
+          style={arrowBtn}
+          onMouseEnter={e => { if (!disabled) (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--fill-weak)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+          title="Previous match"
+        >
+          <ChevronLeft size={14} />
+        </button>
+        {count > 0 && (
+          <span style={{ fontSize: 12, color: 'var(--foreground)', flexShrink: 0, minWidth: 16, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>
+            {activeIdx + 1}
+          </span>
+        )}
+        <button
+          onClick={onNext}
+          disabled={disabled}
+          style={arrowBtn}
+          onMouseEnter={e => { if (!disabled) (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--fill-weak)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+          title="Next match"
+        >
+          <ChevronRight size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Compact row ──────────────────────────────────────────────────────────────
 
 function CompactRow({
@@ -616,6 +682,7 @@ function CompactRow({
   const kind = KIND_META[result.media_class] ?? { label: result.media_class, color: '#9ca3af' };
   return (
     <div
+      data-evidence-id={result.evidence_id}
       onClick={onClick}
       onMouseEnter={e => {
         onHover();
@@ -681,24 +748,92 @@ function MetaField({ label, value }: { label: string; value?: string | null }) {
 
 // ─── Doc preview ──────────────────────────────────────────────────────────────
 
-function DocPreview({ fileUrl }: { fileUrl?: string }) {
-  if (!fileUrl) return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <FileText size={32} style={{ color: '#4b5563', opacity: 0.5 }} />
-    </div>
-  );
+function DocPreview({
+  fileUrl,
+  searchQuery,
+  scrollToMatch,
+}: {
+  fileUrl?: string;
+  searchQuery: string;
+  scrollToMatch?: Match;
+}) {
+  const [page, setPage] = React.useState(1);
+  const [totalPages, setTotalPages] = React.useState(1);
+
+  React.useEffect(() => {
+    if (scrollToMatch) setPage(scrollToMatch.pageIndex + 1);
+  }, [scrollToMatch]);
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [fileUrl]);
+
+  if (!fileUrl) {
+    return (
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <FileText size={32} style={{ color: '#4b5563', opacity: 0.5 }} />
+      </div>
+    );
+  }
+
+  const isPdf = fileUrl.toLowerCase().endsWith('.pdf');
+  if (!isPdf) {
+    return (
+      <iframe
+        src={`${fileUrl}#toolbar=0&navpanes=0`}
+        style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+        title="Document preview"
+      />
+    );
+  }
+
   return (
-    <iframe
-      src={`${fileUrl}#toolbar=0&navpanes=0`}
-      style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-      title="Document preview"
-    />
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#1c1c1e' }}>
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <PdfViewer
+          fileUrl={fileUrl}
+          searchQuery={searchQuery}
+          page={page}
+          onTotalPagesChange={setTotalPages}
+          scrollToMatch={scrollToMatch}
+        />
+      </div>
+      {totalPages > 1 && (
+        <div style={{ height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderTop: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            style={{ background: 'none', border: 'none', cursor: page > 1 ? 'pointer' : 'default', color: page > 1 ? '#9ca3af' : '#374151', display: 'flex', alignItems: 'center', padding: '0 4px' }}
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <span style={{ fontSize: 12, color: '#9ca3af' }}>{page} of {totalPages}</span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+            style={{ background: 'none', border: 'none', cursor: page < totalPages ? 'pointer' : 'default', color: page < totalPages ? '#9ca3af' : '#374151', display: 'flex', alignItems: 'center', padding: '0 4px' }}
+          >
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
 // ─── Preview pane ─────────────────────────────────────────────────────────────
 
-function PreviewPane({ result, onViewEvidence }: { result: SearchEvidenceResult; onViewEvidence: () => void }) {
+function PreviewPane({
+  result,
+  onViewEvidence,
+  searchQuery,
+  scrollToMatch,
+}: {
+  result: SearchEvidenceResult;
+  onViewEvidence: () => void;
+  searchQuery: string;
+  scrollToMatch?: Match;
+}) {
   const kind = KIND_META[result.media_class] ?? { label: result.media_class, color: '#9ca3af' };
   const formattedDate = result.date_recorded
     ? new Date(result.date_recorded).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
@@ -753,9 +888,9 @@ function PreviewPane({ result, onViewEvidence }: { result: SearchEvidenceResult;
       {(() => {
         const isDoc = ['document', 'pdf', 'text'].includes(result.media_class);
         return (
-          <div style={{ flexShrink: 0, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)', backgroundColor: 'var(--fill-weak)', ...(isDoc ? { height: 'clamp(320px, 62vh, 880px)' } : { aspectRatio: '16 / 10' }) }}>
+          <div style={{ flexShrink: 0, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)', backgroundColor: 'var(--fill-weak)', ...(isDoc ? { height: 'clamp(320px, 78vh, 1400px)' } : { aspectRatio: '16 / 10' }) }}>
             {isDoc ? (
-              <DocPreview fileUrl={result.fileUrl} />
+              <DocPreview fileUrl={result.fileUrl} searchQuery={searchQuery} scrollToMatch={scrollToMatch} />
             ) : result.thumbnailUrl ? (
               <img src={result.thumbnailUrl} alt={result.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
             ) : (
@@ -883,6 +1018,12 @@ export function SearchTakeover() {
   const [selectedId, setSelectedId] = useState<string | null>(
     initialSelectedId ?? initialOutput?.results[0]?.evidence_id ?? null
   );
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [activeMatchIdx, setActiveMatchIdx] = useState(0);
+  const [attributeMatches, setAttributeMatches] = useState<AttributeMatch[]>([]);
+  const [activeAttrIdx, setActiveAttrIdx] = useState(0);
+  const [textIndexReady, setTextIndexReady] = useState(false);
+  const resultsListRef = useRef<HTMLDivElement | null>(null);
   const [activeChips, setActiveChips] = useState<FilterChip[]>(initialOutput?.chips ?? []);
   const [selectedScopes, setSelectedScopes] = useState<Set<string>>(new Set());
   const searchFilters = useSearchFilters();
@@ -1150,7 +1291,27 @@ export function SearchTakeover() {
     setActiveChips(prev => prev.filter(c => c.id !== chipId));
   };
 
-  const selectedEvidence = searchOutput?.results.find(r => r.evidence_id === selectedId);
+  const selectedEvidence: SearchEvidenceResult | undefined = React.useMemo(() => {
+    const fromResults = searchOutput?.results.find(r => r.evidence_id === selectedId);
+    if (fromResults) return fromResults;
+    if (!selectedId) return undefined;
+    const node = getContextGraph().nodes[selectedId];
+    if (!node) return undefined;
+    return {
+      evidence_id: node.id,
+      title: node.title,
+      media_class: node.media_class,
+      case_id: node.case_id,
+      officer: node.officer,
+      category: node.category,
+      relevance: '',
+      excerpt: node.description,
+      confidence: 'medium',
+      thumbnailUrl: node.thumbnailUrl,
+      fileUrl: node.fileUrl,
+      date_recorded: node.date_recorded,
+    };
+  }, [searchOutput?.results, selectedId]);
   const hasResults = searchOutput !== null;
 
   // Lazy description generation — runs once per selected result that has no excerpt
@@ -1239,8 +1400,41 @@ export function SearchTakeover() {
     return Object.entries(counts).sort((a, b) => b[1] - a[1]) as [string, number][];
   }, [evidenceItems]);
 
-  const facetFilteredItems = React.useMemo(() =>
-    evidenceItems.filter(r => {
+  const facetFilteredItems = React.useMemo(() => {
+    const byId = new Map<string, SearchEvidenceResult>();
+    for (const r of evidenceItems) byId.set(r.evidence_id, r);
+
+    // Surface any doc with an exact text match or attribute match that the
+    // AI search omitted, so the list highlight has a row to scroll to when
+    // the user cycles either navigator.
+    const matchOrder = new Map<string, number>();
+    matches.forEach((m, i) => { if (!matchOrder.has(m.evidenceId)) matchOrder.set(m.evidenceId, i); });
+    const attrOrder = new Map<string, number>();
+    attributeMatches.forEach((m, i) => { if (!attrOrder.has(m.evidenceId)) attrOrder.set(m.evidenceId, i); });
+    const graph = getContextGraph();
+    const ensureNode = (id: string) => {
+      if (byId.has(id)) return;
+      const node = graph.nodes[id];
+      if (!node) return;
+      byId.set(id, {
+        evidence_id: node.id,
+        title: node.title,
+        media_class: node.media_class,
+        case_id: node.case_id,
+        officer: node.officer,
+        category: node.category,
+        relevance: '',
+        excerpt: node.description,
+        confidence: 'medium',
+        thumbnailUrl: node.thumbnailUrl,
+        fileUrl: node.fileUrl,
+        date_recorded: node.date_recorded,
+      });
+    };
+    for (const id of matchOrder.keys()) ensureNode(id);
+    for (const id of attrOrder.keys()) ensureNode(id);
+
+    const filtered = [...byId.values()].filter(r => {
       if (activeFacetType && r.media_class !== activeFacetType) return false;
       if (activeFacetCase && r.case_id !== activeFacetCase) return false;
       if (activeFacetPerson && r.officer !== activeFacetPerson) return false;
@@ -1250,8 +1444,84 @@ export function SearchTakeover() {
         if (d !== activeFacetDate) return false;
       }
       return true;
-    }),
-  [evidenceItems, activeFacetType, activeFacetCase, activeFacetPerson, activeFacetStatus, activeFacetDate]);
+    });
+
+    // Stable sort: text-matched docs first, then attribute-matched docs,
+    // then everything else in its original AI ranking.
+    const aiOrder = new Map<string, number>();
+    evidenceItems.forEach((r, i) => aiOrder.set(r.evidence_id, i));
+    const tier = (id: string) => {
+      if (matchOrder.has(id)) return 0;
+      if (attrOrder.has(id)) return 1;
+      return 2;
+    };
+    return filtered.sort((a, b) => {
+      const ta = tier(a.evidence_id);
+      const tb = tier(b.evidence_id);
+      if (ta !== tb) return ta - tb;
+      if (ta === 0) return matchOrder.get(a.evidence_id)! - matchOrder.get(b.evidence_id)!;
+      if (ta === 1) return attrOrder.get(a.evidence_id)! - attrOrder.get(b.evidence_id)!;
+      const ao = aiOrder.get(a.evidence_id) ?? Number.MAX_SAFE_INTEGER;
+      const bo = aiOrder.get(b.evidence_id) ?? Number.MAX_SAFE_INTEGER;
+      return ao - bo;
+    });
+  }, [evidenceItems, matches, attributeMatches, activeFacetType, activeFacetCase, activeFacetPerson, activeFacetStatus, activeFacetDate]);
+
+  // Load the prebuilt PDF text index once.
+  useEffect(() => {
+    loadTextIndex().then(() => setTextIndexReady(true));
+  }, []);
+
+  // Recompute matches whenever the query changes. Scope to the whole indexed
+  // corpus, not just AI-surfaced results — exact-phrase finds shouldn't be
+  // hidden when the agent search didn't rank that doc.
+  useEffect(() => {
+    if (!textIndexReady) return;
+    const graph = getContextGraph();
+    const entries = Object.values(graph.nodes)
+      .filter(n => !!n.fileUrl)
+      .map(n => ({ evidenceId: n.id, fileUrl: n.fileUrl! }));
+    const next = findMatches(entries, committedQuery);
+    setMatches(next);
+    setActiveMatchIdx(0);
+  }, [textIndexReady, committedQuery]);
+
+  // When the active match changes, drive selectedId to that result.
+  const activeMatch = matches[activeMatchIdx];
+  useEffect(() => {
+    if (activeMatch) setSelectedId(activeMatch.evidenceId);
+  }, [activeMatch?.evidenceId, activeMatch?.pageIndex, activeMatch?.itemIndex, activeMatch?.charStart]);
+
+  // Attribute matches: scan visual evidence (image/video) attributes for the
+  // query, independent of the AI search ranking.
+  useEffect(() => {
+    const graph = getContextGraph();
+    const next = findAttributeMatches(Object.values(graph.nodes), committedQuery);
+    setAttributeMatches(next);
+    setActiveAttrIdx(0);
+  }, [committedQuery]);
+
+  const activeAttr = attributeMatches[activeAttrIdx];
+  useEffect(() => {
+    if (activeAttr) setSelectedId(activeAttr.evidenceId);
+  }, [activeAttr?.evidenceId]);
+
+  const cycleAttr = (direction: 1 | -1) => {
+    if (attributeMatches.length === 0) return;
+    setActiveAttrIdx(i => (i + direction + attributeMatches.length) % attributeMatches.length);
+  };
+
+  // Auto-scroll the selected row into view in the results list.
+  useEffect(() => {
+    if (!selectedId || !resultsListRef.current) return;
+    const row = resultsListRef.current.querySelector<HTMLElement>(`[data-evidence-id="${CSS.escape(selectedId)}"]`);
+    if (row) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [selectedId]);
+
+  const cycleMatch = (direction: 1 | -1) => {
+    if (matches.length === 0) return;
+    setActiveMatchIdx(i => (i + direction + matches.length) % matches.length);
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -1334,6 +1604,24 @@ export function SearchTakeover() {
                   renderIcon={v => <TypeIcon mediaClass={v} />}
                   renderLabel={v => TYPE_LABEL_PLURAL[v] ?? KIND_META[v]?.label ?? v}
                 />
+                {committedQuery.trim() && (
+                  <>
+                    <MatchNavigator
+                      title="Text"
+                      count={matches.length}
+                      activeIdx={activeMatchIdx}
+                      onPrev={() => cycleMatch(-1)}
+                      onNext={() => cycleMatch(1)}
+                    />
+                    <MatchNavigator
+                      title="Attributes"
+                      count={attributeMatches.length}
+                      activeIdx={activeAttrIdx}
+                      onPrev={() => cycleAttr(-1)}
+                      onNext={() => cycleAttr(1)}
+                    />
+                  </>
+                )}
                 <FacetGroup
                   title="Case"
                   items={caseFacets}
@@ -1385,7 +1673,7 @@ export function SearchTakeover() {
                     </label>
                   )}
                 </div>
-                <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none' }} className="[&::-webkit-scrollbar]:hidden">
+                <div ref={resultsListRef} style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none' }} className="[&::-webkit-scrollbar]:hidden">
                   {isLoading && facetFilteredItems.length === 0
                     ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
                     : facetFilteredItems.map(result => (
@@ -1420,7 +1708,12 @@ export function SearchTakeover() {
                 {isLoading && !selectedEvidence ? (
                   <SkeletonPreview />
                 ) : selectedEvidence ? (
-                  <PreviewPane result={selectedEvidence} onViewEvidence={() => handleViewEvidence(selectedEvidence.evidence_id)} />
+                  <PreviewPane
+                    result={selectedEvidence}
+                    onViewEvidence={() => handleViewEvidence(selectedEvidence.evidence_id)}
+                    searchQuery={committedQuery}
+                    scrollToMatch={activeMatch && activeMatch.evidenceId === selectedEvidence.evidence_id ? activeMatch : undefined}
+                  />
                 ) : (
                   <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <p style={{ fontSize: 13, color: 'var(--text-weak)', margin: 0 }}>Select a result to preview</p>
