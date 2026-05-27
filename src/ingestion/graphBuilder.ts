@@ -1,5 +1,6 @@
 import { ContextGraph, GraphNode, GraphEdge } from '../data/types';
 import { getContextGraph, setContextGraph } from '../storage/config';
+import { extractEntities } from './entityExtractor';
 
 function generateId(): string {
   return 'EV-' + Math.random().toString(36).slice(2, 10).toUpperCase();
@@ -28,7 +29,7 @@ export interface NodeInput {
   dateRecorded?: string;
 }
 
-export function addNodeToGraph(input: NodeInput): GraphNode {
+export async function addNodeToGraph(input: NodeInput): Promise<GraphNode> {
   const graph = getContextGraph();
   const id = generateId();
   const now = new Date().toISOString();
@@ -63,10 +64,33 @@ export function addNodeToGraph(input: NodeInput): GraphNode {
   graph.nodes[id] = node;
   generateEdges(graph, node);
   upsertCase(graph, node);
+  await upsertEntities(graph, node);
   updateMetadata(graph);
   setContextGraph(graph);
 
   return node;
+}
+
+async function upsertEntities(graph: ContextGraph, node: GraphNode): Promise<void> {
+  if (!graph.entities) graph.entities = {};
+  for (const ent of await extractEntities(node)) {
+    const existing = graph.entities[ent.id];
+    if (existing) {
+      if (!existing.evidence_ids.includes(node.id)) {
+        existing.evidence_ids.push(node.id);
+      }
+    } else {
+      graph.entities[ent.id] = {
+        id: ent.id,
+        kind: ent.kind,
+        label: ent.label,
+        subkind: ent.subkind,
+        evidence_ids: [node.id],
+      };
+    }
+    // referenced_in edge entity → evidence
+    addEdge(graph, ent.id, node.id, 'referenced_in', { entity_kind: ent.kind });
+  }
 }
 
 function upsertCase(graph: ContextGraph, node: GraphNode): void {
@@ -88,27 +112,80 @@ function upsertCase(graph: ContextGraph, node: GraphNode): void {
   }
 }
 
+const MAX_EDGES_PER_NODE = 6;
+
+const RELATIONSHIP_WEIGHT: Record<GraphEdge['relationship'], number> = {
+  same_case: 3,
+  same_officer: 2, // retained for back-compat; no longer emitted
+  same_date: 1,
+  referenced_in: 0,
+};
+
+type EdgeCandidate = {
+  otherId: string;
+  relationship: GraphEdge['relationship'];
+  metadata: Record<string, unknown>;
+  weight: number;
+  dateDistance: number;
+};
+
 function generateEdges(graph: ContextGraph, node: GraphNode): void {
   const existing = Object.values(graph.nodes).filter(n => n.id !== node.id);
+  const candidates: EdgeCandidate[] = [];
 
   for (const other of existing) {
-    // same_case
-    if (other.case_id && other.case_id === node.case_id) {
-      addEdge(graph, node.id, other.id, 'same_case', { case_id: node.case_id });
-    }
-    // same_officer
-    else if (other.officer && other.officer === node.officer) {
-      addEdge(graph, node.id, other.id, 'same_officer', { officer: node.officer });
-    }
-    // same_date (within 24h)
-    else if (node.date_recorded && other.date_recorded) {
+    // Same-case and same-officer are rendered as hub nodes (case + officer entity)
+    // with referenced_in spokes, so we don't emit pairwise edges for them here.
+    if (other.case_id && other.case_id === node.case_id) continue;
+    if (other.officer && other.officer === node.officer) continue;
+
+    let relationship: GraphEdge['relationship'] | null = null;
+    let metadata: Record<string, unknown> = {};
+
+    if (node.date_recorded && other.date_recorded) {
       const diff = Math.abs(
         new Date(node.date_recorded).getTime() - new Date(other.date_recorded).getTime()
       );
       if (diff <= 24 * 60 * 60 * 1000) {
-        addEdge(graph, node.id, other.id, 'same_date', { date: node.date_recorded });
+        relationship = 'same_date';
+        metadata = { date: node.date_recorded };
       }
     }
+
+    if (!relationship) continue;
+
+    const dateDistance =
+      node.date_recorded && other.date_recorded
+        ? Math.abs(
+            new Date(node.date_recorded).getTime() - new Date(other.date_recorded).getTime()
+          )
+        : Number.POSITIVE_INFINITY;
+
+    candidates.push({
+      otherId: other.id,
+      relationship,
+      metadata,
+      weight: RELATIONSHIP_WEIGHT[relationship],
+      dateDistance,
+    });
+  }
+
+  // Strongest relationship first; closest in time breaks ties.
+  candidates.sort((a, b) => b.weight - a.weight || a.dateDistance - b.dateDistance);
+
+  const edgeCount = new Map<string, number>();
+  for (const e of graph.edges) {
+    edgeCount.set(e.source, (edgeCount.get(e.source) ?? 0) + 1);
+    edgeCount.set(e.target, (edgeCount.get(e.target) ?? 0) + 1);
+  }
+
+  let added = 0;
+  for (const c of candidates) {
+    if (added >= MAX_EDGES_PER_NODE) break;
+    if ((edgeCount.get(c.otherId) ?? 0) >= MAX_EDGES_PER_NODE) continue;
+    addEdge(graph, node.id, c.otherId, c.relationship, c.metadata);
+    edgeCount.set(c.otherId, (edgeCount.get(c.otherId) ?? 0) + 1);
+    added++;
   }
 }
 

@@ -3,6 +3,7 @@
       "version": "0.1.0",
       "private": true,
       "dependencies": {
+            "@antv/g6": "^5.1.1",
             "@radix-ui/react-accordion": "^1.2.3",
             "@radix-ui/react-alert-dialog": "^1.1.6",
             "@radix-ui/react-aspect-ratio": "^1.1.2",
@@ -68,6 +69,7 @@
             "build": "vite build",
             "start": "node server.js",
             "build:text-index": "node scripts/build-text-index.mjs",
+            "reprune-graph": "node scripts/reprune-graph.mjs",
             "predev": "npm run build:text-index",
             "prebuild": "npm run build:text-index"
       }

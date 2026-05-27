@@ -29,8 +29,12 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
+  ScanSearch,
+  ClipboardCheck,
+  Calendar,
+  Plane,
 } from 'lucide-react';
-import { SCOPE_CHIPS } from '../SearchDropdown';
+import { SCOPE_CHIPS, AnimatedPlaceholder, useCyclingPlaceholder } from '../SearchDropdown';
 import assistantIcon from '../../assets/aiera.svg';
 import { chatWithEvidenceStream, ChatMessage as EngineChatMessage } from '../../engine/assistantChat';
 import { Checkbox } from '../ui/checkbox';
@@ -38,6 +42,7 @@ import { ThinkingBlock, DraftCard, DraftDrawer, ToolCall, ToolCallCard, Metadata
 import { DraftReport, parseDraft, DRAFT_PANEL_WIDTH } from '../../utils/draftUtils';
 import { getContextGraph } from '../../storage/config';
 import { GraphNode, MetadataEdit } from '../../data/types';
+import { KnowledgeGraphPanel } from '../knowledge-graph/KnowledgeGraphPanel';
 
 // ── Speech to text ────────────────────────────────────────────────────────────
 
@@ -348,6 +353,7 @@ function HomeSearch({
   const [value, setValue] = useState('');
   const [activeScopes, setActiveScopes] = useState<Set<string>>(new Set(['all']));
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const cyclingPlaceholder = useCyclingPlaceholder(!value);
 
   const { isListening, start: startListening, stop: stopListening } = useSpeechToText(
     useCallback((t: string) => setValue(prev => prev ? prev + ' ' + t : t), [])
@@ -387,7 +393,6 @@ function HomeSearch({
         borderRadius: 16,
         border: '1px solid var(--border)',
         backgroundColor: 'var(--overlay)',
-        boxShadow: 'var(--elevation-md)',
         padding: '12px 16px 14px',
         display: 'flex',
         flexDirection: 'column',
@@ -425,15 +430,26 @@ function HomeSearch({
           {isListening ? (
             <ListeningWave />
           ) : (
-            <textarea
-              ref={textareaRef}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder="Ask me anything..."
-              rows={1}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSubmit(); } }}
-              style={{ width: '100%', background: 'none', border: 'none', outline: 'none', resize: 'none', fontSize: 16, color: 'var(--text-strong)', fontFamily: 'inherit', lineHeight: 1.5, minHeight: 28, overflow: 'hidden' }}
-            />
+            <div style={{ position: 'relative' }}>
+              {!value && (
+                <AnimatedPlaceholder
+                  text={cyclingPlaceholder}
+                  left={0}
+                  right={0}
+                  fontSize={16}
+                  color="var(--muted-foreground)"
+                />
+              )}
+              <textarea
+                ref={textareaRef}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder=""
+                rows={1}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSubmit(); } }}
+                style={{ width: '100%', background: 'none', border: 'none', outline: 'none', resize: 'none', fontSize: 16, color: 'var(--text-strong)', fontFamily: 'inherit', lineHeight: 1.5, minHeight: 28, overflow: 'hidden' }}
+              />
+            </div>
           )}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -461,13 +477,22 @@ function HomeSearch({
 
       {tab === 'search' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ borderRadius: 10, border: '1px solid var(--border)', backgroundColor: 'var(--base)', padding: '0 14px', display: 'flex', alignItems: 'center', gap: 10, height: 48 }}>
+          <div style={{ position: 'relative', borderRadius: 10, border: '1px solid var(--border)', backgroundColor: 'var(--base)', padding: '0 14px', display: 'flex', alignItems: 'center', gap: 10, height: 48 }}>
             <Search size={16} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+            {!value && (
+              <AnimatedPlaceholder
+                text={cyclingPlaceholder}
+                left={40}
+                right={14}
+                fontSize={15}
+                color="var(--muted-foreground)"
+              />
+            )}
             <input
               type="text"
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              placeholder="Describe what you want to find"
+              placeholder=""
               onKeyDown={(e) => { if (e.key === 'Enter' && value.trim()) { onSearch(value.trim()); } }}
               autoFocus
               style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 15, color: 'var(--text-strong)', fontFamily: 'inherit' }}
@@ -480,7 +505,7 @@ function HomeSearch({
           </div>
 
           {/* Filter chips */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 0' }}>
             {SCOPE_CHIPS.map(chip => {
               const active = activeScopes.has(chip.id);
               return (
@@ -517,10 +542,12 @@ function HomeSearch({
 function Widget({
   title,
   viewAllLabel = 'View all →',
+  background = '#ffffff',
   children,
 }: {
-  title: string;
-  viewAllLabel?: string;
+  title: React.ReactNode;
+  viewAllLabel?: React.ReactNode;
+  background?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -529,7 +556,7 @@ function Widget({
         position: 'relative',
         borderRadius: 12,
         border: '1px solid var(--border)',
-        backgroundColor: '#ffffff',
+        backgroundColor: background,
         padding: '18px 20px',
         display: 'flex',
         flexDirection: 'column',
@@ -537,78 +564,643 @@ function Widget({
       }}
     >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 14, marginLeft: -20, marginRight: -20, paddingLeft: 20, paddingRight: 20, borderBottom: '1px solid var(--border)' }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-strong)' }}>{title}</span>
-          <button style={{ fontSize: 13, color: 'var(--text-key)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
-            {viewAllLabel}
-          </button>
+          {typeof title === 'string' ? (
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-strong)' }}>{title}</span>
+          ) : (
+            title
+          )}
+          {typeof viewAllLabel === 'string' ? (
+            <button style={{ fontSize: 13, color: 'var(--text-key)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+              {viewAllLabel}
+            </button>
+          ) : (
+            viewAllLabel
+          )}
         </div>
         {children}
     </div>
   );
 }
 
+// ── Home Overview pieces ──────────────────────────────────────────────────────
+
+function HomeGreeting() {
+  return (
+    <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-strong)', margin: 0, letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+      {greeting()}, Officer Reyes.
+    </h1>
+  );
+}
+
+function HomeSearchInput() {
+  return (
+    <div
+      style={{
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '0 14px',
+        height: 44,
+        borderRadius: 10,
+        border: '1px solid var(--border)',
+        backgroundColor: 'var(--overlay)',
+      }}
+    >
+      <Search size={15} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+      <input
+        type="text"
+        placeholder="Search cases, evidence, people, devices..."
+        style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 14, color: 'var(--text-strong)', fontFamily: 'inherit' }}
+      />
+      <span
+        style={{
+          fontSize: 11,
+          color: 'var(--muted-foreground)',
+          border: '1px solid var(--border)',
+          padding: '1px 6px',
+          borderRadius: 4,
+          fontFamily: 'inherit',
+          flexShrink: 0,
+        }}
+      >
+        ⌘K
+      </span>
+    </div>
+  );
+}
+
+function ShiftBriefing() {
+  return (
+    <p style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--muted-foreground)', margin: 0 }}>
+      <strong style={{ fontWeight: 600, color: 'var(--text-strong)' }}>3 things to know before your 14:00 patrol.</strong> Two retail burglary reports on Whitman St share the same MO as Case{' '}
+      <a href="#" style={{ color: '#2563eb', textDecoration: 'underline' }} onClick={e => e.preventDefault()}>#6189</a>. Body 4 firmware update was deployed overnight. Your Use of Force acknowledgment is due in 4 days.
+    </p>
+  );
+}
+
+type WeekPerfMetric = {
+  label: string;
+  value: number;
+  target: number;
+  delta: string;
+  good: boolean;
+  data: number[];
+};
+
+const WEEK_PERF: WeekPerfMetric[] = [
+  { label: 'Activation rate', value: 93, target: 95, delta: '+2.1%', good: true, data: [55, 58, 60, 62, 66, 70, 74, 78] },
+  { label: 'Report completion', value: 96, target: 95, delta: '+0.8%', good: true, data: [80, 81, 82, 84, 85, 87, 89, 92] },
+  { label: 'Evidence tagging', value: 82, target: 90, delta: '-1.4%', good: false, data: [78, 74, 72, 70, 67, 64, 60, 56] },
+  { label: 'Response time avg', value: 91, target: 85, delta: '+3.0%', good: true, data: [48, 52, 56, 60, 65, 72, 80, 86] },
+];
+
+function Sparkline({ data, color }: { data: number[]; color: string }) {
+  const w = 140;
+  const h = 30;
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const points = data
+    .map((v, i) => {
+      const x = (i / (data.length - 1)) * w;
+      const y = h - ((v - min) / range) * (h - 2) - 1;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
+  return (
+    <svg
+      width="100%"
+      height={h}
+      viewBox={`0 0 ${w} ${h}`}
+      preserveAspectRatio="none"
+      style={{ display: 'block' }}
+    >
+      <polyline
+        fill="none"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={points}
+      />
+    </svg>
+  );
+}
+
+function ThisWeeksPerformance() {
+  return (
+    <Widget
+      title={
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-strong)' }}>This week's performance</span>
+          <span
+            style={{
+              fontSize: 11,
+              color: 'var(--muted-foreground)',
+              padding: '2px 9px',
+              borderRadius: 99,
+              border: '1px solid var(--border)',
+              fontWeight: 500,
+            }}
+          >
+            Mar 10 — Mar 16
+          </span>
+        </span>
+      }
+      viewAllLabel="Full dashboard →"
+    >
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        {WEEK_PERF.map(m => {
+          const color = m.good ? '#16a34a' : '#dc2626';
+          return (
+            <div
+              key={m.label}
+              style={{
+                borderRadius: 10,
+                border: '1px solid var(--border)',
+                padding: '12px 14px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{m.label}</span>
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 3,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color,
+                  }}
+                >
+                  {m.good ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+                  {m.delta}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
+                <span style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-strong)', lineHeight: 1 }}>{m.value}%</span>
+                <span style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>vs {m.target}% target</span>
+              </div>
+              <Sparkline data={m.data} color={color} />
+            </div>
+          );
+        })}
+      </div>
+    </Widget>
+  );
+}
+
+export function HomeOverview() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18, width: '100%' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <HomeGreeting />
+        <ShiftBriefing />
+      </div>
+      <HomeSearchInput />
+      <MyTasks />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, alignItems: 'start' }}>
+        <ShiftSchedule />
+        <MyDevices />
+      </div>
+    </div>
+  );
+}
+
+// ── Home Artifacts ────────────────────────────────────────────────────────────
+
+type ArtifactKind = 'draft' | 'summary' | 'timeline' | 'brief';
+
+const ARTIFACT_BADGE: Record<ArtifactKind, { label: string; icon: React.ReactNode }> = {
+  draft:    { label: 'Report draft', icon: <FileText size={16} /> },
+  summary:  { label: 'Summary',      icon: <ClipboardCheck size={16} /> },
+  timeline: { label: 'Timeline',     icon: <Calendar size={16} /> },
+  brief:    { label: 'Brief',        icon: <Shield size={16} /> },
+};
+
+const ARTIFACT_TIMELINE_088142 = `# Case PBPD-2025-088142 — Incident Timeline
+
+Compiled from 30 evidence items (Officer Diane Tran, lead).
+
+## 2026-05-07 — Day of incident
+- **15:46** — Case opened (PBPD-2025-088142).
+- **15:58** — Initial responding officer report filed (Officer Maria Thibodaux).
+- **16:14** — Crime scene secured, perimeter established.
+- **16:32** — Crime scene report filed (Officer Diane Tran).
+- **17:05** — Photo log captured (Officer Kenneth Okafor) — 18 frames.
+- **17:48** — Crime scene sketch completed (Officer Diane Tran).
+- **18:30** — Search warrant request drafted and submitted.
+- **20:15** — Officer James Martin statement recorded.
+
+## 2026-05-07 — Evening
+- **21:00** — Detective case notes opened (Officer Renee Broussard).
+- **22:18** — Supplemental report filed.
+- **23:40** — Canvass report submitted (Officer Diane Tran).
+
+## Open questions
+- Witness identification for two persons observed in the photo log.
+- Verification of subject's whereabouts between 14:00 and 15:30.
+`;
+
+const ARTIFACT_WEEKLY_SUMMARY = `# Officer Reyes — Weekly Activity Summary
+**Mar 10 — Mar 16, 2026**
+
+## Patrol coverage
+- 5 shifts logged (40h total), 2 East Patrol, 3 South Patrol.
+- 14 calls for service, 9 self-initiated stops, 1 arrest.
+
+## Evidence and reports
+- 47 evidence items captured (32 BWC, 11 images, 4 documents).
+- 12 reports filed, 1 returned for revisions (Incident #6201).
+- Activation rate: **93%** (target 95%). Tagging: **82%** (target 90%).
+
+## Standout incidents
+- **Incident #6189** — Retail burglary, Whitman St. Possible MO match to 2 prior reports.
+- **Incident #6201** — Domestic disturbance, witness section pending revision.
+
+## Recommendations
+- Improve tagging discipline at end-of-shift; current trend down 1.4%.
+- Follow up on the Whitman St MO correlation with the case unit.
+`;
+
+const ARTIFACT_USE_OF_FORCE_BRIEF = `# Use of Force Policy — Acknowledgment Brief
+**Annual review · Due in 4 days**
+
+## What changed this year
+- Section 4.2 clarified: de-escalation attempts must be documented for any
+  encounter where force is anticipated, even if force is not ultimately used.
+- Section 5.1 expanded: TASER deployment now requires a verbal warning unless
+  doing so would compromise officer or public safety.
+- New Section 7: post-incident wellness check is mandatory within 72h of any
+  use-of-force event involving injury.
+
+## What you need to do
+1. Review the full policy document (12 pages, ~25 min).
+2. Complete the comprehension quiz (10 questions, passing 80%).
+3. Sign the acknowledgment in the Standards portal.
+
+## Why this matters
+Annual acknowledgment is required for continued duty assignment under
+department policy 1.1.4. Missing the deadline triggers an automatic
+notification to your supervisor.
+`;
+
+type Artifact = {
+  id: string;
+  kind: ArtifactKind;
+  title: string;
+  context: string;
+  createdAgo: string;
+  body: string;
+};
+
+// Built lazily inside the component because INCIDENT_6201_DRAFT is declared
+// further down in the file — referencing it at module-load time here would
+// hit a TDZ.
+function buildArtifacts(): Artifact[] {
+  return [
+    {
+      id: 'art-6201',
+      kind: 'draft',
+      title: 'Domestic Disturbance Response — Incident #6201',
+      context: 'Witness section completed · Returned by Sgt. Park',
+      createdAgo: 'Just now',
+      body: INCIDENT_6201_DRAFT,
+    },
+    {
+      id: 'art-timeline-088142',
+      kind: 'timeline',
+      title: 'Case PBPD-2025-088142 — Incident Timeline',
+      context: 'Compiled from 30 evidence items',
+      createdAgo: '2h ago',
+      body: ARTIFACT_TIMELINE_088142,
+    },
+    {
+      id: 'art-weekly',
+      kind: 'summary',
+      title: 'Officer Reyes — Weekly Activity Summary',
+      context: 'Mar 10 — Mar 16 · 5 shifts, 12 reports',
+      createdAgo: 'Yesterday',
+      body: ARTIFACT_WEEKLY_SUMMARY,
+    },
+    {
+      id: 'art-uof',
+      kind: 'brief',
+      title: 'Use of Force Policy — Acknowledgment Brief',
+      context: 'Annual policy review · Due in 4 days',
+      createdAgo: '3d ago',
+      body: ARTIFACT_USE_OF_FORCE_BRIEF,
+    },
+  ];
+}
+
+function ArtifactIconBadge({ kind }: { kind: ArtifactKind }) {
+  return (
+    <span
+      style={{
+        flexShrink: 0,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 32,
+        height: 32,
+        borderRadius: 8,
+        backgroundColor: 'var(--fill-weak)',
+        color: 'var(--muted-foreground)',
+      }}
+    >
+      {ARTIFACT_BADGE[kind].icon}
+    </span>
+  );
+}
+
+export function HomeArtifacts() {
+  const [preview, setPreview] = useState<DraftReport | null>(null);
+  const artifacts = useMemo(buildArtifacts, []);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18, width: '100%' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-strong)', margin: 0, letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+          Artifacts
+        </h1>
+        <p style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--muted-foreground)', margin: 0 }}>
+          AI-generated drafts, summaries, and briefs from your recent work.
+        </p>
+      </div>
+      <Widget background="transparent" title="Recent" viewAllLabel={null}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {artifacts.map((a, i) => (
+            <div
+              key={a.id}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                gap: 12, paddingTop: i === 0 ? 0 : 14, paddingBottom: i === artifacts.length - 1 ? 0 : 14,
+                marginLeft: -20, marginRight: -20, paddingLeft: 20, paddingRight: 20,
+                borderBottom: i < artifacts.length - 1 ? '1px solid var(--border)' : 'none',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+                <ArtifactIconBadge kind={a.kind} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, color: 'var(--text-strong)', margin: 0, fontWeight: 500, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {a.title}
+                  </p>
+                  <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {ARTIFACT_BADGE[a.kind].label} · {a.context} · {a.createdAgo}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPreview({ title: a.title, body: a.body })}
+                style={{
+                  display: 'inline-flex', alignItems: 'center',
+                  fontSize: 12, fontWeight: 500, color: 'var(--text-strong)',
+                  background: 'none', border: '1px solid var(--border)',
+                  borderRadius: 6, cursor: 'pointer', padding: '4px 10px',
+                  fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0,
+                }}
+              >
+                Open
+              </button>
+            </div>
+          ))}
+        </div>
+      </Widget>
+      <DraftDrawer draft={preview} open={!!preview} onClose={() => setPreview(null)} />
+    </div>
+  );
+}
+
 // ── My Tasks ──────────────────────────────────────────────────────────────────
 
-type TaskStatus = 'Overdue' | 'Due Today' | 'Upcoming';
+type TaskStatus = 'Overdue' | 'Due today' | 'Upcoming';
+type TaskIcon = 'alert' | 'scan' | 'clipboard';
 
 const TASKS: {
   id: number;
   status: TaskStatus;
   category: string;
   title: string;
-  subtitle: string;
   action: string;
-  icon: 'alert' | 'video' | 'circle';
+  icon: TaskIcon;
 }[] = [
-  { id: 1, status: 'Overdue', category: 'Records', title: 'Complete report for Incident #6201', subtitle: 'Returned by Sgt. Park — "Missing witness info in narrative"', action: 'Resume Report', icon: 'alert' },
-  { id: 2, status: 'Due Today', category: 'Evidence / DEMS', title: 'Categorize 4 evidence items from 03/11 shift', subtitle: '', action: 'Open', icon: 'video' },
-  { id: 3, status: 'Due Today', category: 'Evidence / DEMS', title: 'Add subject ID to BWC-2026-03-13-0004', subtitle: '', action: 'Quick Edit', icon: 'video' },
-  { id: 4, status: 'Upcoming', category: 'Standards', title: 'Complete annual Use of Force policy acknowledgment', subtitle: 'Due Mar 20', action: 'Open', icon: 'circle' },
-  { id: 5, status: 'Upcoming', category: 'Standards', title: 'Review updated vehicle pursuit policy', subtitle: 'Due Mar 25', action: 'Open', icon: 'circle' },
+  { id: 1, status: 'Overdue', category: 'Records', title: 'Complete report for Incident #6201', action: 'Resume', icon: 'alert' },
+  { id: 2, status: 'Due today', category: 'Evidence', title: 'Categorize 4 evidence items from 03/11 shift', action: 'Open', icon: 'scan' },
+  { id: 3, status: 'Due today', category: 'Evidence', title: 'Add subject ID to BWC-2026-03-13-0004', action: 'Open', icon: 'scan' },
+  { id: 4, status: 'Upcoming', category: 'Standards', title: 'Complete annual Use of Force policy acknowledgment', action: 'Open', icon: 'clipboard' },
+  { id: 5, status: 'Upcoming', category: 'Standards', title: 'Review updated vehicle pursuit policy', action: 'Open', icon: 'clipboard' },
 ];
 
-function taskStatusStyle(s: TaskStatus): React.CSSProperties {
-  if (s === 'Overdue') return { color: '#f87171', backgroundColor: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.25)' };
-  if (s === 'Due Today') return { color: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.25)' };
-  return { color: 'var(--muted-foreground)', backgroundColor: 'var(--fill-weak)', border: '1px solid var(--border)' };
-}
-
-function actionBtnStyle(): React.CSSProperties {
-  return { fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 5, cursor: 'pointer', border: '1px solid var(--border)', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0, backgroundColor: 'transparent', color: 'var(--text-strong)' };
-}
-
-function MyTasks() {
+function TaskIconBadge({ icon }: { icon: TaskIcon }) {
+  const isAlert = icon === 'alert';
   return (
-    <Widget title="My Tasks">
+    <span
+      style={{
+        flexShrink: 0,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 32,
+        height: 32,
+        borderRadius: 8,
+        backgroundColor: isAlert ? 'rgba(239, 68, 68, 0.10)' : 'var(--fill-weak)',
+        color: isAlert ? '#dc2626' : 'var(--muted-foreground)',
+      }}
+    >
+      {icon === 'alert' && <AlertCircle size={16} />}
+      {icon === 'scan' && <ScanSearch size={16} />}
+      {icon === 'clipboard' && <ClipboardCheck size={16} />}
+    </span>
+  );
+}
+
+export function MyTasks() {
+  const overdueCount = TASKS.filter(t => t.status === 'Overdue').length;
+
+  return (
+    <Widget
+      background="transparent"
+      title="My tasks"
+      viewAllLabel={
+        overdueCount > 0 ? (
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 500,
+              padding: '2px 9px',
+              borderRadius: 99,
+              color: '#dc2626',
+              backgroundColor: '#fee2e2',
+            }}
+          >
+            {overdueCount} overdue
+          </span>
+        ) : null
+      }
+    >
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         {TASKS.map((t, i) => (
           <div
             key={t.id}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              gap: 12, paddingTop: i === 0 ? 0 : 12, paddingBottom: i === TASKS.length - 1 ? 0 : 12,
+              gap: 12, paddingTop: i === 0 ? 0 : 14, paddingBottom: i === TASKS.length - 1 ? 0 : 14,
               marginLeft: -20, marginRight: -20, paddingLeft: 20, paddingRight: 20,
               borderBottom: i < TASKS.length - 1 ? '1px solid var(--border)' : 'none',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-              <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
-                {t.icon === 'alert'
-                  ? <AlertCircle size={14} style={{ color: '#f87171' }} />
-                  : t.icon === 'video'
-                  ? <Video size={14} style={{ color: 'var(--muted-foreground)' }} />
-                  : <Circle size={14} style={{ color: 'var(--muted-foreground)' }} />}
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+              <TaskIconBadge icon={t.icon} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 13, color: 'var(--text-strong)', margin: 0, fontWeight: 400, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <p style={{ fontSize: 13, color: 'var(--text-strong)', margin: 0, fontWeight: 500, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {t.title}
                 </p>
-                <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: '1px 0 0' }}>
+                <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '2px 0 0' }}>
                   {t.status} · {t.category}
                 </p>
               </div>
             </div>
-            <button style={actionBtnStyle()}>{t.action}</button>
+            <button
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                fontSize: 12,
+                fontWeight: 500,
+                color: 'var(--text-strong)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px 6px',
+                borderRadius: 6,
+                fontFamily: 'inherit',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              {t.action}
+            </button>
+          </div>
+        ))}
+      </div>
+    </Widget>
+  );
+}
+
+// ── Shift Schedule ───────────────────────────────────────────────────────────
+
+type Shift = {
+  day: string;
+  date: string;
+  time: string;
+  assignment: string;
+  off?: boolean;
+  isToday?: boolean;
+};
+
+const SHIFTS: Shift[] = [
+  { day: 'Today', date: 'Mar 11', time: '10:00 — 18:00', assignment: 'Patrol East', isToday: true },
+  { day: 'Tomorrow', date: 'Mar 12', time: '10:00 — 18:00', assignment: 'Patrol East' },
+  { day: 'Wed', date: 'Mar 13', time: 'Off', assignment: '—', off: true },
+  { day: 'Thu', date: 'Mar 14', time: '14:00 — 22:00', assignment: 'Patrol South' },
+  { day: 'Fri', date: 'Mar 15', time: '14:00 — 22:00', assignment: 'Patrol South' },
+];
+
+export function ShiftSchedule() {
+  return (
+    <Widget
+      background="transparent"
+      title="Shift schedule"
+      viewAllLabel={
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            fontSize: 11,
+            fontWeight: 500,
+            color: 'var(--muted-foreground)',
+          }}
+        >
+          <Calendar size={12} />
+          This week
+        </span>
+      }
+    >
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {SHIFTS.map((s, i) => (
+          <div
+            key={s.date}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              paddingTop: i === 0 ? 0 : 14,
+              paddingBottom: i === SHIFTS.length - 1 ? 0 : 14,
+              marginLeft: -20,
+              marginRight: -20,
+              paddingLeft: 20,
+              paddingRight: 20,
+              borderBottom: i < SHIFTS.length - 1 ? '1px solid var(--border)' : 'none',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+              <span
+                style={{
+                  flexShrink: 0,
+                  display: 'inline-flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  backgroundColor: s.isToday ? 'rgba(59, 130, 246, 0.10)' : 'var(--fill-weak)',
+                  color: s.isToday ? '#2563eb' : 'var(--muted-foreground)',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  lineHeight: 1.1,
+                  letterSpacing: '0.02em',
+                }}
+              >
+                <span style={{ fontSize: 9, textTransform: 'uppercase' }}>{s.date.split(' ')[0]}</span>
+                <span style={{ fontSize: 13, fontWeight: 700 }}>{s.date.split(' ')[1]}</span>
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--text-strong)',
+                    margin: 0,
+                    fontWeight: 500,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {s.day}
+                </p>
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: 'var(--muted-foreground)',
+                    margin: '2px 0 0',
+                  }}
+                >
+                  {s.off ? 'Off duty' : s.assignment}
+                </p>
+              </div>
+            </div>
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: s.off ? 400 : 500,
+                color: s.off ? 'var(--muted-foreground)' : 'var(--text-strong)',
+                fontVariantNumeric: 'tabular-nums',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {s.time}
+            </span>
           </div>
         ))}
       </div>
@@ -632,33 +1224,49 @@ function DeviceIcon({ type }: { type: string }) {
   if (type === 'taser') return <Crosshair size={size} />;
   if (type === 'phone') return <Smartphone size={size} />;
   if (type === 'car') return <Car size={size} />;
-  if (type === 'air') return <Wind size={size} />;
+  if (type === 'air') return <Plane size={size} />;
   return <Circle size={size} />;
 }
 
-function AssignedDevices() {
+export function MyDevices() {
   return (
-    <Widget title="Assigned Devices">
+    <Widget
+      background="transparent"
+      title="My devices"
+      viewAllLabel={null}
+    >
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         {DEVICES.map((d, i) => (
           <div
             key={d.id}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              gap: 12, paddingTop: i === 0 ? 0 : 12, paddingBottom: i === DEVICES.length - 1 ? 0 : 12,
+              gap: 12, paddingTop: i === 0 ? 0 : 14, paddingBottom: i === DEVICES.length - 1 ? 0 : 14,
               marginLeft: -20, marginRight: -20, paddingLeft: 20, paddingRight: 20,
               borderBottom: i < DEVICES.length - 1 ? '1px solid var(--border)' : 'none',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-              <span style={{ flexShrink: 0, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+              <span
+                style={{
+                  flexShrink: 0,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  backgroundColor: 'var(--fill-weak)',
+                  color: 'var(--muted-foreground)',
+                }}
+              >
                 <DeviceIcon type={d.icon} />
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 13, color: 'var(--text-strong)', margin: 0, fontWeight: 400, lineHeight: 1.4 }}>
+                <p style={{ fontSize: 13, color: 'var(--text-strong)', margin: 0, fontWeight: 500, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {d.name}
                 </p>
-                <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: '1px 0 0' }}>
+                <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {d.id} · {d.status}
                 </p>
               </div>
@@ -788,75 +1396,6 @@ function MyReports() {
                     {r.action}
                   </button>
                 </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Widget>
-  );
-}
-
-// ── Recent Incidents & Evidence ───────────────────────────────────────────────
-
-type IncidentStatus = 'Uncategorized evidence' | 'Report returned' | 'Complete';
-
-const INCIDENTS: {
-  id: string;
-  date: string;
-  type: string;
-  evidence: string;
-  report: string;
-  status: IncidentStatus;
-}[] = [
-  { id: '#6215', date: 'Mar 13', type: 'DUI', evidence: '3 items', report: 'Draft', status: 'Uncategorized evidence' },
-  { id: '#6201', date: 'Mar 12', type: 'Domestic', evidence: '2 items', report: 'Returned', status: 'Report returned' },
-  { id: '#6198', date: 'Mar 11', type: 'Suspicious Activity', evidence: '1 items', report: 'Submitted', status: 'Complete' },
-  { id: '#6192', date: 'Mar 10', type: 'Traffic Stop', evidence: '2 items', report: 'Approved', status: 'Complete' },
-];
-
-function incidentStatusEl(s: IncidentStatus) {
-  const map: Record<IncidentStatus, { label: string; style: ReportStatus }> = {
-    'Complete': { label: 'Complete', style: 'Approved' },
-    'Report returned': { label: 'Returned', style: 'Returned' },
-    'Uncategorized evidence': { label: 'Pending', style: 'Draft' },
-  };
-  const { label, style } = map[s];
-  return (
-    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 5, ...reportBadgeStyle(style) }}>
-      {label}
-    </span>
-  );
-}
-
-function RecentIncidents() {
-  return (
-    <Widget title="Recent Incidents & Evidence">
-      <div style={{ overflowX: 'auto', marginLeft: -20, marginRight: -20 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead>
-            <tr>
-              {['Incident', 'Date', 'Type', 'Evidence', 'Report', 'Status'].map((h, i, arr) => (
-                <th key={h} style={{ textAlign: 'left', padding: '0 10px 10px', paddingLeft: i === 0 ? 20 : 10, paddingRight: i === arr.length - 1 ? 20 : 10, fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {INCIDENTS.map((inc, i) => (
-              <tr key={inc.id} style={{ borderBottom: i < INCIDENTS.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                <td style={{ padding: '12px 10px', paddingLeft: 20 }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-strong)', fontWeight: 500 }}>
-                    <ChevronDown size={13} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
-                    {inc.id}
-                  </span>
-                </td>
-                <td style={{ padding: '12px 10px', color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>{inc.date}</td>
-                <td style={{ padding: '12px 10px', color: 'var(--text-strong)' }}>{inc.type}</td>
-                <td style={{ padding: '12px 10px', color: 'var(--muted-foreground)' }}>{inc.evidence}</td>
-                <td style={{ padding: '12px 10px', color: 'var(--muted-foreground)' }}>{inc.report}</td>
-                <td style={{ padding: '12px 10px', paddingRight: 20 }}>{incidentStatusEl(inc.status)}</td>
               </tr>
             ))}
           </tbody>
@@ -1142,7 +1681,7 @@ function EvidenceDrawer({
 
 // ── Chat Drawer ───────────────────────────────────────────────────────────────
 
-export type ChatMessage = { id: string; role: 'user' | 'assistant' | 'system'; text: string; thinking?: string; showSelectEvidence?: boolean; draft?: DraftReport; pendingDraft?: boolean; chunkMap?: Record<string, string>; evidenceSnapshot?: GraphNode[]; toolCall?: ToolCall; metadataEdits?: MetadataEdit[]; featureRequest?: { title: string; description: string } };
+export type ChatMessage = { id: string; role: 'user' | 'assistant' | 'system'; text: string; thinking?: string; showSelectEvidence?: boolean; draft?: DraftReport; pendingDraft?: boolean; chunkMap?: Record<string, string>; evidenceSnapshot?: GraphNode[]; toolCall?: ToolCall; metadataEdits?: MetadataEdit[]; featureRequest?: { title: string; description: string }; draftOffer?: { draft: DraftReport; status: 'pending' | 'accepted' | 'declined' } };
 
 
 // ── Citation processing ───────────────────────────────────────────────────────
@@ -1410,6 +1949,12 @@ export function ChatDrawer({
   onToolCallDeny,
   onMetadataEditApply,
   onMetadataEditDismiss,
+  onDraftOfferAccept,
+  onDraftOfferDecline,
+  inline = false,
+  scopeChip,
+  hideSkills = false,
+  hideSelectEvidence = false,
 }: {
   open: boolean;
   messages: ChatMessage[];
@@ -1429,6 +1974,12 @@ export function ChatDrawer({
   onToolCallDeny: (msgId: string) => void;
   onMetadataEditApply?: (msgId: string, editId: string) => void;
   onMetadataEditDismiss?: (msgId: string, editId: string) => void;
+  onDraftOfferAccept?: (msgId: string) => void;
+  onDraftOfferDecline?: (msgId: string) => void;
+  inline?: boolean;
+  scopeChip?: React.ReactNode;
+  hideSkills?: boolean;
+  hideSelectEvidence?: boolean;
 }) {
   const [input, setInput] = useState('');
   const [width, setWidth] = useState(540);
@@ -1491,10 +2042,17 @@ export function ChatDrawer({
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  return (
-    <>
-    <div
-      style={{
+  const containerStyle: React.CSSProperties = inline
+    ? {
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'transparent',
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+      }
+    : {
         position: 'fixed',
         top: 0,
         right: (evidenceOpen ? EVIDENCE_DRAWER_WIDTH : 0) + (draftOpen ? DRAFT_PANEL_WIDTH : 0) + (learnMoreOpen ? LEARN_MORE_WIDTH : 0),
@@ -1508,9 +2066,13 @@ export function ChatDrawer({
         display: 'flex',
         flexDirection: 'column',
         zIndex: 400,
-      }}
-    >
+      };
+
+  return (
+    <>
+    <div style={containerStyle}>
       {/* Drag handle */}
+      {!inline && (
       <div
         onMouseDown={onHandleMouseDown}
         style={{
@@ -1535,6 +2097,7 @@ export function ChatDrawer({
           boxShadow: '0 1px 4px rgba(0,0,0,0.10)',
         }} />
       </div>
+      )}
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <img src={assistantIcon} alt="Assistant" style={{ width: 32, height: 32 }} />
@@ -1549,12 +2112,14 @@ export function ChatDrawer({
           <button style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-strong)', background: 'none', border: '1px solid var(--border)', borderRadius: 5, cursor: 'pointer', padding: '2px 8px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
             Chat history
           </button>
-          <button
-            onClick={onClose}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, border: 'none', background: 'none', cursor: 'pointer', color: 'var(--muted-foreground)' }}
-          >
-            <X size={16} />
-          </button>
+          {!inline && (
+            <button
+              onClick={onClose}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, border: 'none', background: 'none', cursor: 'pointer', color: 'var(--muted-foreground)' }}
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -1665,7 +2230,7 @@ export function ChatDrawer({
                   {m.featureRequest && (
                     <FeatureRequestCard title={m.featureRequest.title} description={m.featureRequest.description} />
                   )}
-                  {m.showSelectEvidence && evidenceCount === 0 && (
+                  {m.showSelectEvidence && evidenceCount === 0 && !hideSelectEvidence && (
                     <div style={{ marginTop: 10 }}>
                       <AnimatedBorderButton
                         onClick={onSelectEvidence}
@@ -1674,6 +2239,27 @@ export function ChatDrawer({
                       >
                         Select evidence
                       </AnimatedBorderButton>
+                    </div>
+                  )}
+                  {m.draftOffer?.status === 'pending' && (
+                    <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={() => onDraftOfferAccept?.(m.id)}
+                        style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-inverse-strong)', backgroundColor: 'var(--fill-key-strong)', border: 'none', borderRadius: 6, cursor: 'pointer', padding: '6px 12px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+                      >
+                        Yes, draft it
+                      </button>
+                      <button
+                        onClick={() => onDraftOfferDecline?.(m.id)}
+                        style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-strong)', background: 'none', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', padding: '6px 12px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+                      >
+                        No thanks
+                      </button>
+                    </div>
+                  )}
+                  {m.draftOffer?.status === 'declined' && (
+                    <div style={{ marginTop: 8, fontSize: 11, color: 'var(--muted-foreground)', fontStyle: 'italic' }}>
+                      Dismissed.
                     </div>
                   )}
                 </div>
@@ -1685,7 +2271,7 @@ export function ChatDrawer({
       </div>
 
       {/* Input */}
-      <div style={{ padding: '0 16px 16px', flexShrink: 0 }}>
+      <div style={{ padding: '0 16px 16px', flexShrink: 0, maxWidth: 720, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
         {/* Contextual banner */}
         <div
           onClick={() => setLearnMoreOpen(p => !p)}
@@ -1703,20 +2289,20 @@ export function ChatDrawer({
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '10px 14px',
-            backgroundColor: '#ffffff',
+            backgroundColor: 'var(--base)',
             borderRadius: '9px 9px 0 0',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <img src={assistantIcon} alt="Assistant" style={{ width: 18, height: 18, opacity: 0.9, flexShrink: 0 }} />
-            <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--text-strong)' }}>
+            <span style={{ fontSize: 13, fontWeight: 400, color: '#4a4a4a' }}>
               Learn more about what the Assistant can do.
             </span>
           </div>
-          <ArrowRight size={16} style={{ color: 'var(--text-strong)', opacity: 0.9, flexShrink: 0 }} />
+          <ArrowRight size={16} style={{ color: '#4a4a4a', opacity: 0.9, flexShrink: 0 }} />
         </div>
         </div>
-        <div style={{ borderRadius: 12, border: `1px solid ${isListening ? 'var(--fill-key-strong)' : 'var(--border)'}`, backgroundColor: 'var(--base)', padding: '10px 12px 8px', display: 'flex', flexDirection: 'column', gap: 8, transition: 'border-color 0.15s' }}>
+        <div style={{ borderRadius: 12, border: `1px solid ${isListening ? 'var(--fill-key-strong)' : '#d4d4d4'}`, backgroundColor: inline ? '#ffffff' : 'var(--base)', padding: '10px 12px 8px', display: 'flex', flexDirection: 'column', gap: 8, boxShadow: 'none', transition: 'border-color 0.15s' }}>
           {isListening ? (
             <ListeningWave />
           ) : (
@@ -1732,8 +2318,11 @@ export function ChatDrawer({
             />
           )}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <SkillsDropdown value={skill} onChange={onSkillChange} onSelectEvidence={onSelectEvidence} evidenceCount={evidenceCount} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              {!hideSkills && (
+                <SkillsDropdown value={skill} onChange={onSkillChange} onSelectEvidence={onSelectEvidence} evidenceCount={evidenceCount} />
+              )}
+              {scopeChip}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <button
@@ -1824,16 +2413,268 @@ export function ChatDrawer({
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
+const INCIDENT_6201_DRAFT = `**Incident #6201 — Domestic Disturbance Response**
+
+**Date / Time:** March 8, 2026 · 22:14
+**Location:** 4421 Whitman St, Unit 3B
+**Responding Officer:** M. Reyes (Badge #2841)
+**Backing Unit:** Officer L. Cho (Badge #3105)
+**Disposition:** Verbal warning · No arrest
+
+---
+
+## Summary
+Responded to a 911 call from a neighbor reporting loud arguing and a possible physical altercation between two residents at 4421 Whitman St, Unit 3B. On arrival, both parties were verbally separated, no injuries observed, no weapons present. Verbal warning issued and a domestic resource pamphlet was provided. Cleared scene at 22:51.
+
+## Narrative
+Dispatched at 22:09 to 4421 Whitman St, Unit 3B following a 911 call from Maria Sanchez (Unit 3A) reporting loud arguing for ~30 minutes and what she described as "a heavy thud against the shared wall." Arrived on scene at 22:14 with Officer Cho providing backup.
+
+On arrival both residents — John Doe (R/M, DOB 1985-04-12) and Jane Doe (R/F, DOB 1988-09-03) — were standing in the kitchen. Verbal argument was still in progress and was de-escalated upon our entry. I separated the parties: I interviewed Mr. Doe in the living room while Officer Cho interviewed Ms. Doe in the bedroom.
+
+Both parties stated the argument was verbal only and stemmed from a dispute over household finances. Neither party reported physical contact and no injuries were observed on either subject. The apartment showed no signs of damage other than an overturned dining chair, which Ms. Doe stated she had pushed back from the table during the argument — consistent with the sound described by the reporting neighbor.
+
+A check of the residence confirmed no other occupants and no minors present. Both parties were advised of available domestic violence resources and provided with a pamphlet. Verbal warning issued regarding noise. Both parties agreed to remain on scene until officers cleared.
+
+## Subjects
+- **John Doe** — Resident, R/M, DOB 1985-04-12 — No injuries observed. Cooperative.
+- **Jane Doe** — Resident, R/F, DOB 1988-09-03 — No injuries observed. Cooperative.
+
+## Witnesses
+- **Maria Sanchez** — Neighbor, Unit 3A. Phone: (504) 555-0142. Statement (22:38): Reported hearing arguing for "about half an hour" preceding her 911 call, and a single loud bang at approximately 22:00 that she described as "something hitting the wall." Did not observe any physical contact and did not see either resident outside the apartment during the incident.
+- **Mark Chen** — Neighbor, Unit 2B (directly below). Phone: (504) 555-0188. Statement (22:44): Reported hearing raised voices "for maybe twenty minutes" and a single loud bang around 22:00. Did not hear repeated impacts. Did not observe any persons leave the building.
+
+Both witness statements are consistent with the residents' account of a single overturned chair and a primarily verbal dispute.
+
+## Evidence
+- \`BWC-2026-03-08-0014\` — Body-worn camera, M. Reyes — 47:12 — Full on-scene recording from arrival through clear.
+- \`BWC-2026-03-08-0015\` — Body-worn camera, L. Cho — 31:48 — Secondary angle, interview with Ms. Doe.
+- \`IMG-2026-03-08-0003\` — 12 photographs of scene, including the overturned dining chair and shared wall (no visible damage).
+
+## Disposition
+Verbal warning issued. No arrest. No protective order requested by either party. Domestic resource pamphlet provided. Both parties advised to call 911 if the situation re-escalates. Cleared scene at 22:51.
+
+## Outstanding (now complete)
+- [x] Witness statement from Maria Sanchez (Unit 3A)
+- [x] Witness statement from Mark Chen (Unit 2B)
+- [x] Witness section incorporated into narrative per Sgt. Park's return note (2026-03-09)
+`;
+
 export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
-  const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatStreamingId, setChatStreamingId] = useState<string | null>(null);
   const [chatSkill, setChatSkill] = useState<string | null>(null);
   const [confirmedEvidenceItems, setConfirmedEvidenceItems] = useState<GraphNode[]>([]);
+  const [graphScopedEvidence, setGraphScopedEvidence] = useState<GraphNode[]>([]);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [evidenceCount, setEvidenceCount] = useState(0);
-  const [evidenceSource, setEvidenceSource] = useState<'home' | 'drawer'>('home');
   const [openDraft, setOpenDraft] = useState<DraftReport | null>(null);
+  const [chatWidth, setChatWidth] = useState(600);
+  const chatDraggingRef = useRef(false);
+
+  // The home chat scopes to whatever evidence is currently visible/matched in
+  // the knowledge graph. The user must search or filter the graph first to set
+  // a scope; otherwise the assistant has no context.
+  const chatEvidence = graphScopedEvidence;
+
+  // Proactive greeting: if the officer has an overdue task, flag it and offer
+  // to draft a completion — but wait for explicit confirmation before
+  // generating. Streams a short thinking chain + question, then attaches a
+  // pending draftOffer with Yes / No buttons. Fires once per page lifetime.
+  const overdueSeededRef = useRef(false);
+  const overdueMsgIdRef = useRef<string | null>(null);
+  const overdueCancelledRef = useRef(false);
+  useEffect(() => {
+    if (overdueSeededRef.current) return;
+    if (chatMessages.length > 0) return;
+    const overdue = TASKS.find(t => t.status === 'Overdue');
+    if (!overdue) return;
+    overdueSeededRef.current = true;
+
+    const msgId = `asst-overdue-${Date.now()}`;
+    overdueMsgIdRef.current = msgId;
+    overdueCancelledRef.current = false;
+    setChatMessages(prev => prev.length > 0 ? prev : [{ id: msgId, role: 'assistant', text: '', thinking: '' }]);
+    setChatStreamingId(msgId);
+
+    const thinkingChain = [
+      "Checking the officer's open work…",
+      `Found 1 overdue item in My tasks — "${overdue.title}" (${overdue.category}).`,
+      "Pulling the original return note from Sgt. Park — \"Missing witness info in narrative.\"",
+      "Cross-referencing Incident #6201 evidence: BWC-2026-03-08-0014, IMG-2026-03-08-0003, and the two neighbor statements logged the next morning.",
+      "Surfacing this proactively so it doesn't get missed — but waiting for the officer's go-ahead before drafting anything.",
+    ].join('\n');
+
+    const textBody = `I noticed you have an overdue task — **${overdue.title}**. The report was returned by Sgt. Park with a note about missing witness info in the narrative. The witness statements from Maria Sanchez and Mark Chen are now logged, so I can stitch them into the existing narrative and hand back a complete draft for your review. Want me to draft it?`;
+
+    const draft: DraftReport = {
+      title: 'Domestic Disturbance Response — Incident #6201',
+      body: INCIDENT_6201_DRAFT,
+    };
+
+    const streamChars = (
+      source: string,
+      apply: (next: string) => void,
+      perTick: number,
+      tickMs: number,
+      done: () => void,
+    ) => {
+      let i = 0;
+      const tick = () => {
+        if (overdueCancelledRef.current) return;
+        i = Math.min(source.length, i + perTick);
+        apply(source.slice(0, i));
+        if (i >= source.length) { done(); return; }
+        setTimeout(tick, tickMs);
+      };
+      tick();
+    };
+
+    const updateMsg = (patch: Partial<ChatMessage>) => {
+      if (overdueCancelledRef.current) return;
+      setChatMessages(prev => prev.map(m => m.id === msgId ? { ...m, ...patch } : m));
+    };
+
+    // Stream thinking, then the question text, then attach the pending offer.
+    // The offer carries the prepared draft so accepting can stream it in
+    // without re-deriving anything.
+    streamChars(
+      thinkingChain,
+      next => updateMsg({ thinking: next }),
+      3,
+      24,
+      () => {
+        streamChars(
+          textBody,
+          next => updateMsg({ text: next }),
+          4,
+          22,
+          () => {
+            if (overdueCancelledRef.current) return;
+            updateMsg({ draftOffer: { draft, status: 'pending' } });
+            setChatStreamingId(null);
+          },
+        );
+      },
+    );
+
+    return () => { overdueCancelledRef.current = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // When the officer accepts the proactive offer: mark the offer accepted on
+  // the original message, then stream a fresh assistant turn that runs the
+  // original draft flow (short thinking → text → draft attachment).
+  const handleDraftOfferAccept = useCallback((msgId: string) => {
+    const offerMsg = chatMessages.find(m => m.id === msgId);
+    const draft = offerMsg?.draftOffer?.draft;
+    if (!draft) return;
+
+    setChatMessages(prev => prev.map(m => m.id === msgId
+      ? { ...m, draftOffer: m.draftOffer ? { ...m.draftOffer, status: 'accepted' as const } : m.draftOffer }
+      : m,
+    ));
+
+    const newId = `asst-draft-${Date.now()}`;
+    setChatMessages(prev => [...prev, { id: newId, role: 'assistant', text: '', thinking: '' }]);
+    setChatStreamingId(newId);
+
+    const cancelled = { current: false };
+    const thinkingChain = [
+      'Got it — drafting the completion.',
+      'Pulling the witness statements from Maria Sanchez (Unit 3A) and Mark Chen (Unit 2B).',
+      'Stitching the witness section into the existing narrative, keeping the disposition unchanged.',
+      'Done. Handing the full draft back for review.',
+    ].join('\n');
+    const textBody = `Here's the completed draft — witness section added with both neighbor statements, narrative re-flowed, disposition untouched.`;
+
+    const streamChars = (
+      source: string,
+      apply: (next: string) => void,
+      perTick: number,
+      tickMs: number,
+      done: () => void,
+    ) => {
+      let i = 0;
+      const tick = () => {
+        if (cancelled.current) return;
+        i = Math.min(source.length, i + perTick);
+        apply(source.slice(0, i));
+        if (i >= source.length) { done(); return; }
+        setTimeout(tick, tickMs);
+      };
+      tick();
+    };
+
+    const updateMsg = (patch: Partial<ChatMessage>) => {
+      if (cancelled.current) return;
+      setChatMessages(prev => prev.map(m => m.id === newId ? { ...m, ...patch } : m));
+    };
+
+    streamChars(
+      thinkingChain,
+      next => updateMsg({ thinking: next }),
+      3,
+      22,
+      () => {
+        updateMsg({ pendingDraft: true });
+        streamChars(
+          textBody,
+          next => updateMsg({ text: next }),
+          4,
+          20,
+          () => {
+            if (cancelled.current) return;
+            updateMsg({ draft, pendingDraft: false });
+            setChatStreamingId(prev => prev === newId ? null : prev);
+          },
+        );
+      },
+    );
+  }, [chatMessages]);
+
+  const handleDraftOfferDecline = useCallback((msgId: string) => {
+    setChatMessages(prev => prev.map(m => m.id === msgId
+      ? { ...m, draftOffer: m.draftOffer ? { ...m.draftOffer, status: 'declined' as const } : m.draftOffer }
+      : m,
+    ));
+  }, []);
+
+  // When the user switches to the Investigate tab, drop the proactive overdue
+  // greeting from the chat (and cancel its stream if still running).
+  const handleTabChange = useCallback((tab: 'agents' | 'evidence' | 'artifacts') => {
+    if (tab !== 'evidence') return;
+    const id = overdueMsgIdRef.current;
+    if (!id) return;
+    overdueCancelledRef.current = true;
+    overdueMsgIdRef.current = null;
+    setChatMessages(prev => prev.filter(m => m.id !== id));
+    setChatStreamingId(prev => prev === id ? null : prev);
+  }, []);
+
+  const onChatHandleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    chatDraggingRef.current = true;
+    const startX = e.clientX;
+    const startWidth = chatWidth;
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!chatDraggingRef.current) return;
+      const delta = startX - ev.clientX;
+      const next = Math.min(900, Math.max(560, startWidth + delta));
+      setChatWidth(next);
+    };
+    const onMouseUp = () => {
+      chatDraggingRef.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
 
   const sendChatMessage = async (text: string, history: ChatMessage[], evidenceItems: GraphNode[]) => {
     const assistantId = `asst-${Date.now()}`;
@@ -2085,26 +2926,6 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
     },
   });
 
-  const handleChat = (text: string) => {
-    if (isSearchIntent(text)) { onSearch(text); return; }
-    const userMsg: ChatMessage = { id: `user-${Date.now()}`, role: 'user', text };
-    setChatOpen(true);
-    if (FACIAL_MATCH_WATCHLIST_RE.test(text)) {
-      setChatMessages([userMsg, makeFacialMatchMock()]);
-      return;
-    }
-    if (ADD_TO_CASE_RE.test(text) && confirmedEvidenceItems.length > 0) {
-      setChatMessages([userMsg, makeAddToCaseMock(confirmedEvidenceItems, text)]);
-      return;
-    }
-    if (needsEvidenceGuidance(chatSkill, confirmedEvidenceItems)) {
-      setChatMessages([userMsg, evidenceGuidanceMessage()]);
-      return;
-    }
-    setChatMessages([userMsg]);
-    sendChatMessage(text, [], confirmedEvidenceItems);
-  };
-
   const handleChatSend = (text: string) => {
     if (text.startsWith('__system__')) {
       const systemText = text.slice('__system__'.length);
@@ -2117,94 +2938,120 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
       setChatMessages(prev => [...prev, userMsg, makeFacialMatchMock()]);
       return;
     }
-    if (ADD_TO_CASE_RE.test(text) && confirmedEvidenceItems.length > 0) {
-      setChatMessages(prev => [...prev, userMsg, makeAddToCaseMock(confirmedEvidenceItems, text)]);
+    if (ADD_TO_CASE_RE.test(text) && chatEvidence.length > 0) {
+      setChatMessages(prev => [...prev, userMsg, makeAddToCaseMock(chatEvidence, text)]);
       return;
     }
-    if (needsEvidenceGuidance(chatSkill, confirmedEvidenceItems)) {
+    if (needsEvidenceGuidance(chatSkill, chatEvidence)) {
       setChatMessages(prev => [...prev, userMsg, evidenceGuidanceMessage()]);
       return;
     }
     setChatMessages(prev => [...prev, userMsg]);
-    sendChatMessage(text, [...chatMessages, userMsg], confirmedEvidenceItems);
+    sendChatMessage(text, [...chatMessages, userMsg], chatEvidence);
   };
 
   return (
     <>
     <div
       style={{
-        minHeight: '100%',
+        height: '100%',
         background: 'var(--base)',
-        padding: '48px 40px 48px',
+        display: 'flex',
+        alignItems: 'stretch',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ maxWidth: 1400, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 28 }}>
+      {/* Left column: knowledge graph */}
+      <div style={{ flex: 1, minWidth: 0, height: '100%', overflow: 'hidden', display: 'flex' }}>
+        <KnowledgeGraphPanel
+          onVisibleEvidenceChange={setGraphScopedEvidence}
+          onTabChange={handleTabChange}
+        />
+      </div>
 
-        {/* Greeting */}
-        <h1 style={{ fontSize: 32, fontWeight: 400, color: 'var(--text-strong)', margin: 0, letterSpacing: '-0.01em', display: 'flex', alignItems: 'baseline', gap: '0.35em', flexWrap: 'nowrap' }}>
-          Ask Assistant to
-          <AnimatedSubtitle />
-        </h1>
-
-        {/* Chat / Search */}
-        <HomeSearch
-          onSearch={onSearch}
-          onChat={handleChat}
-          onSelectEvidence={() => { setEvidenceSource('home'); setEvidenceOpen(p => !p); }}
-          evidenceCount={evidenceCount}
+      {/* Right column: inline chat */}
+      <div style={{ width: chatWidth, flexShrink: 0, minWidth: 0, height: '100%', borderLeft: '1px solid var(--border)', position: 'relative' }}>
+        {/* Drag handle — straddles the border between graph and chat */}
+        <div
+          onMouseDown={onChatHandleMouseDown}
+          style={{
+            position: 'absolute',
+            left: -12,
+            top: 0,
+            bottom: 0,
+            width: 24,
+            cursor: 'ew-resize',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 5,
+          }}
+        >
+          <div style={{
+            width: 6,
+            height: 48,
+            borderRadius: 99,
+            backgroundColor: 'var(--overlay)',
+            border: '1px solid var(--border)',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.10)',
+          }} />
+        </div>
+        <ChatDrawer
+          inline
+          hideSkills
+          hideSelectEvidence
+          open={true}
+          messages={chatMessages}
+          onClose={() => {}}
+          onNewChat={() => setChatMessages([])}
+          onSend={handleChatSend}
+          onSelectEvidence={() => setEvidenceOpen(true)}
+          evidenceOpen={evidenceOpen}
+          evidenceCount={chatEvidence.length}
+          isStreaming={chatStreamingId !== null}
           skill={chatSkill}
           onSkillChange={handleSkillChange}
+          evidenceItems={chatEvidence}
+          onOpenDraft={setOpenDraft}
+          draftOpen={!!openDraft}
+          onToolCallApprove={handleToolCallApprove}
+          onToolCallDeny={handleToolCallDeny}
+          onMetadataEditApply={handleMetadataEditApply}
+          onMetadataEditDismiss={handleMetadataEditDismiss}
+          onDraftOfferAccept={handleDraftOfferAccept}
+          onDraftOfferDecline={handleDraftOfferDecline}
+          scopeChip={
+            chatEvidence.length > 0 ? (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  height: 28,
+                  padding: '0 10px',
+                  borderRadius: 7,
+                  border: '1px solid #bfdbfe',
+                  backgroundColor: '#eff6ff',
+                  color: '#1d4ed8',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  fontFamily: 'inherit',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <ScanSearch size={12} />
+                Scoped to {chatEvidence.length} evidence item{chatEvidence.length === 1 ? '' : 's'}
+              </span>
+            ) : null
+          }
         />
-
-        {/* Bento grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: 12, alignItems: 'start' }}>
-          {/* Row 1: Performance — full width */}
-          <div style={{ gridColumn: 'span 2' }}>
-            <MyPerformance />
-          </div>
-
-          {/* Row 2: Tasks + Devices side by side */}
-          <MyTasks />
-          <AssignedDevices />
-
-          {/* Row 3: Reports — full width */}
-          <div style={{ gridColumn: 'span 2' }}>
-            <MyReports />
-          </div>
-
-          {/* Row 4: Recent Incidents — full width */}
-          <div style={{ gridColumn: 'span 2' }}>
-            <RecentIncidents />
-          </div>
-        </div>
-
       </div>
     </div>
     <EvidenceDrawer
       open={evidenceOpen}
       onClose={() => setEvidenceOpen(false)}
       onSelectionChange={(items: GraphNode[]) => { setConfirmedEvidenceItems(items); setEvidenceCount(items.length); }}
-      onConfirm={(items: GraphNode[]) => { setConfirmedEvidenceItems(items); setEvidenceCount(items.length); if (evidenceSource === 'drawer') setChatOpen(true); }}
-    />
-    <ChatDrawer
-      open={chatOpen}
-      messages={chatMessages}
-      onClose={() => { setChatOpen(false); setEvidenceOpen(false); setOpenDraft(null); }}
-      onNewChat={() => setChatMessages([])}
-      onSend={handleChatSend}
-      onSelectEvidence={() => { setEvidenceSource('drawer'); setEvidenceOpen(true); }}
-      evidenceOpen={evidenceOpen}
-      evidenceCount={evidenceCount}
-      isStreaming={chatStreamingId !== null}
-      skill={chatSkill}
-      onSkillChange={handleSkillChange}
-      evidenceItems={confirmedEvidenceItems}
-      onOpenDraft={setOpenDraft}
-      draftOpen={!!openDraft}
-      onToolCallApprove={handleToolCallApprove}
-      onToolCallDeny={handleToolCallDeny}
-      onMetadataEditApply={handleMetadataEditApply}
-      onMetadataEditDismiss={handleMetadataEditDismiss}
+      onConfirm={(items: GraphNode[]) => { setConfirmedEvidenceItems(items); setEvidenceCount(items.length); }}
     />
     <DraftDrawer draft={openDraft} open={!!openDraft} onClose={() => setOpenDraft(null)} />
     </>

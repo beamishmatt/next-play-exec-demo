@@ -126,7 +126,7 @@ ${vision.notable_details ? `Notable: ${vision.notable_details}` : ''}`;
   const thumbnailUrl = await fileToThumbnailDataUrl(file);
 
   onStatus('Building graph node…');
-  const node = addNodeToGraph({
+  const node = await addNodeToGraph({
     title: file.name,
     mediaClass: 'image',
     mimeType,

@@ -33,6 +33,19 @@ export async function deleteEvidence(uuid: string, vectorFileId?: string): Promi
     }
   }
 
+  // Prune the deleted evidence from every entity's evidence_ids. Drop entities
+  // that no longer reference any remaining evidence so they don't render as
+  // orphan nodes.
+  if (graph.entities) {
+    for (const [entId, ent] of Object.entries(graph.entities)) {
+      if (!ent.evidence_ids.includes(uuid)) continue;
+      ent.evidence_ids = ent.evidence_ids.filter(id => id !== uuid);
+      if (ent.evidence_ids.length === 0) {
+        delete graph.entities[entId];
+      }
+    }
+  }
+
   graph.metadata.total_items = Object.keys(graph.nodes).length;
   graph.metadata.last_updated = new Date().toISOString();
 

@@ -29,11 +29,76 @@ export function getContextGraph(): ContextGraph {
 export async function loadContextGraph(): Promise<void> {
   try {
     const res = await fetch('/api/graph');
-    _graph = await res.json() as ContextGraph;
+    const raw = await res.json() as ContextGraph;
+    const normalized: ContextGraph = { ...raw, entities: raw.entities ?? {} };
+    const { graph: pruned, changed } = pruneStaleReferences(normalized);
+    _graph = pruned;
+    // Persist back any stale references we cleaned up so the file no longer
+    // resurrects them on subsequent loads.
+    if (changed) {
+      fetch('/api/graph', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pruned, null, 2),
+      }).catch(() => { /* non-fatal */ });
+    }
   } catch {
     _graph = emptyGraph();
   }
 }
+
+// Removes references to deleted evidence that may have been left behind in
+// entity.evidence_ids, case.evidence_ids, or edges — and drops entities and
+// cases that no longer reference any remaining node.
+function pruneStaleReferences(graph: ContextGraph): { graph: ContextGraph; changed: boolean } {
+  const nodeIds = new Set(Object.keys(graph.nodes));
+  let changed = false;
+
+  // Prune entity.evidence_ids; drop entities with no remaining references.
+  const entities: Record<string, EntityNodeShape> = {};
+  for (const [id, ent] of Object.entries(graph.entities ?? {})) {
+    const filtered = ent.evidence_ids.filter(evId => nodeIds.has(evId));
+    if (filtered.length === 0) {
+      changed = true;
+      continue;
+    }
+    if (filtered.length !== ent.evidence_ids.length) {
+      changed = true;
+      entities[id] = { ...ent, evidence_ids: filtered };
+    } else {
+      entities[id] = ent;
+    }
+  }
+
+  // Prune case.evidence_ids; drop cases with no remaining evidence.
+  const cases: ContextGraph['cases'] = {};
+  for (const [caseId, meta] of Object.entries(graph.cases)) {
+    const filtered = meta.evidence_ids.filter(evId => nodeIds.has(evId));
+    if (filtered.length === 0) {
+      changed = true;
+      continue;
+    }
+    if (filtered.length !== meta.evidence_ids.length) {
+      changed = true;
+      cases[caseId] = { ...meta, evidence_ids: filtered };
+    } else {
+      cases[caseId] = meta;
+    }
+  }
+
+  // Drop edges that reference any node/entity that no longer exists.
+  const validIds = new Set([...nodeIds, ...Object.keys(entities)]);
+  const edges = graph.edges.filter(e => validIds.has(e.source) && validIds.has(e.target));
+  if (edges.length !== graph.edges.length) changed = true;
+
+  return {
+    graph: { ...graph, edges, cases, entities },
+    changed,
+  };
+}
+
+// Local alias so the prune helper doesn't depend on the full EntityNode import.
+type EntityNodeShape = ContextGraph['entities'] extends Record<string, infer T> ? T : never;
 
 export function setContextGraph(graph: ContextGraph): void {
   _graph = graph;
@@ -60,6 +125,7 @@ export function emptyGraph(): ContextGraph {
     nodes: {},
     edges: [],
     cases: {},
+    entities: {},
     metadata: { total_items: 0, last_updated: new Date().toISOString(), media_breakdown: {} },
   };
 }

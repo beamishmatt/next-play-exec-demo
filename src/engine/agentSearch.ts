@@ -85,7 +85,7 @@ export async function agentSearch(
   // Phase 1b: Scope graph (instant — pure local)
   onProgress?.('scoping');
   console.log('[search] analysis:', JSON.stringify(analysis, null, 2));
-  const scopedNodes = hasNodes ? scopeGraph(graph, analysis) : [];
+  const scopedNodes = hasNodes ? scopeGraph(graph, analysis, query) : [];
   console.log('[search] scopedNodes count:', scopedNodes.length);
   const caseIds = [...new Set(scopedNodes.map(n => n.case_id))];
   const entities = buildEntityResults(analysis);

@@ -94,6 +94,17 @@ export interface GraphEdge {
   metadata?: Record<string, unknown>;
 }
 
+export type EntityKind = 'officer' | 'object' | 'location' | 'identifier' | 'person';
+
+export interface EntityNode {
+  id: string;
+  kind: EntityKind;
+  label: string;
+  // Free-form details: for identifiers, sub-kind ("phone" / "license_plate" / "case_number" / "address").
+  subkind?: string;
+  evidence_ids: string[];
+}
+
 export interface CaseGraphMetadata {
   title: string;
   status: string;
@@ -106,6 +117,7 @@ export interface ContextGraph {
   nodes: Record<string, GraphNode>;
   edges: GraphEdge[];
   cases: Record<string, CaseGraphMetadata>;
+  entities: Record<string, EntityNode>;
   metadata: {
     total_items: number;
     last_updated: string;

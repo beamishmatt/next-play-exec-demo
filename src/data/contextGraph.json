@@ -735,3487 +735,1232 @@
       "fileUrl": "/evidence/ring-camera-image.jpeg",
       "video_processing": null,
       "tags": []
+    },
+    "EV-IRJRABR0": {
+      "id": "EV-IRJRABR0",
+      "title": "18-detective-case-summary-supplemental.pdf",
+      "media_class": "pdf",
+      "mime_type": "application/pdf",
+      "size": 6672,
+      "case_id": "PBPD-2026-034532",
+      "date_recorded": "2026-05-26T23:46:57.297Z",
+      "date_ingested": "2026-05-26T23:46:57.297Z",
+      "officer": "Yvette Landry",
+      "category": "Homicide",
+      "source": "Case Summary",
+      "duration": null,
+      "status": "complete",
+      "objects_detected": [],
+      "vector_file_id": "file-W29r1SifgUXJR6mEA92E3t",
+      "fileUrl": "/evidence/18-detective-case-summary-supplemental.pdf",
+      "video_processing": null,
+      "tags": []
+    },
+    "EV-Z4UDGI6U": {
+      "id": "EV-Z4UDGI6U",
+      "title": "02-detective-initial-investigation-report.pdf",
+      "media_class": "pdf",
+      "mime_type": "application/pdf",
+      "size": 6532,
+      "case_id": "PBPD-2026-034532",
+      "date_recorded": "2026-05-26T23:47:35.098Z",
+      "date_ingested": "2026-05-26T23:47:35.098Z",
+      "officer": "Yvette Landry",
+      "category": "Homicide",
+      "source": "Investigation Report",
+      "duration": null,
+      "status": "complete",
+      "objects_detected": [],
+      "vector_file_id": "file-Ah9Mrw1tAKM1iHTDw5WLmV",
+      "fileUrl": "/evidence/02-detective-initial-investigation-report.pdf",
+      "video_processing": null,
+      "tags": []
+    },
+    "EV-BU4WX5PG": {
+      "id": "EV-BU4WX5PG",
+      "title": "03-crime-scene-investigation-report.pdf",
+      "media_class": "pdf",
+      "mime_type": "application/pdf",
+      "size": 7137,
+      "case_id": "PBPD-2026-034532",
+      "date_recorded": "2026-05-26T23:48:33.739Z",
+      "date_ingested": "2026-05-26T23:48:33.739Z",
+      "officer": "Bernard Fontenot",
+      "category": "Homicide",
+      "source": "Crime Scene Report",
+      "duration": null,
+      "status": "complete",
+      "objects_detected": [],
+      "vector_file_id": "file-56pPTeybBuoKjrJyS5Ns5u",
+      "fileUrl": "/evidence/03-crime-scene-investigation-report.pdf",
+      "video_processing": null,
+      "tags": []
+    },
+    "EV-HIY6I7OU": {
+      "id": "EV-HIY6I7OU",
+      "title": "04-autopsy-report.pdf",
+      "media_class": "pdf",
+      "mime_type": "application/pdf",
+      "size": 7239,
+      "case_id": "PBPD-2026-034532",
+      "date_recorded": "2026-05-26T23:49:20.044Z",
+      "date_ingested": "2026-05-26T23:49:20.044Z",
+      "officer": "Vivian N. Caldwell-Beaumont",
+      "category": "Homicide",
+      "source": "Autopsy Report",
+      "duration": null,
+      "status": "complete",
+      "objects_detected": [],
+      "vector_file_id": "file-5Pf7gYf1Gem7eruBwZw3YQ",
+      "fileUrl": "/evidence/04-autopsy-report.pdf",
+      "video_processing": null,
+      "tags": []
+    },
+    "EV-BIC50BIE": {
+      "id": "EV-BIC50BIE",
+      "title": "05-911-call-transcript.pdf",
+      "media_class": "pdf",
+      "mime_type": "application/pdf",
+      "size": 5533,
+      "case_id": "PBPD-2026-034532",
+      "date_recorded": "2026-05-26T23:49:57.061Z",
+      "date_ingested": "2026-05-26T23:49:57.061Z",
+      "officer": "Linda Chen",
+      "category": "Homicide",
+      "source": "911 Call Transcript",
+      "duration": null,
+      "status": "complete",
+      "objects_detected": [],
+      "vector_file_id": "file-BwdKR9CEAmETB2281SaxMK",
+      "fileUrl": "/evidence/05-911-call-transcript.pdf",
+      "video_processing": null,
+      "tags": []
+    },
+    "EV-A5TY7KET": {
+      "id": "EV-A5TY7KET",
+      "title": "06-witness-statement-reginald-pierce.pdf",
+      "media_class": "pdf",
+      "mime_type": "application/pdf",
+      "size": 6889,
+      "case_id": "PBPD-2026-034532",
+      "date_recorded": "2026-05-26T23:51:00.548Z",
+      "date_ingested": "2026-05-26T23:51:00.548Z",
+      "officer": "Aimee Beaulieu",
+      "category": "Homicide",
+      "source": "Witness Statement DARNELL JAMAL WASHINGTON",
+      "duration": null,
+      "status": "complete",
+      "objects_detected": [],
+      "vector_file_id": "file-L8SijuBffpPF5eAoAvh6hv",
+      "fileUrl": "/evidence/06-witness-statement-reginald-pierce.pdf",
+      "video_processing": null,
+      "tags": []
+    },
+    "EV-HCJN6AEC": {
+      "id": "EV-HCJN6AEC",
+      "title": "07-witness-statement-gerard-olivier.pdf",
+      "media_class": "pdf",
+      "mime_type": "application/pdf",
+      "size": 6993,
+      "case_id": "PBPD-2026-034532",
+      "date_recorded": "2026-05-26T23:51:45.707Z",
+      "date_ingested": "2026-05-26T23:51:45.707Z",
+      "officer": "Aimee Beaulieu",
+      "category": "Homicide",
+      "source": "Witness Statement Gerard Olivier",
+      "duration": null,
+      "status": "complete",
+      "objects_detected": [],
+      "vector_file_id": "file-BQR3K6FD7ebKmbDiTCdp3s",
+      "fileUrl": "/evidence/07-witness-statement-gerard-olivier.pdf",
+      "video_processing": null,
+      "tags": []
+    },
+    "EV-BS1IZP3K": {
+      "id": "EV-BS1IZP3K",
+      "title": "08-witness-statement-marisol-acosta.pdf",
+      "media_class": "pdf",
+      "mime_type": "application/pdf",
+      "size": 6764,
+      "case_id": "PBPD-2026-034532",
+      "date_recorded": "2026-05-26T23:52:16.728Z",
+      "date_ingested": "2026-05-26T23:52:16.728Z",
+      "officer": "Aimee Beaulieu",
+      "category": "Homicide",
+      "source": "Witness Statement Marisol Acosta",
+      "duration": null,
+      "status": "complete",
+      "objects_detected": [],
+      "vector_file_id": "file-XAZts8FL7Bfn2wC6kZaR8j",
+      "fileUrl": "/evidence/08-witness-statement-marisol-acosta.pdf",
+      "video_processing": null,
+      "tags": []
+    },
+    "EV-0HRDYQYK": {
+      "id": "EV-0HRDYQYK",
+      "title": "09-security-camera-footage-review.pdf",
+      "media_class": "pdf",
+      "mime_type": "application/pdf",
+      "size": 7569,
+      "case_id": "PBPD-2026-034532",
+      "date_recorded": "2026-05-26T23:53:27.384Z",
+      "date_ingested": "2026-05-26T23:53:27.384Z",
+      "officer": "Patrick Soileau",
+      "category": "Homicide",
+      "source": "Camera Footage Review",
+      "duration": null,
+      "status": "complete",
+      "objects_detected": [],
+      "vector_file_id": "file-FxoWHbYxT4bzYjDTPRNwvF",
+      "fileUrl": "/evidence/09-security-camera-footage-review.pdf",
+      "video_processing": null,
+      "tags": []
+    },
+    "EV-6QN5Z9HF": {
+      "id": "EV-6QN5Z9HF",
+      "title": "10-forensic-lab-biological-evidence.pdf",
+      "media_class": "pdf",
+      "mime_type": "application/pdf",
+      "size": 6618,
+      "case_id": "PBPD-2026-034532",
+      "date_recorded": "2026-05-26T23:54:03.136Z",
+      "date_ingested": "2026-05-26T23:54:03.136Z",
+      "officer": "Yvette Landry",
+      "category": "Homicide",
+      "source": "Forensic Lab Report",
+      "duration": null,
+      "status": "complete",
+      "objects_detected": [],
+      "vector_file_id": "file-LvhhhJwmE9GbLzgGceSEWg",
+      "fileUrl": "/evidence/10-forensic-lab-biological-evidence.pdf",
+      "video_processing": null,
+      "tags": []
+    },
+    "EV-TDCCHTD2": {
+      "id": "EV-TDCCHTD2",
+      "title": "11-forensic-lab-trace-impression.pdf",
+      "media_class": "pdf",
+      "mime_type": "application/pdf",
+      "size": 7634,
+      "case_id": "PBPD-2026-034532",
+      "date_recorded": "2026-05-26T23:54:27.949Z",
+      "date_ingested": "2026-05-26T23:54:27.949Z",
+      "officer": "Yvette Landry",
+      "category": "Homicide",
+      "source": "Forensic Trace Impression",
+      "duration": null,
+      "status": "complete",
+      "objects_detected": [],
+      "vector_file_id": "file-7s5zN2NqrDexpZbnzts5WS",
+      "fileUrl": "/evidence/11-forensic-lab-trace-impression.pdf",
+      "video_processing": null,
+      "tags": []
+    },
+    "EV-5VHX9SXV": {
+      "id": "EV-5VHX9SXV",
+      "title": "12-digital-evidence-phone-records.pdf",
+      "media_class": "pdf",
+      "mime_type": "application/pdf",
+      "size": 7207,
+      "case_id": "PBPD-2026-034532",
+      "date_recorded": "2026-05-26T23:54:53.876Z",
+      "date_ingested": "2026-05-26T23:54:53.876Z",
+      "officer": "Yvette Landry",
+      "category": "Homicide",
+      "source": "Phone Records",
+      "duration": null,
+      "status": "complete",
+      "objects_detected": [],
+      "vector_file_id": "file-7h1HXdwksA3YKNhs375wy9",
+      "fileUrl": "/evidence/12-digital-evidence-phone-records.pdf",
+      "video_processing": null,
+      "tags": []
+    },
+    "EV-JZ6AZCKG": {
+      "id": "EV-JZ6AZCKG",
+      "title": "16-suspect-interview-mccall.pdf",
+      "media_class": "pdf",
+      "mime_type": "application/pdf",
+      "size": 8129,
+      "case_id": "PBPD-2026-034532",
+      "date_recorded": "2026-05-26T23:58:10.948Z",
+      "date_ingested": "2026-05-26T23:58:10.948Z",
+      "officer": "Yvette Landry",
+      "category": "Homicide",
+      "source": "Ryan McCall Suspect Interview",
+      "duration": null,
+      "status": "complete",
+      "objects_detected": [],
+      "vector_file_id": "file-NTGRa2fABwJkK8vB9efxfj",
+      "fileUrl": "/evidence/16-suspect-interview-mccall.pdf",
+      "video_processing": null,
+      "tags": []
+    },
+    "EV-3X55DASX": {
+      "id": "EV-3X55DASX",
+      "title": "cigarette-crime-scene.png",
+      "media_class": "image",
+      "mime_type": "image/png",
+      "size": 241147,
+      "case_id": "PBPD-2026-034532",
+      "date_recorded": "2026-05-27T00:07:10.695Z",
+      "date_ingested": "2026-05-27T00:07:10.695Z",
+      "officer": "Yvette Landry",
+      "category": "Homicide",
+      "source": "Crime Scene Evidence",
+      "duration": null,
+      "status": "complete",
+      "description": "The image shows a cigarette butt lying on a textured concrete surface, possibly a sidewalk.",
+      "objects_detected": [
+        {
+          "label": "cigarette_butt",
+          "color": "brown",
+          "confidence": "high",
+          "position": "center",
+          "count": 1
+        }
+      ],
+      "scene_type": "outdoor_pavement",
+      "lighting": "daylight",
+      "people_count": 0,
+      "vector_file_id": "file-JEdR3MhuxGEgQRTAdUw8jf",
+      "thumbnailUrl": "data:image/jpeg;base64,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",
+      "fileUrl": "/evidence/cigarette-crime-scene.png",
+      "video_processing": null,
+      "tags": []
+    },
+    "EV-XROEHK17": {
+      "id": "EV-XROEHK17",
+      "title": "16-suspect-interview-Ryan McCall.pdf",
+      "media_class": "pdf",
+      "mime_type": "application/pdf",
+      "size": 8129,
+      "case_id": "PBPD-2025-088142",
+      "date_recorded": "2026-05-27T00:15:14.131Z",
+      "date_ingested": "2026-05-27T00:15:14.131Z",
+      "officer": "Yvette Landry",
+      "category": "Homicide",
+      "source": "Suspect Interview",
+      "duration": null,
+      "status": "complete",
+      "objects_detected": [],
+      "vector_file_id": "file-PJn4V32UBP54NuKxYCFf95",
+      "fileUrl": "/evidence/16-suspect-interview-Ryan McCall.pdf",
+      "video_processing": null,
+      "tags": []
     }
   },
   "edges": [
     {
-      "source": "EV-U2CGQ1EG",
+      "source": "officer:maria-thibodaux",
       "target": "EV-OLBP21F1",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-09606H82",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-OLBP21F1",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-09606H82",
+      "source": "officer:diane-tran",
       "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-3BFC6QKE",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3BFC6QKE",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-3BFC6QKE",
+      "source": "officer:kenneth-okafor",
       "target": "EV-09606H82",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-Y5JNUYTW",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-Y5JNUYTW",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-Y5JNUYTW",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-09606H82",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-Y5JNUYTW",
+      "source": "officer:diane-tran",
       "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-E4OO2U6Q",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-E4OO2U6Q",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-E4OO2U6Q",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-E4OO2U6Q",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-E4OO2U6Q",
+      "source": "officer:diane-tran",
       "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-80823F7N",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-80823F7N",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-80823F7N",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-80823F7N",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-80823F7N",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-80823F7N",
+      "source": "officer:james-martin",
       "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-JER9JV1B",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-JER9JV1B",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-JER9JV1B",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-JER9JV1B",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-JER9JV1B",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-JER9JV1B",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-JER9JV1B",
+      "source": "officer:renee-broussard",
       "target": "EV-80823F7N",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-NG9RRGW1",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-NG9RRGW1",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-NG9RRGW1",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-NG9RRGW1",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-NG9RRGW1",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-NG9RRGW1",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-NG9RRGW1",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-80823F7N",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-NG9RRGW1",
+      "source": "officer:renee-broussard",
       "target": "EV-JER9JV1B",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-N32DJVAS",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-N32DJVAS",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-N32DJVAS",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-N32DJVAS",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-N32DJVAS",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-N32DJVAS",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-N32DJVAS",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-N32DJVAS",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-JER9JV1B",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-N32DJVAS",
+      "source": "officer:diane-tran",
       "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-PSTDF2T9",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-PSTDF2T9",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-PSTDF2T9",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-PSTDF2T9",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-PSTDF2T9",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-PSTDF2T9",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-PSTDF2T9",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-PSTDF2T9",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-PSTDF2T9",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-PSTDF2T9",
+      "source": "officer:diane-tran",
       "target": "EV-N32DJVAS",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-6OYJZMK1",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-6OYJZMK1",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-6OYJZMK1",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-6OYJZMK1",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-6OYJZMK1",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-6OYJZMK1",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-6OYJZMK1",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-6OYJZMK1",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-6OYJZMK1",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-6OYJZMK1",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-N32DJVAS",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-6OYJZMK1",
+      "source": "person:shannon-obrien",
+      "target": "EV-N32DJVAS",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "person"
+      }
+    },
+    {
+      "source": "officer:diane-tran",
       "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-WQEBDV6N",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WQEBDV6N",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WQEBDV6N",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WQEBDV6N",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WQEBDV6N",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WQEBDV6N",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WQEBDV6N",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WQEBDV6N",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WQEBDV6N",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WQEBDV6N",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WQEBDV6N",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-WQEBDV6N",
+      "source": "person:shannon-obrien",
+      "target": "EV-PSTDF2T9",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "person"
+      }
+    },
+    {
+      "source": "officer:diane-tran",
       "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-E0UEG80V",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-E0UEG80V",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-E0UEG80V",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-E0UEG80V",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-E0UEG80V",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-E0UEG80V",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-E0UEG80V",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-E0UEG80V",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-E0UEG80V",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-E0UEG80V",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-E0UEG80V",
-      "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-E0UEG80V",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-E0UEG80V",
+      "source": "person:darnell-washington",
+      "target": "EV-6OYJZMK1",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "person"
+      }
+    },
+    {
+      "source": "officer:diane-tran",
       "target": "EV-WQEBDV6N",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-2BETEK3O",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-2BETEK3O",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-2BETEK3O",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-2BETEK3O",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-2BETEK3O",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-2BETEK3O",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-2BETEK3O",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-2BETEK3O",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-2BETEK3O",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-2BETEK3O",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-2BETEK3O",
-      "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-2BETEK3O",
-      "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-2BETEK3O",
+      "source": "location:bar",
       "target": "EV-WQEBDV6N",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "location"
       }
     },
     {
-      "source": "EV-2BETEK3O",
+      "source": "identifier:case_number:pbpd-2025-088142",
+      "target": "EV-WQEBDV6N",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "identifier"
+      }
+    },
+    {
+      "source": "person:carlos-reyes",
+      "target": "EV-WQEBDV6N",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "person"
+      }
+    },
+    {
+      "source": "officer:diane-tran",
       "target": "EV-E0UEG80V",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-CF8L7HKO",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-CF8L7HKO",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-CF8L7HKO",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-CF8L7HKO",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-CF8L7HKO",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-CF8L7HKO",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-CF8L7HKO",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-CF8L7HKO",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-CF8L7HKO",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-CF8L7HKO",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-CF8L7HKO",
-      "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-CF8L7HKO",
-      "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-CF8L7HKO",
-      "target": "EV-WQEBDV6N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-CF8L7HKO",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-E0UEG80V",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-CF8L7HKO",
+      "source": "person:derek-fontenot",
+      "target": "EV-E0UEG80V",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "person"
+      }
+    },
+    {
+      "source": "officer:diane-tran",
       "target": "EV-2BETEK3O",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-MTKZJQKE",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-MTKZJQKE",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-MTKZJQKE",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-MTKZJQKE",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-MTKZJQKE",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-MTKZJQKE",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-MTKZJQKE",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-MTKZJQKE",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-MTKZJQKE",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-MTKZJQKE",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-MTKZJQKE",
-      "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-MTKZJQKE",
-      "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-MTKZJQKE",
-      "target": "EV-WQEBDV6N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-MTKZJQKE",
-      "target": "EV-E0UEG80V",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-MTKZJQKE",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-2BETEK3O",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-MTKZJQKE",
+      "source": "person:travis-bell",
+      "target": "EV-2BETEK3O",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "person"
+      }
+    },
+    {
+      "source": "officer:diane-tran",
       "target": "EV-CF8L7HKO",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-F23V4Y4G",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-F23V4Y4G",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-F23V4Y4G",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-F23V4Y4G",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-F23V4Y4G",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-F23V4Y4G",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-F23V4Y4G",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-F23V4Y4G",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-F23V4Y4G",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-F23V4Y4G",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-F23V4Y4G",
-      "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-F23V4Y4G",
-      "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-F23V4Y4G",
-      "target": "EV-WQEBDV6N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-F23V4Y4G",
-      "target": "EV-E0UEG80V",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-F23V4Y4G",
-      "target": "EV-2BETEK3O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-F23V4Y4G",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-CF8L7HKO",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-F23V4Y4G",
+      "source": "person:ryan-mccall",
+      "target": "EV-CF8L7HKO",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "person"
+      }
+    },
+    {
+      "source": "officer:renee-broussard",
       "target": "EV-MTKZJQKE",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-4F2XP01O",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-4F2XP01O",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-4F2XP01O",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-4F2XP01O",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-4F2XP01O",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-4F2XP01O",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-4F2XP01O",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-4F2XP01O",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-4F2XP01O",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-4F2XP01O",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-4F2XP01O",
-      "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-4F2XP01O",
-      "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-4F2XP01O",
-      "target": "EV-WQEBDV6N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-4F2XP01O",
-      "target": "EV-E0UEG80V",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-4F2XP01O",
-      "target": "EV-2BETEK3O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-4F2XP01O",
-      "target": "EV-CF8L7HKO",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-4F2XP01O",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-MTKZJQKE",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-4F2XP01O",
+      "source": "officer:thomas-r-guidry",
       "target": "EV-F23V4Y4G",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-TH6ARSLH",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-TH6ARSLH",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-TH6ARSLH",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-TH6ARSLH",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-TH6ARSLH",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-TH6ARSLH",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-TH6ARSLH",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-TH6ARSLH",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-TH6ARSLH",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-TH6ARSLH",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-TH6ARSLH",
-      "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-TH6ARSLH",
-      "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-TH6ARSLH",
-      "target": "EV-WQEBDV6N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-TH6ARSLH",
-      "target": "EV-E0UEG80V",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-TH6ARSLH",
-      "target": "EV-2BETEK3O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-TH6ARSLH",
-      "target": "EV-CF8L7HKO",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-TH6ARSLH",
-      "target": "EV-MTKZJQKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-TH6ARSLH",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-F23V4Y4G",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-TH6ARSLH",
+      "source": "officer:thomas-r-guidry",
       "target": "EV-4F2XP01O",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-WQEBDV6N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-E0UEG80V",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-2BETEK3O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-CF8L7HKO",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-MTKZJQKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
-      "target": "EV-F23V4Y4G",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-83Z6HKA6",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-4F2XP01O",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-83Z6HKA6",
+      "source": "officer:renee-broussard",
       "target": "EV-TH6ARSLH",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-WQEBDV6N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-E0UEG80V",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-2BETEK3O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-CF8L7HKO",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-MTKZJQKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-F23V4Y4G",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
-      "target": "EV-4F2XP01O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-QQOVY8XN",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-TH6ARSLH",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-QQOVY8XN",
+      "source": "officer:patrice-delacroix",
       "target": "EV-83Z6HKA6",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-WQEBDV6N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-E0UEG80V",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-2BETEK3O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-CF8L7HKO",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-MTKZJQKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-F23V4Y4G",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-4F2XP01O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
-      "target": "EV-TH6ARSLH",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-YIW8D1CH",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-83Z6HKA6",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-YIW8D1CH",
+      "source": "officer:patrice-delacroix",
       "target": "EV-QQOVY8XN",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-WQEBDV6N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-E0UEG80V",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-2BETEK3O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-CF8L7HKO",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-MTKZJQKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-F23V4Y4G",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-4F2XP01O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-TH6ARSLH",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
-      "target": "EV-83Z6HKA6",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-ZWJH35J4",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-QQOVY8XN",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-ZWJH35J4",
+      "source": "officer:brandon-st-amant",
       "target": "EV-YIW8D1CH",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-WQEBDV6N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-E0UEG80V",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-2BETEK3O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-CF8L7HKO",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-MTKZJQKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-F23V4Y4G",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-4F2XP01O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-TH6ARSLH",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-83Z6HKA6",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
-      "target": "EV-QQOVY8XN",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U5Y4EEW5",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-YIW8D1CH",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-U5Y4EEW5",
+      "source": "officer:brandon-st-amant",
       "target": "EV-ZWJH35J4",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-3O26L3KN",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-WQEBDV6N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-E0UEG80V",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-2BETEK3O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-CF8L7HKO",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-MTKZJQKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-F23V4Y4G",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-4F2XP01O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-TH6ARSLH",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-83Z6HKA6",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-QQOVY8XN",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
-      "target": "EV-YIW8D1CH",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-3O26L3KN",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-ZWJH35J4",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-3O26L3KN",
+      "source": "officer:tanya-robicheaux",
       "target": "EV-U5Y4EEW5",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-WQEBDV6N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-E0UEG80V",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-2BETEK3O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-CF8L7HKO",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-MTKZJQKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-F23V4Y4G",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-4F2XP01O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-TH6ARSLH",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-83Z6HKA6",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-QQOVY8XN",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-YIW8D1CH",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
-      "target": "EV-ZWJH35J4",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-WMFWDDFL",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-U5Y4EEW5",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-WMFWDDFL",
+      "source": "officer:tanya-robicheaux",
       "target": "EV-3O26L3KN",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-WQEBDV6N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-E0UEG80V",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-2BETEK3O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-CF8L7HKO",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-MTKZJQKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-F23V4Y4G",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-4F2XP01O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-TH6ARSLH",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-83Z6HKA6",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-QQOVY8XN",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-YIW8D1CH",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-ZWJH35J4",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
-      "target": "EV-U5Y4EEW5",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-C8JSJRHR",
+      "source": "identifier:case_number:pbpd-2025-088142",
       "target": "EV-3O26L3KN",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "identifier"
       }
     },
     {
-      "source": "EV-C8JSJRHR",
+      "source": "person:ryan-mccall",
+      "target": "EV-3O26L3KN",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "person"
+      }
+    },
+    {
+      "source": "officer:diane-tran",
       "target": "EV-WMFWDDFL",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-U58R5UO8",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-WQEBDV6N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-E0UEG80V",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-2BETEK3O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-CF8L7HKO",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-MTKZJQKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-F23V4Y4G",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-4F2XP01O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-TH6ARSLH",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-83Z6HKA6",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-QQOVY8XN",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-YIW8D1CH",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-ZWJH35J4",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-U5Y4EEW5",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
-      "target": "EV-3O26L3KN",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-U58R5UO8",
+      "source": "object:bar",
       "target": "EV-WMFWDDFL",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "object"
       }
     },
     {
-      "source": "EV-U58R5UO8",
+      "source": "object:stool",
+      "target": "EV-WMFWDDFL",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "object"
+      }
+    },
+    {
+      "source": "object:chair",
+      "target": "EV-WMFWDDFL",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "object"
+      }
+    },
+    {
+      "source": "object:bottle",
+      "target": "EV-WMFWDDFL",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "object"
+      }
+    },
+    {
+      "source": "object:red-stain",
+      "target": "EV-WMFWDDFL",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "object"
+      }
+    },
+    {
+      "source": "location:bar",
+      "target": "EV-WMFWDDFL",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "location"
+      }
+    },
+    {
+      "source": "location:indoor-residence",
+      "target": "EV-WMFWDDFL",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "location"
+      }
+    },
+    {
+      "source": "officer:diane-tran",
       "target": "EV-C8JSJRHR",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
       }
     },
     {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-OLBP21F1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-U2CGQ1EG",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-09606H82",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-3BFC6QKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-Y5JNUYTW",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-E4OO2U6Q",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-80823F7N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-JER9JV1B",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-NG9RRGW1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-N32DJVAS",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-PSTDF2T9",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-6OYJZMK1",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-WQEBDV6N",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-E0UEG80V",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-2BETEK3O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-CF8L7HKO",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-MTKZJQKE",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-F23V4Y4G",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-4F2XP01O",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-TH6ARSLH",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-83Z6HKA6",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-QQOVY8XN",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-YIW8D1CH",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-ZWJH35J4",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-U5Y4EEW5",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-3O26L3KN",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
-      "target": "EV-WMFWDDFL",
-      "relationship": "same_case",
-      "metadata": {
-        "case_id": "PBPD-2025-088142"
-      }
-    },
-    {
-      "source": "EV-T96FQ2FP",
+      "source": "object:bar-stool",
       "target": "EV-C8JSJRHR",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "object"
       }
     },
     {
-      "source": "EV-T96FQ2FP",
+      "source": "object:chair",
+      "target": "EV-C8JSJRHR",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "object"
+      }
+    },
+    {
+      "source": "object:liquid-spill",
+      "target": "EV-C8JSJRHR",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "object"
+      }
+    },
+    {
+      "source": "location:bar",
+      "target": "EV-C8JSJRHR",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "location"
+      }
+    },
+    {
+      "source": "location:indoor-residence",
+      "target": "EV-C8JSJRHR",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "location"
+      }
+    },
+    {
+      "source": "officer:diane-tran",
       "target": "EV-U58R5UO8",
-      "relationship": "same_case",
+      "relationship": "referenced_in",
       "metadata": {
-        "case_id": "PBPD-2025-088142"
+        "entity_kind": "officer"
+      }
+    },
+    {
+      "source": "object:sidewalk",
+      "target": "EV-U58R5UO8",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "object"
+      }
+    },
+    {
+      "source": "object:storefront",
+      "target": "EV-U58R5UO8",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "object"
+      }
+    },
+    {
+      "source": "object:trash-bin",
+      "target": "EV-U58R5UO8",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "object"
+      }
+    },
+    {
+      "source": "location:sidewalk",
+      "target": "EV-U58R5UO8",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "location"
+      }
+    },
+    {
+      "source": "location:storefront",
+      "target": "EV-U58R5UO8",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "location"
+      }
+    },
+    {
+      "source": "location:street",
+      "target": "EV-U58R5UO8",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "location"
+      }
+    },
+    {
+      "source": "location:outdoor-street",
+      "target": "EV-U58R5UO8",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "location"
+      }
+    },
+    {
+      "source": "officer:diane-tran",
+      "target": "EV-T96FQ2FP",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "officer"
+      }
+    },
+    {
+      "source": "location:doorbell",
+      "target": "EV-T96FQ2FP",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "location"
+      }
+    },
+    {
+      "source": "location:outdoor-street",
+      "target": "EV-T96FQ2FP",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "location"
+      }
+    },
+    {
+      "source": "officer:yvette-landry",
+      "target": "EV-IRJRABR0",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "officer"
+      }
+    },
+    {
+      "source": "officer:yvette-landry",
+      "target": "EV-Z4UDGI6U",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "officer"
+      }
+    },
+    {
+      "source": "officer:bernard-fontenot",
+      "target": "EV-BU4WX5PG",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "officer"
+      }
+    },
+    {
+      "source": "officer:vivian-n-caldwell-beaumont",
+      "target": "EV-HIY6I7OU",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "officer"
+      }
+    },
+    {
+      "source": "officer:linda-chen",
+      "target": "EV-BIC50BIE",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "officer"
+      }
+    },
+    {
+      "source": "officer:aimee-beaulieu",
+      "target": "EV-A5TY7KET",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "officer"
+      }
+    },
+    {
+      "source": "person:reginald-pierce",
+      "target": "EV-A5TY7KET",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "person"
+      }
+    },
+    {
+      "source": "officer:aimee-beaulieu",
+      "target": "EV-HCJN6AEC",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "officer"
+      }
+    },
+    {
+      "source": "person:gerard-olivier",
+      "target": "EV-HCJN6AEC",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "person"
+      }
+    },
+    {
+      "source": "officer:aimee-beaulieu",
+      "target": "EV-BS1IZP3K",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "officer"
+      }
+    },
+    {
+      "source": "person:marisol-acosta",
+      "target": "EV-BS1IZP3K",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "person"
+      }
+    },
+    {
+      "source": "officer:patrick-soileau",
+      "target": "EV-0HRDYQYK",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "officer"
+      }
+    },
+    {
+      "source": "officer:yvette-landry",
+      "target": "EV-6QN5Z9HF",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "officer"
+      }
+    },
+    {
+      "source": "officer:yvette-landry",
+      "target": "EV-TDCCHTD2",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "officer"
+      }
+    },
+    {
+      "source": "officer:yvette-landry",
+      "target": "EV-5VHX9SXV",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "officer"
+      }
+    },
+    {
+      "source": "officer:yvette-landry",
+      "target": "EV-JZ6AZCKG",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "officer"
+      }
+    },
+    {
+      "source": "officer:yvette-landry",
+      "target": "EV-3X55DASX",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "officer"
+      }
+    },
+    {
+      "source": "object:cigarette-butt",
+      "target": "EV-3X55DASX",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "object"
+      }
+    },
+    {
+      "source": "location:sidewalk",
+      "target": "EV-3X55DASX",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "location"
+      }
+    },
+    {
+      "source": "location:outdoor-pavement",
+      "target": "EV-3X55DASX",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "location"
+      }
+    },
+    {
+      "source": "EV-XROEHK17",
+      "target": "EV-0HRDYQYK",
+      "relationship": "same_date",
+      "metadata": {
+        "date": "2026-05-27T00:15:14.131Z"
+      }
+    },
+    {
+      "source": "EV-XROEHK17",
+      "target": "EV-BS1IZP3K",
+      "relationship": "same_date",
+      "metadata": {
+        "date": "2026-05-27T00:15:14.131Z"
+      }
+    },
+    {
+      "source": "EV-XROEHK17",
+      "target": "EV-HCJN6AEC",
+      "relationship": "same_date",
+      "metadata": {
+        "date": "2026-05-27T00:15:14.131Z"
+      }
+    },
+    {
+      "source": "EV-XROEHK17",
+      "target": "EV-A5TY7KET",
+      "relationship": "same_date",
+      "metadata": {
+        "date": "2026-05-27T00:15:14.131Z"
+      }
+    },
+    {
+      "source": "EV-XROEHK17",
+      "target": "EV-BIC50BIE",
+      "relationship": "same_date",
+      "metadata": {
+        "date": "2026-05-27T00:15:14.131Z"
+      }
+    },
+    {
+      "source": "EV-XROEHK17",
+      "target": "EV-HIY6I7OU",
+      "relationship": "same_date",
+      "metadata": {
+        "date": "2026-05-27T00:15:14.131Z"
+      }
+    },
+    {
+      "source": "officer:yvette-landry",
+      "target": "EV-XROEHK17",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "officer"
+      }
+    },
+    {
+      "source": "person:ryan-mccall",
+      "target": "EV-XROEHK17",
+      "relationship": "referenced_in",
+      "metadata": {
+        "entity_kind": "person"
       }
     }
   ],
@@ -4223,7 +1968,7 @@
     "PBPD-2025-088142": {
       "title": "Case PBPD-2025-088142",
       "status": "active",
-      "lead_officer": "Diane Tran",
+      "lead_officer": "Yvette Landry",
       "evidence_ids": [
         "EV-OLBP21F1",
         "EV-U2CGQ1EG",
@@ -4254,17 +1999,468 @@
         "EV-WMFWDDFL",
         "EV-C8JSJRHR",
         "EV-U58R5UO8",
-        "EV-T96FQ2FP"
+        "EV-T96FQ2FP",
+        "EV-XROEHK17"
       ],
       "date_opened": "2026-05-07T15:46:18.063Z"
+    },
+    "PBPD-2026-034532": {
+      "title": "Case PBPD-2026-034532",
+      "status": "active",
+      "lead_officer": "Yvette Landry",
+      "evidence_ids": [
+        "EV-IRJRABR0",
+        "EV-Z4UDGI6U",
+        "EV-BU4WX5PG",
+        "EV-HIY6I7OU",
+        "EV-BIC50BIE",
+        "EV-A5TY7KET",
+        "EV-HCJN6AEC",
+        "EV-BS1IZP3K",
+        "EV-0HRDYQYK",
+        "EV-6QN5Z9HF",
+        "EV-TDCCHTD2",
+        "EV-5VHX9SXV",
+        "EV-JZ6AZCKG",
+        "EV-3X55DASX"
+      ],
+      "date_opened": "2026-05-26T23:46:57.297Z"
     }
   },
   "metadata": {
-    "total_items": 30,
-    "last_updated": "2026-05-07T17:33:10.842Z",
+    "total_items": 45,
+    "last_updated": "2026-05-27T00:15:15.003Z",
     "media_breakdown": {
-      "pdf": 26,
-      "image": 4
+      "pdf": 40,
+      "image": 5
+    }
+  },
+  "entities": {
+    "officer:maria-thibodaux": {
+      "id": "officer:maria-thibodaux",
+      "kind": "officer",
+      "label": "Maria Thibodaux",
+      "evidence_ids": [
+        "EV-OLBP21F1"
+      ]
+    },
+    "identifier:case_number:pbpd-2025-088142": {
+      "id": "identifier:case_number:pbpd-2025-088142",
+      "kind": "identifier",
+      "label": "PBPD-2025-088142",
+      "subkind": "case_number",
+      "evidence_ids": [
+        "EV-OLBP21F1",
+        "EV-U2CGQ1EG",
+        "EV-09606H82",
+        "EV-3BFC6QKE",
+        "EV-Y5JNUYTW",
+        "EV-E4OO2U6Q",
+        "EV-80823F7N",
+        "EV-JER9JV1B",
+        "EV-NG9RRGW1",
+        "EV-N32DJVAS",
+        "EV-PSTDF2T9",
+        "EV-6OYJZMK1",
+        "EV-WQEBDV6N",
+        "EV-E0UEG80V",
+        "EV-2BETEK3O",
+        "EV-CF8L7HKO",
+        "EV-MTKZJQKE",
+        "EV-F23V4Y4G",
+        "EV-4F2XP01O",
+        "EV-TH6ARSLH",
+        "EV-83Z6HKA6",
+        "EV-QQOVY8XN",
+        "EV-YIW8D1CH",
+        "EV-ZWJH35J4",
+        "EV-U5Y4EEW5",
+        "EV-3O26L3KN"
+      ]
+    },
+    "officer:diane-tran": {
+      "id": "officer:diane-tran",
+      "kind": "officer",
+      "label": "Diane Tran",
+      "evidence_ids": [
+        "EV-U2CGQ1EG",
+        "EV-3BFC6QKE",
+        "EV-Y5JNUYTW",
+        "EV-NG9RRGW1",
+        "EV-N32DJVAS",
+        "EV-PSTDF2T9",
+        "EV-6OYJZMK1",
+        "EV-WQEBDV6N",
+        "EV-E0UEG80V",
+        "EV-2BETEK3O",
+        "EV-CF8L7HKO",
+        "EV-WMFWDDFL",
+        "EV-C8JSJRHR",
+        "EV-U58R5UO8",
+        "EV-T96FQ2FP"
+      ]
+    },
+    "officer:kenneth-okafor": {
+      "id": "officer:kenneth-okafor",
+      "kind": "officer",
+      "label": "Kenneth Okafor",
+      "evidence_ids": [
+        "EV-09606H82"
+      ]
+    },
+    "officer:james-martin": {
+      "id": "officer:james-martin",
+      "kind": "officer",
+      "label": "James Martin",
+      "evidence_ids": [
+        "EV-E4OO2U6Q"
+      ]
+    },
+    "officer:renee-broussard": {
+      "id": "officer:renee-broussard",
+      "kind": "officer",
+      "label": "Renee Broussard",
+      "evidence_ids": [
+        "EV-80823F7N",
+        "EV-JER9JV1B",
+        "EV-MTKZJQKE",
+        "EV-TH6ARSLH"
+      ]
+    },
+    "person:shannon-obrien": {
+      "id": "person:shannon-obrien",
+      "kind": "person",
+      "label": "Shannon O'Brien",
+      "subkind": "witness",
+      "evidence_ids": [
+        "EV-N32DJVAS",
+        "EV-PSTDF2T9"
+      ]
+    },
+    "person:darnell-washington": {
+      "id": "person:darnell-washington",
+      "kind": "person",
+      "label": "Darnell Washington",
+      "subkind": "witness",
+      "evidence_ids": [
+        "EV-6OYJZMK1"
+      ]
+    },
+    "location:bar": {
+      "id": "location:bar",
+      "kind": "location",
+      "label": "bar",
+      "evidence_ids": [
+        "EV-WQEBDV6N",
+        "EV-WMFWDDFL",
+        "EV-C8JSJRHR"
+      ]
+    },
+    "person:carlos-reyes": {
+      "id": "person:carlos-reyes",
+      "kind": "person",
+      "label": "Carlos Reyes",
+      "subkind": "witness",
+      "evidence_ids": [
+        "EV-WQEBDV6N"
+      ]
+    },
+    "person:derek-fontenot": {
+      "id": "person:derek-fontenot",
+      "kind": "person",
+      "label": "Derek Fontenot",
+      "subkind": "suspect",
+      "evidence_ids": [
+        "EV-E0UEG80V"
+      ]
+    },
+    "person:travis-bell": {
+      "id": "person:travis-bell",
+      "kind": "person",
+      "label": "Travis Bell",
+      "subkind": "suspect",
+      "evidence_ids": [
+        "EV-2BETEK3O"
+      ]
+    },
+    "person:ryan-mccall": {
+      "id": "person:ryan-mccall",
+      "kind": "person",
+      "label": "Ryan McCall",
+      "subkind": "suspect",
+      "evidence_ids": [
+        "EV-CF8L7HKO",
+        "EV-3O26L3KN",
+        "EV-XROEHK17"
+      ]
+    },
+    "officer:thomas-r-guidry": {
+      "id": "officer:thomas-r-guidry",
+      "kind": "officer",
+      "label": "Thomas R. Guidry",
+      "evidence_ids": [
+        "EV-F23V4Y4G",
+        "EV-4F2XP01O"
+      ]
+    },
+    "officer:patrice-delacroix": {
+      "id": "officer:patrice-delacroix",
+      "kind": "officer",
+      "label": "Patrice Delacroix",
+      "evidence_ids": [
+        "EV-83Z6HKA6",
+        "EV-QQOVY8XN"
+      ]
+    },
+    "officer:brandon-st-amant": {
+      "id": "officer:brandon-st-amant",
+      "kind": "officer",
+      "label": "Brandon St. Amant",
+      "evidence_ids": [
+        "EV-YIW8D1CH",
+        "EV-ZWJH35J4"
+      ]
+    },
+    "officer:tanya-robicheaux": {
+      "id": "officer:tanya-robicheaux",
+      "kind": "officer",
+      "label": "Tanya Robicheaux",
+      "evidence_ids": [
+        "EV-U5Y4EEW5",
+        "EV-3O26L3KN"
+      ]
+    },
+    "object:bar": {
+      "id": "object:bar",
+      "kind": "object",
+      "label": "bar",
+      "evidence_ids": [
+        "EV-WMFWDDFL"
+      ]
+    },
+    "object:stool": {
+      "id": "object:stool",
+      "kind": "object",
+      "label": "stool",
+      "evidence_ids": [
+        "EV-WMFWDDFL"
+      ]
+    },
+    "object:chair": {
+      "id": "object:chair",
+      "kind": "object",
+      "label": "chair",
+      "evidence_ids": [
+        "EV-WMFWDDFL",
+        "EV-C8JSJRHR"
+      ]
+    },
+    "object:bottle": {
+      "id": "object:bottle",
+      "kind": "object",
+      "label": "bottle",
+      "evidence_ids": [
+        "EV-WMFWDDFL"
+      ]
+    },
+    "object:red-stain": {
+      "id": "object:red-stain",
+      "kind": "object",
+      "label": "red stain",
+      "evidence_ids": [
+        "EV-WMFWDDFL"
+      ]
+    },
+    "location:indoor-residence": {
+      "id": "location:indoor-residence",
+      "kind": "location",
+      "label": "indoor residence",
+      "evidence_ids": [
+        "EV-WMFWDDFL",
+        "EV-C8JSJRHR"
+      ]
+    },
+    "object:bar-stool": {
+      "id": "object:bar-stool",
+      "kind": "object",
+      "label": "bar stool",
+      "evidence_ids": [
+        "EV-C8JSJRHR"
+      ]
+    },
+    "object:liquid-spill": {
+      "id": "object:liquid-spill",
+      "kind": "object",
+      "label": "liquid spill",
+      "evidence_ids": [
+        "EV-C8JSJRHR"
+      ]
+    },
+    "object:sidewalk": {
+      "id": "object:sidewalk",
+      "kind": "object",
+      "label": "sidewalk",
+      "evidence_ids": [
+        "EV-U58R5UO8"
+      ]
+    },
+    "object:storefront": {
+      "id": "object:storefront",
+      "kind": "object",
+      "label": "storefront",
+      "evidence_ids": [
+        "EV-U58R5UO8"
+      ]
+    },
+    "object:trash-bin": {
+      "id": "object:trash-bin",
+      "kind": "object",
+      "label": "trash bin",
+      "evidence_ids": [
+        "EV-U58R5UO8"
+      ]
+    },
+    "location:sidewalk": {
+      "id": "location:sidewalk",
+      "kind": "location",
+      "label": "sidewalk",
+      "evidence_ids": [
+        "EV-U58R5UO8",
+        "EV-3X55DASX"
+      ]
+    },
+    "location:storefront": {
+      "id": "location:storefront",
+      "kind": "location",
+      "label": "storefront",
+      "evidence_ids": [
+        "EV-U58R5UO8"
+      ]
+    },
+    "location:street": {
+      "id": "location:street",
+      "kind": "location",
+      "label": "street",
+      "evidence_ids": [
+        "EV-U58R5UO8"
+      ]
+    },
+    "location:outdoor-street": {
+      "id": "location:outdoor-street",
+      "kind": "location",
+      "label": "outdoor street",
+      "evidence_ids": [
+        "EV-U58R5UO8",
+        "EV-T96FQ2FP"
+      ]
+    },
+    "location:doorbell": {
+      "id": "location:doorbell",
+      "kind": "location",
+      "label": "doorbell",
+      "evidence_ids": [
+        "EV-T96FQ2FP"
+      ]
+    },
+    "officer:yvette-landry": {
+      "id": "officer:yvette-landry",
+      "kind": "officer",
+      "label": "Yvette Landry",
+      "evidence_ids": [
+        "EV-IRJRABR0",
+        "EV-Z4UDGI6U",
+        "EV-6QN5Z9HF",
+        "EV-TDCCHTD2",
+        "EV-5VHX9SXV",
+        "EV-JZ6AZCKG",
+        "EV-3X55DASX",
+        "EV-XROEHK17"
+      ]
+    },
+    "officer:bernard-fontenot": {
+      "id": "officer:bernard-fontenot",
+      "kind": "officer",
+      "label": "Bernard Fontenot",
+      "evidence_ids": [
+        "EV-BU4WX5PG"
+      ]
+    },
+    "officer:vivian-n-caldwell-beaumont": {
+      "id": "officer:vivian-n-caldwell-beaumont",
+      "kind": "officer",
+      "label": "Vivian N. Caldwell-Beaumont",
+      "evidence_ids": [
+        "EV-HIY6I7OU"
+      ]
+    },
+    "officer:linda-chen": {
+      "id": "officer:linda-chen",
+      "kind": "officer",
+      "label": "Linda Chen",
+      "evidence_ids": [
+        "EV-BIC50BIE"
+      ]
+    },
+    "officer:aimee-beaulieu": {
+      "id": "officer:aimee-beaulieu",
+      "kind": "officer",
+      "label": "Aimee Beaulieu",
+      "evidence_ids": [
+        "EV-A5TY7KET",
+        "EV-HCJN6AEC",
+        "EV-BS1IZP3K"
+      ]
+    },
+    "person:reginald-pierce": {
+      "id": "person:reginald-pierce",
+      "kind": "person",
+      "label": "Reginald Pierce",
+      "subkind": "witness",
+      "evidence_ids": [
+        "EV-A5TY7KET"
+      ]
+    },
+    "person:gerard-olivier": {
+      "id": "person:gerard-olivier",
+      "kind": "person",
+      "label": "Gerard Olivier",
+      "subkind": "witness",
+      "evidence_ids": [
+        "EV-HCJN6AEC"
+      ]
+    },
+    "person:marisol-acosta": {
+      "id": "person:marisol-acosta",
+      "kind": "person",
+      "label": "Marisol Acosta",
+      "subkind": "witness",
+      "evidence_ids": [
+        "EV-BS1IZP3K"
+      ]
+    },
+    "officer:patrick-soileau": {
+      "id": "officer:patrick-soileau",
+      "kind": "officer",
+      "label": "Patrick Soileau",
+      "evidence_ids": [
+        "EV-0HRDYQYK"
+      ]
+    },
+    "object:cigarette-butt": {
+      "id": "object:cigarette-butt",
+      "kind": "object",
+      "label": "cigarette butt",
+      "evidence_ids": [
+        "EV-3X55DASX"
+      ]
+    },
+    "location:outdoor-pavement": {
+      "id": "location:outdoor-pavement",
+      "kind": "location",
+      "label": "outdoor pavement",
+      "evidence_ids": [
+        "EV-3X55DASX"
+      ]
     }
   }
 }

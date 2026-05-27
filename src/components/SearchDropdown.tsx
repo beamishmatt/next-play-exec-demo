@@ -232,18 +232,17 @@ interface SearchDropdownProps {
   onClearResults?: () => void;
 }
 
-const PLACEHOLDER_QUERIES = [
+export const PLACEHOLDER_QUERIES = [
+  'suspect Ryan McCall…',
   'body cam footage from PBPD-2025-088142…',
   'witness statements officer Thibodaux…',
-  'traffic stop videos last 30 days…',
-  'EV-PSTDF2T9…',
+  'ID EV-PSTDF2T9…',
   'shooting incident photos case 088142…',
-  'drug offense documents officer Martin…',
 ];
 
 const CYCLE_INTERVAL = 3400;
 
-function useCyclingPlaceholder(active: boolean): string {
+export function useCyclingPlaceholder(active: boolean): string {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -257,14 +256,26 @@ function useCyclingPlaceholder(active: boolean): string {
   return PLACEHOLDER_QUERIES[index];
 }
 
-function AnimatedPlaceholder({ text }: { text: string }) {
+export function AnimatedPlaceholder({
+  text,
+  left = 32,
+  right = 32,
+  fontSize = 12,
+  color = 'rgba(0,0,0,0.35)',
+}: {
+  text: string;
+  left?: number;
+  right?: number;
+  fontSize?: number;
+  color?: string;
+}) {
   return (
     <div
       aria-hidden
       style={{
         position: 'absolute',
-        left: 32,
-        right: 32,
+        left,
+        right,
         top: 0,
         bottom: 0,
         display: 'flex',
@@ -287,7 +298,7 @@ function AnimatedPlaceholder({ text }: { text: string }) {
               initial={{ opacity: 0, filter: 'blur(6px)' }}
               animate={{ opacity: 1, filter: 'blur(0px)' }}
               transition={{ duration: 0.3, delay: i * 0.018 }}
-              style={{ fontSize: '12px', color: 'rgba(0,0,0,0.35)', fontFamily: 'inherit', lineHeight: 1 }}
+              style={{ fontSize: `${fontSize}px`, color, fontFamily: 'inherit', lineHeight: 1 }}
             >
               {char === ' ' ? '\u00a0' : char}
             </motion.span>

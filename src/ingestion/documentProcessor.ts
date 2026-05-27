@@ -29,7 +29,7 @@ export async function processDocument(
   }
 
   onStatus('Building graph node…');
-  const node = addNodeToGraph({
+  const node = await addNodeToGraph({
     title: file.name,
     mediaClass,
     mimeType,

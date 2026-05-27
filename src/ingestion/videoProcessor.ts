@@ -34,7 +34,7 @@ This entry represents the video file for search and retrieval purposes.`;
   }
 
   onStatus('Building graph node…');
-  const node = addNodeToGraph({
+  const node = await addNodeToGraph({
     title: file.name,
     mediaClass: 'video',
     mimeType,

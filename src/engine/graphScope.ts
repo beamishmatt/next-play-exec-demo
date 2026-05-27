@@ -1,7 +1,7 @@
 import { ContextGraph, GraphNode } from '../data/types';
 import { QueryAnalysis } from './queryAnalysis';
 
-export function scopeGraph(graph: ContextGraph, analysis: QueryAnalysis): GraphNode[] {
+export function scopeGraph(graph: ContextGraph, analysis: QueryAnalysis, originalQuery = ''): GraphNode[] {
   const all = Object.values(graph.nodes);
   if (all.length === 0) return [];
 
@@ -27,11 +27,10 @@ export function scopeGraph(graph: ContextGraph, analysis: QueryAnalysis): GraphN
     entities.dates.start ||
     entities.dates.end;
 
-  const terms = queryTerms(analysis);
+  const terms = queryTerms(analysis, originalQuery);
 
   // No structured entities extracted — fuzzy match on all query terms
   if (!hasEntityFilters) {
-    const terms = queryTerms(analysis);
     if (terms.length === 0) return [];
     return scoredSort(fuzzyMatch(all, terms), analysis, terms, new Set());
   }
@@ -95,7 +94,6 @@ export function scopeGraph(graph: ContextGraph, analysis: QueryAnalysis): GraphN
 
   // If strict filters eliminated everything, fall back to full query terms
   if (candidates.length === 0) {
-    const terms = queryTerms(analysis);
     if (terms.length === 0) return [];
     const fallback = fuzzyMatch(all, terms);
     if (fallback.length === 0) return [];
@@ -191,11 +189,22 @@ const STOP_WORDS = new Set([
   'where', 'how', 'any', 'all', 'some', 'than', 'then', 'into', 'about',
 ]);
 
-function queryTerms(analysis: QueryAnalysis): string[] {
-  return [
-    ...analysis.reformulated_query.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !STOP_WORDS.has(w)),
-    ...analysis.entities.keywords.map(k => k.toLowerCase()).filter(k => !STOP_WORDS.has(k)),
-  ];
+function queryTerms(analysis: QueryAnalysis, originalQuery: string): string[] {
+  // Use the user's literal words plus the LLM's `keywords` catch-all.
+  // We deliberately skip `reformulated_query` — the LLM tends to pad it with
+  // boilerplate like "evidence", "items", "report" that appears in nearly
+  // every node's description, which turns the fuzzy fallback into a
+  // match-everything search (e.g. "football" returning unrelated results).
+  const fromQuery = originalQuery.toLowerCase().split(/\s+/);
+  const fromKeywords = analysis.entities.keywords.map(k => k.toLowerCase());
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const t of [...fromQuery, ...fromKeywords]) {
+    if (t.length <= 2 || STOP_WORDS.has(t) || seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out;
 }
 
 function fuzzyMatch(nodes: GraphNode[], terms: string[]): GraphNode[] {
