@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ArrowUp, ChevronDown, Clock, CircleCheck, FileText, X, Copy, Check, Tag, RefreshCw, ShieldCheck, Pencil, Lightbulb } from 'lucide-react';
+import { ArrowUp, ChevronDown, Clock, CircleCheck, FileText, X, Copy, Check, Tag, RefreshCw, ShieldCheck, Pencil, Lightbulb, Save } from 'lucide-react';
 import { PromptInput, PromptInputTextarea, PromptInputActions } from './ui/prompt-input';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
+import { ColorOrb } from './ui/color-orb';
 import { chatWithEvidenceStream, ChatMessage } from '../engine/assistantChat';
 import { AgentAction, AgentActionType, MetadataEdit } from '../data/types';
 import { DraftReport, parseDraft, DRAFT_PANEL_WIDTH } from '../utils/draftUtils';
@@ -660,7 +661,7 @@ export function DraftCard({ title, onOpen }: { title: string; onOpen: () => void
 }
 
 
-export function DraftDrawer({ draft, open, onClose }: { draft: DraftReport | null; open: boolean; onClose: () => void }) {
+export function DraftDrawer({ draft, open, onClose, onSave }: { draft: DraftReport | null; open: boolean; onClose: () => void; onSave?: (draft: DraftReport) => void }) {
   const lastDraft = React.useRef<DraftReport | null>(draft);
   if (draft) lastDraft.current = draft;
   const displayDraft = draft ?? lastDraft.current;
@@ -668,9 +669,13 @@ export function DraftDrawer({ draft, open, onClose }: { draft: DraftReport | nul
   const [value, setValue] = React.useState(displayDraft?.body ?? '');
   const [editing, setEditing] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
+  const [saved, setSaved] = React.useState(false);
 
   React.useEffect(() => {
-    if (draft) setValue(draft.body);
+    if (draft) {
+      setValue(draft.body);
+      setSaved(false);
+    }
   }, [draft?.body]);
 
   const handleCopy = () => {
@@ -678,6 +683,13 @@ export function DraftDrawer({ draft, open, onClose }: { draft: DraftReport | nul
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
+  };
+
+  const handleSave = () => {
+    if (!displayDraft || !onSave) return;
+    onSave({ title: displayDraft.title, body: value });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   };
 
   if (!open && !displayDraft) return null;
@@ -729,22 +741,28 @@ export function DraftDrawer({ draft, open, onClose }: { draft: DraftReport | nul
           <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>
             Draft
           </span>
-          {displayDraft && value !== displayDraft.body && (
+          {onSave && displayDraft && (
             <button
-              onClick={() => {/* persist handled by value state */}}
+              onClick={handleSave}
+              disabled={saved}
               style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
                 padding: '4px 10px',
                 borderRadius: 6,
-                border: '1px solid var(--border)',
-                backgroundColor: 'var(--fill-strong)',
-                color: 'var(--text-inverse-strong)',
+                border: 'none',
+                backgroundColor: saved ? 'var(--fill-weak)' : 'var(--fill-key-strong)',
+                color: saved ? 'var(--text-strong)' : 'var(--text-inverse-strong)',
                 fontSize: 12,
                 fontWeight: 500,
-                cursor: 'pointer',
+                cursor: saved ? 'default' : 'pointer',
                 fontFamily: 'inherit',
+                transition: 'background-color 0.15s',
               }}
             >
-              Save
+              {saved ? <Check size={12} /> : <Save size={12} />}
+              {saved ? 'Saved' : 'Save'}
             </button>
           )}
           <button
@@ -839,6 +857,26 @@ export function DraftDrawer({ draft, open, onClose }: { draft: DraftReport | nul
                 hr: () => <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '16px 0' }} />,
                 blockquote: ({ children }) => <blockquote style={{ borderLeft: '3px solid var(--border-strong)', paddingLeft: 12, margin: '0 0 10px', color: 'var(--muted-foreground)' }}>{children}</blockquote>,
                 code: ({ children }) => <code style={{ fontFamily: 'monospace', fontSize: 12, backgroundColor: 'var(--fill-weak)', padding: '1px 5px', borderRadius: 3 }}>{children}</code>,
+                table: ({ children }) => (
+                  <div style={{ margin: '0 0 14px', overflowX: 'auto', border: '1px solid var(--border)', borderRadius: 6 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, lineHeight: 1.5, color: 'var(--foreground)' }}>
+                      {children}
+                    </table>
+                  </div>
+                ),
+                thead: ({ children }) => <thead style={{ backgroundColor: 'var(--fill-weak)' }}>{children}</thead>,
+                tbody: ({ children }) => <tbody>{children}</tbody>,
+                tr: ({ children }) => <tr style={{ borderBottom: '1px solid var(--border)' }}>{children}</tr>,
+                th: ({ children }) => (
+                  <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, fontSize: 11, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.03em', whiteSpace: 'nowrap', borderBottom: '1px solid var(--border)' }}>
+                    {children}
+                  </th>
+                ),
+                td: ({ children }) => (
+                  <td style={{ padding: '8px 10px', verticalAlign: 'top', fontSize: 12, lineHeight: 1.5, color: 'var(--foreground)' }}>
+                    {children}
+                  </td>
+                ),
               }}
             >
               {value}
@@ -1158,12 +1196,7 @@ export function AssistantPanel({ isOpen, items, onClose, onAction }: AssistantPa
       >
         {/* Header */}
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M8.70548 11.5171C9.05311 10.9168 9.89062 10.8351 10.3469 11.3592L14.057 15.6105C14.1006 15.6641 14.0852 15.7188 14.0725 15.7456C14.0598 15.7739 14.0257 15.8205 13.9537 15.8205H12.4807L12.4791 15.8238H1.5489C1.49404 15.8235 1.48044 15.7458 1.53263 15.7261L6.69295 13.8356C7.24254 13.635 7.70523 13.2467 7.9991 12.7394L8.70548 11.5171Z" fill="#36393D" fillOpacity="0.8"/>
-            <path d="M18.3336 6.65708H16.2502V13.3238H18.3336V15.8238H15.8336L12.9169 10.4071V6.65708H10.8336V4.15708H18.3336V6.65708Z" fill="#36393D" fillOpacity="0.8"/>
-            <path d="M6.47403 5.29803C6.5037 5.24717 6.58295 5.2814 6.56599 5.33791L5.59676 8.57603C5.39907 9.23574 5.48298 9.94767 5.82625 10.5438L6.5603 11.8182C6.87395 12.3636 6.62271 13.059 6.03214 13.2766L1.10701 15.0873L1.09155 15.0946C1.01949 15.1243 0.970064 15.0929 0.941807 15.0604C0.913621 15.0279 0.88838 14.9761 0.926345 14.9099L6.47403 5.29803Z" fill="#36393D" fillOpacity="0.8"/>
-            <path d="M7.81355 4.06024C7.84463 4.05742 7.90459 4.06035 7.94132 4.12535L8.80395 5.62111H8.80558L13.3791 13.5443C13.4102 13.5965 13.3382 13.6476 13.2986 13.6029L10.5634 10.4673C10.0887 9.92195 9.40037 9.60956 8.677 9.60956H7.42781C6.74981 9.60935 6.26282 8.95544 6.45776 8.30422L7.70369 4.14895C7.72628 4.08013 7.78245 4.06314 7.81355 4.06024Z" fill="#36393D" fillOpacity="0.8"/>
-          </svg>
+          <ColorOrb dimension="16px" />
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={() => { setMessages([]); setInput(''); }}

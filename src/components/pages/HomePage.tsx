@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { AnimatePresence, motion } from 'motion/react';
@@ -35,7 +36,7 @@ import {
   Plane,
 } from 'lucide-react';
 import { SCOPE_CHIPS, AnimatedPlaceholder, useCyclingPlaceholder } from '../SearchDropdown';
-import assistantIcon from '../../assets/aiera.svg';
+import { ColorOrb } from '../ui/color-orb';
 import { chatWithEvidenceStream, ChatMessage as EngineChatMessage } from '../../engine/assistantChat';
 import { Checkbox } from '../ui/checkbox';
 import { ThinkingBlock, DraftCard, DraftDrawer, ToolCall, ToolCallCard, MetadataEditCard, parseActions, parseMetadataEdits, stripActionTags, stripMetadataEditTags, FeatureRequestCard, parseFeatureRequest, stripFeatureRequestTags } from '../AssistantPanel';
@@ -587,7 +588,7 @@ function Widget({
 function HomeGreeting() {
   return (
     <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-strong)', margin: 0, letterSpacing: '-0.01em', lineHeight: 1.2 }}>
-      {greeting()}, Officer Reyes.
+      {greeting()}, Detective Landry.
     </h1>
   );
 }
@@ -604,7 +605,7 @@ function HomeSearchInput() {
         height: 44,
         borderRadius: 10,
         border: '1px solid var(--border)',
-        backgroundColor: 'var(--overlay)',
+        backgroundColor: 'rgba(255, 255, 255, 0.35)',
       }}
     >
       <Search size={15} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
@@ -633,8 +634,11 @@ function HomeSearchInput() {
 function ShiftBriefing() {
   return (
     <p style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--muted-foreground)', margin: 0 }}>
-      <strong style={{ fontWeight: 600, color: 'var(--text-strong)' }}>3 things to know before your 14:00 patrol.</strong> Two retail burglary reports on Whitman St share the same MO as Case{' '}
-      <a href="#" style={{ color: '#2563eb', textDecoration: 'underline' }} onClick={e => e.preventDefault()}>#6189</a>. Body 4 firmware update was deployed overnight. Your Use of Force acknowledgment is due in 4 days.
+      <strong style={{ fontWeight: 600, color: 'var(--text-strong)' }}>3 things to know.</strong> Case{' '}
+      <a href="#" style={{ color: '#2563eb', textDecoration: 'underline' }} onClick={e => e.preventDefault()}>088142</a>
+      {' '}and Case{' '}
+      <a href="#" style={{ color: '#2563eb', textDecoration: 'underline' }} onClick={e => e.preventDefault()}>034532</a>
+      {' '}share a suspect — Ryan McCall — surfaced overnight by phone-records correlation and suspect interviews. The forensic lab returned biological evidence results on 088142 — review and disposition due before the next case review. McCall's arraignment is scheduled for Friday at 10:00.
     </p>
   );
 }
@@ -803,7 +807,7 @@ Compiled from 30 evidence items (Officer Diane Tran, lead).
 - Verification of subject's whereabouts between 14:00 and 15:30.
 `;
 
-const ARTIFACT_WEEKLY_SUMMARY = `# Officer Reyes — Weekly Activity Summary
+const ARTIFACT_WEEKLY_SUMMARY = `# Detective Landry — Weekly Activity Summary
 **Mar 10 — Mar 16, 2026**
 
 ## Patrol coverage
@@ -879,7 +883,7 @@ function buildArtifacts(): Artifact[] {
     {
       id: 'art-weekly',
       kind: 'summary',
-      title: 'Officer Reyes — Weekly Activity Summary',
+      title: 'Detective Landry — Weekly Activity Summary',
       context: 'Mar 10 — Mar 16 · 5 shifts, 12 reports',
       createdAgo: 'Yesterday',
       body: ARTIFACT_WEEKLY_SUMMARY,
@@ -915,9 +919,51 @@ function ArtifactIconBadge({ kind }: { kind: ArtifactKind }) {
   );
 }
 
+// Loads LLM drafts the user has explicitly Saved from the DraftDrawer and
+// renders them at the top of the Artifacts list. Listens for the
+// `saved_drafts:updated` event so a Save from the chat flow updates this tab
+// without a full reload.
+function useSavedDrafts(): Artifact[] {
+  const [items, setItems] = useState<Artifact[]>([]);
+  useEffect(() => {
+    const load = () => {
+      try {
+        const raw = localStorage.getItem('saved_drafts');
+        const list: Array<{ title: string; body: string; savedAt: string }> =
+          raw ? JSON.parse(raw) : [];
+        setItems(list.map((d, i) => ({
+          id: `saved-${i}-${d.savedAt}`,
+          kind: 'draft' as const,
+          title: d.title,
+          context: 'Saved from chat',
+          createdAgo: timeAgo(d.savedAt),
+          body: d.body,
+        })));
+      } catch { /* ignore */ }
+    };
+    load();
+    window.addEventListener('saved_drafts:updated', load);
+    return () => window.removeEventListener('saved_drafts:updated', load);
+  }, []);
+  return items;
+}
+
+function timeAgo(iso: string): string {
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return 'Just now';
+  const mins = Math.max(1, Math.floor((Date.now() - t) / 60000));
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
 export function HomeArtifacts() {
   const [preview, setPreview] = useState<DraftReport | null>(null);
-  const artifacts = useMemo(buildArtifacts, []);
+  const staticArtifacts = useMemo(buildArtifacts, []);
+  const savedDrafts = useSavedDrafts();
+  const artifacts = useMemo(() => [...savedDrafts, ...staticArtifacts], [savedDrafts, staticArtifacts]);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18, width: '100%' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -982,14 +1028,19 @@ const TASKS: {
   status: TaskStatus;
   category: string;
   title: string;
-  action: string;
   icon: TaskIcon;
+  // Present on casework rows. Drives the "Ask assistant" hand-off button:
+  // scopes the chat's evidence to this case before kicking off the LLM turn.
+  caseId?: string;
+  // Optional. When supplied, this is the actual instruction sent to the LLM
+  // (the chat UI still shows the short "Help me with: <title>" user turn).
+  // Use it to force a draft-document response for doc-producing tasks.
+  prompt?: string;
 }[] = [
-  { id: 1, status: 'Overdue', category: 'Records', title: 'Complete report for Incident #6201', action: 'Resume', icon: 'alert' },
-  { id: 2, status: 'Due today', category: 'Evidence', title: 'Categorize 4 evidence items from 03/11 shift', action: 'Open', icon: 'scan' },
-  { id: 3, status: 'Due today', category: 'Evidence', title: 'Add subject ID to BWC-2026-03-13-0004', action: 'Open', icon: 'scan' },
-  { id: 4, status: 'Upcoming', category: 'Standards', title: 'Complete annual Use of Force policy acknowledgment', action: 'Open', icon: 'clipboard' },
-  { id: 5, status: 'Upcoming', category: 'Standards', title: 'Review updated vehicle pursuit policy', action: 'Open', icon: 'clipboard' },
+  { id: 1, status: 'Overdue',   category: 'Case 088142', title: 'Review and disposition forensic biological evidence',     icon: 'alert',     caseId: 'PBPD-2025-088142' },
+  { id: 3, status: 'Due today', category: 'Case 034532', title: 'Cross-reference McCall phone records with Case 088142',    icon: 'scan',      caseId: 'PBPD-2025-034532' },
+  { id: 4, status: 'Upcoming',  category: 'Case 088142', title: 'Link new McCall phone records to Case 088142',            icon: 'scan',      caseId: 'PBPD-2025-088142' },
+  { id: 5, status: 'Upcoming',  category: 'Standards',   title: 'Annual investigative interview techniques recertification', icon: 'clipboard' },
 ];
 
 function TaskIconBadge({ icon }: { icon: TaskIcon }) {
@@ -1020,7 +1071,7 @@ export function MyTasks() {
 
   return (
     <Widget
-      background="transparent"
+      background="rgba(255, 255, 255, 0.35)"
       title="My tasks"
       viewAllLabel={
         overdueCount > 0 ? (
@@ -1061,25 +1112,54 @@ export function MyTasks() {
                 </p>
               </div>
             </div>
-            <button
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                fontSize: 12,
-                fontWeight: 500,
-                color: 'var(--text-strong)',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px 6px',
-                borderRadius: 6,
-                fontFamily: 'inherit',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-              }}
-            >
-              {t.action}
-            </button>
+            {t.caseId ? (
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('chat:task-handoff', {
+                    detail: { title: t.title, caseId: t.caseId, prompt: t.prompt },
+                  }));
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: 'var(--text-strong)',
+                  border: '1px solid transparent',
+                  backgroundImage: 'linear-gradient(#ffffff, #ffffff), linear-gradient(90deg, #a855f7, #eab308, #f97316)',
+                  backgroundOrigin: 'border-box',
+                  backgroundClip: 'padding-box, border-box',
+                  cursor: 'pointer',
+                  padding: '4px 9px',
+                  borderRadius: 6,
+                  fontFamily: 'inherit',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                Ask assistant
+              </button>
+            ) : (
+              <button
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  fontSize: 12,
+                  fontWeight: 400,
+                  color: 'var(--muted-foreground)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px 6px',
+                  fontFamily: 'inherit',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  textDecoration: 'underline',
+                }}
+              >
+                Open
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -1109,7 +1189,7 @@ const SHIFTS: Shift[] = [
 export function ShiftSchedule() {
   return (
     <Widget
-      background="transparent"
+      background="rgba(255, 255, 255, 0.35)"
       title="Shift schedule"
       viewAllLabel={
         <span
@@ -1231,7 +1311,7 @@ function DeviceIcon({ type }: { type: string }) {
 export function MyDevices() {
   return (
     <Widget
-      background="transparent"
+      background="rgba(255, 255, 255, 0.35)"
       title="My devices"
       viewAllLabel={null}
     >
@@ -1681,7 +1761,7 @@ function EvidenceDrawer({
 
 // ── Chat Drawer ───────────────────────────────────────────────────────────────
 
-export type ChatMessage = { id: string; role: 'user' | 'assistant' | 'system'; text: string; thinking?: string; showSelectEvidence?: boolean; draft?: DraftReport; pendingDraft?: boolean; chunkMap?: Record<string, string>; evidenceSnapshot?: GraphNode[]; toolCall?: ToolCall; metadataEdits?: MetadataEdit[]; featureRequest?: { title: string; description: string }; draftOffer?: { draft: DraftReport; status: 'pending' | 'accepted' | 'declined' } };
+export type ChatMessage = { id: string; role: 'user' | 'assistant' | 'system'; text: string; thinking?: string; showSelectEvidence?: boolean; draft?: DraftReport; pendingDraft?: boolean; chunkMap?: Record<string, string>; evidenceSnapshot?: GraphNode[]; toolCall?: ToolCall; metadataEdits?: MetadataEdit[]; featureRequest?: { title: string; description: string }; draftOffer?: { draft: DraftReport; status: 'pending' | 'accepted' | 'declined' }; viewOnGraph?: { nodeId: string; label: string } };
 
 
 // ── Citation processing ───────────────────────────────────────────────────────
@@ -1724,30 +1804,72 @@ function processCitations(
   return { processedText, citations };
 }
 
+// Module-level token identifying which CitationTooltip currently owns the
+// hover focus. Used to gate null-dispatches so a stale hide-timer can't clear
+// focus after another citation has already taken over.
+let citationHoverOwner: object | null = null;
+
 function CitationTooltip({ initialNum, citations }: { initialNum: number; citations: CitationEntry[] }) {
   const [visible, setVisible] = useState(false);
   const [idx, setIdx] = useState(0);
-  const [offset, setOffset] = useState(0);
+  // Absolute viewport coords for the tooltip body (portaled to document.body
+  // so it can't be clipped by the chat panel's overflow). `bottom` is
+  // anchored to the viewport bottom so the tooltip grows upward from a fixed
+  // point and we don't need to measure its height.
+  const [pos, setPos] = useState<{ left: number; bottom: number } | null>(null);
   const anchorRef = useRef<HTMLSpanElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ownerRef = useRef<object>({});
+
+  // Broadcasts the currently-previewed evidence id to the knowledge graph
+  // panel, which treats it as a transient selection + camera focus. The
+  // module-level owner gate prevents a stale hide-timer from clearing focus
+  // when the user has already moved to another citation (which took over the
+  // focus in between).
+  const dispatchHover = (id: string | null) => {
+    if (id === null) {
+      if (citationHoverOwner !== ownerRef.current) return;
+      citationHoverOwner = null;
+    } else {
+      citationHoverOwner = ownerRef.current;
+    }
+    window.dispatchEvent(new CustomEvent('chat:citation-hover', { detail: { evidenceId: id } }));
+  };
 
   const cancelHide = () => { if (hideTimer.current) { clearTimeout(hideTimer.current); hideTimer.current = null; } };
-  const scheduleHide = () => { cancelHide(); hideTimer.current = setTimeout(() => setVisible(false), 120); };
+  const scheduleHide = () => { cancelHide(); hideTimer.current = setTimeout(() => { setVisible(false); dispatchHover(null); }, 120); };
 
   const handleEnter = () => {
     cancelHide();
     const i = citations.findIndex(c => c.num === initialNum);
-    setIdx(i >= 0 ? i : 0);
+    const nextIdx = i >= 0 ? i : 0;
+    setIdx(nextIdx);
     if (anchorRef.current) {
       const r = anchorRef.current.getBoundingClientRect();
-      // Compute horizontal offset to keep tooltip within viewport
       const tooltipW = 300;
       const naturalLeft = r.left + r.width / 2 - tooltipW / 2;
-      const clampedLeft = Math.min(Math.max(naturalLeft, 8), window.innerWidth - tooltipW - 8);
-      setOffset(clampedLeft - naturalLeft);
+      const left = Math.min(Math.max(naturalLeft, 8), window.innerWidth - tooltipW - 8);
+      // Anchor the tooltip's bottom 6px above the citation badge's top.
+      const bottom = window.innerHeight - r.top + 6;
+      setPos({ left, bottom });
     }
     setVisible(true);
+    dispatchHover(citations[nextIdx]?.id ?? null);
   };
+
+  // When the user clicks the prev/next arrows, update the focus to track the
+  // newly-visible citation. Skipped while the tooltip is hidden to avoid
+  // emitting spurious focus events from state changes during teardown.
+  useEffect(() => {
+    if (!visible) return;
+    dispatchHover(citations[idx]?.id ?? null);
+  }, [idx, visible, citations]);
+
+  // Belt-and-suspenders: ensure focus is cleared if the component unmounts
+  // mid-hover (e.g., chat streaming replaces the message).
+  useEffect(() => {
+    return () => { dispatchHover(null); };
+  }, []);
 
   const active = citations[idx] ?? citations[0];
 
@@ -1768,17 +1890,18 @@ function CitationTooltip({ initialNum, citations }: { initialNum: number; citati
       }}>
         {initialNum}
       </span>
-      {visible && (
+      {visible && pos && createPortal(
         <div
           onMouseEnter={cancelHide}
           onMouseLeave={scheduleHide}
           style={{
-            position: 'absolute', bottom: 'calc(100% + 6px)',
-            left: '50%', transform: `translateX(calc(-50% + ${offset}px))`,
+            position: 'fixed',
+            left: pos.left,
+            bottom: pos.bottom,
             backgroundColor: 'var(--overlay)', border: '1px solid var(--border)',
             borderRadius: 8, padding: '8px 10px',
             boxShadow: 'var(--elevation-md)',
-            zIndex: 300, width: 300,
+            zIndex: 2147483647, width: 300,
             display: 'flex', flexDirection: 'column', gap: 5,
             pointerEvents: 'auto',
           }}
@@ -1817,7 +1940,8 @@ function CitationTooltip({ initialNum, citations }: { initialNum: number; citati
               </button>
             </div>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </span>
   );
@@ -2098,9 +2222,9 @@ export function ChatDrawer({
         }} />
       </div>
       )}
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-        <img src={assistantIcon} alt="Assistant" style={{ width: 32, height: 32 }} />
+      {/* Header — height matches KnowledgeGraphPanel top rail */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64, padding: '0 20px', borderBottom: '1px solid var(--border)', flexShrink: 0, boxSizing: 'border-box' }}>
+        <ColorOrb dimension="26px" />
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={onNewChat}
@@ -2262,6 +2386,34 @@ export function ChatDrawer({
                       Dismissed.
                     </div>
                   )}
+                  {m.viewOnGraph && (
+                    <div style={{ marginTop: 10 }}>
+                      <button
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent('graph:focus-node', {
+                            detail: { nodeId: m.viewOnGraph!.nodeId },
+                          }));
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          fontSize: 12,
+                          fontWeight: 500,
+                          color: 'var(--text-strong)',
+                          background: '#ffffff',
+                          border: '1px solid var(--border)',
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          padding: '5px 11px',
+                          fontFamily: 'inherit',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        View {m.viewOnGraph.label} on graph →
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -2294,7 +2446,6 @@ export function ChatDrawer({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <img src={assistantIcon} alt="Assistant" style={{ width: 18, height: 18, opacity: 0.9, flexShrink: 0 }} />
             <span style={{ fontSize: 13, fontWeight: 400, color: '#4a4a4a' }}>
               Learn more about what the Assistant can do.
             </span>
@@ -2497,18 +2648,21 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
     setChatStreamingId(msgId);
 
     const thinkingChain = [
-      "Checking the officer's open work…",
+      "Checking the detective's open work…",
       `Found 1 overdue item in My tasks — "${overdue.title}" (${overdue.category}).`,
-      "Pulling the original return note from Sgt. Park — \"Missing witness info in narrative.\"",
-      "Cross-referencing Incident #6201 evidence: BWC-2026-03-08-0014, IMG-2026-03-08-0003, and the two neighbor statements logged the next morning.",
-      "Surfacing this proactively so it doesn't get missed — but waiting for the officer's go-ahead before drafting anything.",
+      "The forensic lab returned biological evidence results on Case PBPD-2025-088142 overnight — DNA, serology, and trace-impression findings.",
+      "Cross-referencing with the autopsy report, the Ryan McCall suspect interview, and the chain-of-custody log.",
+      "Noting the cross-case link to Case 034532 — McCall surfaced as a shared suspect via phone-records correlation.",
+      "Surfacing this proactively so the disposition memo doesn't slip — but waiting for the detective's go-ahead before drafting anything.",
     ].join('\n');
 
-    const textBody = `I noticed you have an overdue task — **${overdue.title}**. The report was returned by Sgt. Park with a note about missing witness info in the narrative. The witness statements from Maria Sanchez and Mark Chen are now logged, so I can stitch them into the existing narrative and hand back a complete draft for your review. Want me to draft it?`;
+    const textBody = `I noticed you have an overdue task — **${overdue.title}**. The forensic lab just returned biological evidence on Case PBPD-2025-088142 overnight, and a disposition memo is required before the next case review. I can pull the findings, verify chain of custody, cross-reference the autopsy and the Ryan McCall interview, and flag the link to Case 034532 — then hand back a draft memo for your review. Want me to draft it?`;
 
+    // Placeholder: the actual draft is produced by the LLM on accept. We
+    // still need a value here for the offer type, but its body isn't used.
     const draft: DraftReport = {
-      title: 'Domestic Disturbance Response — Incident #6201',
-      body: INCIDENT_6201_DRAFT,
+      title: 'Forensic Biological Evidence — Disposition Memo (Case 088142)',
+      body: '',
     };
 
     const streamChars = (
@@ -2561,31 +2715,84 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When the officer accepts the proactive offer: mark the offer accepted on
-  // the original message, then stream a fresh assistant turn that runs the
-  // original draft flow (short thinking → text → draft attachment).
+  // When the detective accepts the proactive offer: mark the offer accepted,
+  // synthesize a "Yes, draft it" user turn, then hand off to the real LLM via
+  // sendChatMessage — scoped to Case PBPD-2025-088142 evidence so the model
+  // can ground the disposition memo on the forensic + interview material.
   const handleDraftOfferAccept = useCallback((msgId: string) => {
-    const offerMsg = chatMessages.find(m => m.id === msgId);
-    const draft = offerMsg?.draftOffer?.draft;
-    if (!draft) return;
-
     setChatMessages(prev => prev.map(m => m.id === msgId
       ? { ...m, draftOffer: m.draftOffer ? { ...m.draftOffer, status: 'accepted' as const } : m.draftOffer }
       : m,
     ));
 
-    const newId = `asst-draft-${Date.now()}`;
+    const userMsg: ChatMessage = {
+      id: `user-disposition-${Date.now()}`,
+      role: 'user',
+      text: 'Yes, draft the disposition memo.',
+    };
+    setChatMessages(prev => [...prev, userMsg]);
+
+    const graph = getContextGraph();
+    const evidence = Object.values(graph.nodes).filter(n => n.case_id === 'PBPD-2025-088142');
+
+    const prompt = `Draft a disposition memo for Case PBPD-2025-088142. The forensic lab just returned the biological evidence (DNA, serology, trace-impression) results, and I need to review and disposition them before the next case review.
+
+The memo should include:
+- Summary of the biological evidence findings
+- Chain-of-custody verification against the lab intake
+- Cross-reference with the autopsy report and the Ryan McCall suspect interview
+- Note the cross-case link to Case 034532 — McCall surfaced as a shared suspect via phone-records correlation
+- Recommended next steps
+
+Use a standard detective memo format. Keep it concise — 1-2 pages.`;
+
+    sendChatMessage(prompt, [...chatMessages, userMsg], evidence);
+  }, [chatMessages]);
+
+  const handleDraftOfferDecline = useCallback((msgId: string) => {
+    setChatMessages(prev => prev.map(m => m.id === msgId
+      ? { ...m, draftOffer: m.draftOffer ? { ...m.draftOffer, status: 'declined' as const } : m.draftOffer }
+      : m,
+    ));
+  }, []);
+
+  // Hand-off from MyTasks: a "Ask assistant" click in the task list dispatches
+  // `chat:task-handoff` with the task title + caseId. We synthesize a user
+  // turn ("Help me with: <title>"), filter evidence to the task's case, and
+  // run the same LLM path as the proactive offer's accept handler.
+  // Refs let us bind the listener once while still accessing the latest
+  // chatMessages and sendChatMessage closures on each invocation.
+  const chatMessagesRef = useRef(chatMessages);
+  chatMessagesRef.current = chatMessages;
+  const sendChatMessageRef = useRef<typeof sendChatMessage>(undefined as any);
+
+  // Synthetic streaming flow for the cross-reference task. Mirrors the
+  // proactive-offer pattern: stream thinking, then findings text, then attach
+  // a `viewOnGraph` action so the detective can jump to Ryan McCall on the
+  // knowledge graph.
+  const streamCrossRefFindings = useCallback(() => {
+    const newId = `asst-crossref-${Date.now()}`;
     setChatMessages(prev => [...prev, { id: newId, role: 'assistant', text: '', thinking: '' }]);
     setChatStreamingId(newId);
 
     const cancelled = { current: false };
     const thinkingChain = [
-      'Got it — drafting the completion.',
-      'Pulling the witness statements from Maria Sanchez (Unit 3A) and Mark Chen (Unit 2B).',
-      'Stitching the witness section into the existing narrative, keeping the disposition unchanged.',
-      'Done. Handing the full draft back for review.',
+      'Pulling McCall phone records from Case 088142 evidence (29-phone-records-ryan-mccall).',
+      'Comparing call timestamps against the Case 034532 incident window (Apr 22–24, 2026).',
+      'Mapping shared contacts and outgoing-call patterns across both timelines.',
+      'Cross-referencing cell-tower geolocation against both crime scenes.',
+      'Comparing against McCall\'s recorded statement (16-suspect-interview-mccall).',
+      'Findings consolidated — surfacing now.',
     ].join('\n');
-    const textBody = `Here's the completed draft — witness section added with both neighbor statements, narrative re-flowed, disposition untouched.`;
+
+    const findings = `**Cross-reference complete.** Four signals tie Ryan McCall to both cases:
+
+1. **Shared contact.** McCall placed 7 calls to **(504) 555-0193** in the 72h before the Case 088142 homicide (May 7). The same number appears in 4 calls during the Case 034532 incident window (Apr 22–24).
+2. **Activity burst around incident times.** Outgoing call volume spikes ~3× baseline in the 2h before each incident, then drops to near-zero for ~6h after — a coordination-then-silence pattern, consistent across both cases.
+3. **Geolocation overlap.** Cell-tower data places McCall's phone within **0.4 mi** of the Case 088142 scene at 23:47 on May 7 (12 min before the 911 call), and within **0.6 mi** of the Case 034532 scene at 02:18 on Apr 23 (16 min before that case's reported time of death).
+4. **Statement contradicted.** McCall's own interview places him "with friends" during the Case 088142 window — directly contradicted by the call and location data above.
+
+Recommend treating Case 034532 as a linked investigation and coordinating findings with the lead detective on that file.`;
 
     const streamChars = (
       source: string,
@@ -2616,27 +2823,53 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
       3,
       22,
       () => {
-        updateMsg({ pendingDraft: true });
         streamChars(
-          textBody,
+          findings,
           next => updateMsg({ text: next }),
           4,
-          20,
+          18,
           () => {
             if (cancelled.current) return;
-            updateMsg({ draft, pendingDraft: false });
+            updateMsg({ viewOnGraph: { nodeId: 'person:ryan-mccall', label: 'Ryan McCall' } });
             setChatStreamingId(prev => prev === newId ? null : prev);
           },
         );
       },
     );
-  }, [chatMessages]);
+  }, []);
 
-  const handleDraftOfferDecline = useCallback((msgId: string) => {
-    setChatMessages(prev => prev.map(m => m.id === msgId
-      ? { ...m, draftOffer: m.draftOffer ? { ...m.draftOffer, status: 'declined' as const } : m.draftOffer }
-      : m,
-    ));
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ title: string; caseId?: string; prompt?: string }>).detail;
+      if (!detail?.title) return;
+      // The chat UI shows a short, intent-y user turn; the LLM receives the
+      // longer task-specific prompt when one is provided (so doc-producing
+      // tasks like the exhibit list reliably come back wrapped in
+      // <draft_report> and surface as a Draft card).
+      const visibleText = `Help me with: ${detail.title}`;
+      const userMsg: ChatMessage = { id: `user-task-${Date.now()}`, role: 'user', text: visibleText };
+      setChatMessages(prev => [...prev, userMsg]);
+
+      // Cross-reference task → synthetic flow. Case 034532 isn't in the
+      // context graph, so the LLM would have nothing to ground on; we stream
+      // pre-baked findings and surface a "View on graph" button that focuses
+      // on the Ryan McCall entity.
+      if (detail.caseId === 'PBPD-2025-034532') {
+        streamCrossRefFindings();
+        return;
+      }
+
+      const llmPrompt = detail.prompt ?? visibleText;
+      const graph = getContextGraph();
+      const evidence = detail.caseId
+        ? Object.values(graph.nodes).filter(n => n.case_id === detail.caseId)
+        : [];
+      const send = sendChatMessageRef.current;
+      if (!send) return;
+      send(llmPrompt, [...chatMessagesRef.current, userMsg], evidence);
+    };
+    window.addEventListener('chat:task-handoff', handler);
+    return () => window.removeEventListener('chat:task-handoff', handler);
   }, []);
 
   // When the user switches to the Investigate tab, drop the proactive overdue
@@ -2807,6 +3040,7 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
       setChatStreamingId(null);
     }
   };
+  sendChatMessageRef.current = sendChatMessage;
 
   const handleSkillChange = (skill: string | null) => {
     setChatSkill(skill);
@@ -3053,7 +3287,26 @@ export function HomePage({ onSearch }: { onSearch: (q: string) => void }) {
       onSelectionChange={(items: GraphNode[]) => { setConfirmedEvidenceItems(items); setEvidenceCount(items.length); }}
       onConfirm={(items: GraphNode[]) => { setConfirmedEvidenceItems(items); setEvidenceCount(items.length); }}
     />
-    <DraftDrawer draft={openDraft} open={!!openDraft} onClose={() => setOpenDraft(null)} />
+    <DraftDrawer
+      draft={openDraft}
+      open={!!openDraft}
+      onClose={() => setOpenDraft(null)}
+      onSave={(d) => {
+        // Persist LLM-generated drafts to localStorage so the Artifacts tab
+        // can surface them. Newer entries first; dedupe on title.
+        try {
+          const raw = localStorage.getItem('saved_drafts');
+          const list: Array<{ title: string; body: string; savedAt: string }> =
+            raw ? JSON.parse(raw) : [];
+          const next = [
+            { title: d.title, body: d.body, savedAt: new Date().toISOString() },
+            ...list.filter(x => x.title !== d.title),
+          ];
+          localStorage.setItem('saved_drafts', JSON.stringify(next));
+          window.dispatchEvent(new CustomEvent('saved_drafts:updated'));
+        } catch { /* localStorage unavailable / quota */ }
+      }}
+    />
     </>
   );
 }

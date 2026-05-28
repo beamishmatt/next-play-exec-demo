@@ -45,9 +45,17 @@ export function KnowledgeGraphPanel({
   onTabChange?: (tab: Tab) => void;
 } = {}) {
   const navigate = useNavigate();
+  // Ref so the once-bound event listeners can call the latest onTabChange
+  // without re-binding on every render.
+  const onTabChangeRef = useRef(onTabChange);
+  onTabChangeRef.current = onTabChange;
   const [version, setVersion] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  // When the user hovers a citation in chat, treat it as a transient
+  // selection — it overrides the user's clicked selection until the hover
+  // ends. Camera also focuses on it via `focusNodeId` on the canvas.
+  const [hoveredCitationId, setHoveredCitationId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [dateRange, setDateRange] = useState<DateRange>(EMPTY_DATE_RANGE);
@@ -72,11 +80,37 @@ export function KnowledgeGraphPanel({
     });
     const handler = () => setVersion(v => v + 1);
     window.addEventListener('evidenceGraphUpdated', handler);
+    const hoverHandler = (e: Event) => {
+      const detail = (e as CustomEvent<{ evidenceId: string | null }>).detail;
+      setHoveredCitationId(detail?.evidenceId ?? null);
+    };
+    window.addEventListener('chat:citation-hover', hoverHandler);
+    // Explicit "View on graph" click from chat: switch to Investigate, select
+    // the node permanently, and use the hover-focus channel briefly to pan
+    // the camera. Clearing it after the pan completes leaves the selection
+    // alone (it's stored in selectedNodeId, not the transient hover state).
+    const focusHandler = (e: Event) => {
+      const detail = (e as CustomEvent<{ nodeId: string }>).detail;
+      if (!detail?.nodeId) return;
+      setActiveTab('evidence');
+      onTabChangeRef.current?.('evidence');
+      setSelectedNodeId(detail.nodeId);
+      setHoveredCitationId(detail.nodeId);
+      setTimeout(() => setHoveredCitationId(null), 800);
+    };
+    window.addEventListener('graph:focus-node', focusHandler);
     return () => {
       mounted = false;
       window.removeEventListener('evidenceGraphUpdated', handler);
+      window.removeEventListener('chat:citation-hover', hoverHandler);
+      window.removeEventListener('graph:focus-node', focusHandler);
     };
   }, []);
+
+  // While a citation is hovered, the hovered node id wins. The user's actual
+  // clicked selection stays in `selectedNodeId` underneath and is restored as
+  // soon as the hover ends.
+  const effectiveSelectedNodeId = hoveredCitationId ?? selectedNodeId;
 
   const graph = useMemo(() => getContextGraph(), [version]);
 
@@ -114,14 +148,14 @@ export function KnowledgeGraphPanel({
   }, [graph, nodes]);
 
   const neighborIds = useMemo(() => {
-    if (!selectedNodeId) return new Set<string>();
+    if (!effectiveSelectedNodeId) return new Set<string>();
     const ids = new Set<string>();
     for (const e of visibleLinks) {
-      if (e.source === selectedNodeId) ids.add(e.target);
-      else if (e.target === selectedNodeId) ids.add(e.source);
+      if (e.source === effectiveSelectedNodeId) ids.add(e.target);
+      else if (e.target === effectiveSelectedNodeId) ids.add(e.source);
     }
     return ids;
-  }, [selectedNodeId, visibleLinks]);
+  }, [effectiveSelectedNodeId, visibleLinks]);
 
   const filterOptions = useMemo(() => {
     const collect = (pick: (n: GraphNode) => string | undefined) => {
@@ -257,12 +291,12 @@ export function KnowledgeGraphPanel({
     setSelectedNodeId(null);
   }, []);
 
-  const selectedNode = selectedNodeId ? graph.nodes[selectedNodeId] : null;
-  const selectedEntity = selectedNodeId ? (graph.entities ?? {})[selectedNodeId] : null;
+  const selectedNode = effectiveSelectedNodeId ? graph.nodes[effectiveSelectedNodeId] : null;
+  const selectedEntity = effectiveSelectedNodeId ? (graph.entities ?? {})[effectiveSelectedNodeId] : null;
   const selectedCaseHub = useMemo(() => {
-    if (!selectedNodeId || !selectedNodeId.startsWith('case:')) return null;
-    return caseHubs.find(h => h.id === selectedNodeId) ?? null;
-  }, [selectedNodeId, caseHubs]);
+    if (!effectiveSelectedNodeId || !effectiveSelectedNodeId.startsWith('case:')) return null;
+    return caseHubs.find(h => h.id === effectiveSelectedNodeId) ?? null;
+  }, [effectiveSelectedNodeId, caseHubs]);
 
   // For a selected case, find every other case that shares at least one entity
   // (person / officer / location / object / identifier). The shared entity is
@@ -343,13 +377,14 @@ export function KnowledgeGraphPanel({
               <KnowledgeGraphCanvas
                 nodes={canvasNodes}
                 links={visibleLinks}
-                selectedNodeId={selectedNodeId}
+                selectedNodeId={effectiveSelectedNodeId}
                 neighborIds={neighborIds}
                 matchedIds={matchedIds}
                 onNodeClick={handleNodeClick}
                 onBackgroundClick={handleBackgroundClick}
                 onSelectedNodePosition={setSelectedNodePos}
                 fitViewSignal={fitViewSignal}
+                focusNodeId={hoveredCitationId}
               />
             ) : (
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>

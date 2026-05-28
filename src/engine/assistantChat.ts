@@ -39,7 +39,7 @@ function buildSystemPrompt(items: AssistantItem[], vectorContext: string): strin
     'Format your response in clean markdown. Use bullet points, bold, and headers where appropriate.',
     'Be concise and factual. Only draw on the evidence listed above.',
     'When you reference a specific piece of evidence, cite its ID inline immediately after the relevant claim using square brackets, e.g. [EV-16M3TQA7]. Use a separate bracket for each ID — never group multiple IDs in one bracket (do NOT write [EV-ID1, EV-ID2], instead write [EV-ID1][EV-ID2]). Only cite IDs from the evidence listed above. NEVER write an evidence ID or filename in plain prose — only inside square brackets.',
-    items.length > 0 ? '\nDRAFT REPORTS: If the user asks you to draft, write, or generate a report, incident report, summary report, or any written document, you MUST output the full draft inside a <draft_report> block. Use the format:\n<draft_report title="[Descriptive report title]">\n[Full report content in clean markdown]\n</draft_report>\nBefore the block, write 1–2 sentences in plain markdown acknowledging what you are drafting. Do NOT include the report content outside the block.' : null,
+    items.length > 0 ? '\nDRAFT DOCUMENTS: If the user asks you to draft, write, generate, prepare, compose, or produce ANY document — including reports, incident reports, memos, exhibit lists, witness lists, evidence inventories, summaries, briefs, disposition memos, tables, or any structured written output meant to be filed, shared, printed, or brought to court — you MUST output the full content inside a <draft_report> block. This rule applies to lists and tables too: if the output is a standalone document the user will save or hand to someone, wrap it. Use the format:\n<draft_report title="[Descriptive document title]">\n[Full content in clean markdown]\n</draft_report>\nBefore the block, write 1–2 sentences in plain markdown acknowledging what you are drafting. Do NOT include the document content outside the block.' : null,
     '\nTIMELINE: If the user asks for a timeline, chronology, or sequence of events, present the evidence as a markdown table with columns: Date | Time | Title | Type | Officer. Sort rows chronologically. Only include evidence items that have a recorded date.',
     '\nFEATURE REQUESTS: If the user asks you to do something that is outside your capabilities — such as sending emails, making calls, accessing external systems, performing real-world actions, or anything this platform does not support — respond with a brief 1-sentence acknowledgement explaining you cannot do that, then immediately emit: <feature_request title="[concise feature name, 3–6 words]" description="[1–2 sentences describing what the user wanted to do]" />\nDo NOT apologise repeatedly or suggest workarounds. Just acknowledge and emit the tag.',
   ].filter(Boolean).join('\n');
@@ -136,9 +136,9 @@ export async function chatWithEvidenceStream(
   const systemPrompt = buildSystemPrompt(items, vectorContext);
 
   const stream = await openai.chat.completions.create({
-    model: 'gpt-4o',
+    model: 'gpt-5.4-mini-2026-03-17',
     temperature: 0.3,
-    max_tokens: 2400,
+    max_completion_tokens: 2400,
     stream: true,
     messages: [
       { role: 'system', content: systemPrompt },

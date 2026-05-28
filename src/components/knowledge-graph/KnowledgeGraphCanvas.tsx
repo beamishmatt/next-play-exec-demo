@@ -192,6 +192,8 @@ type Props = {
   onBackgroundClick: () => void;
   onSelectedNodePosition?: (pos: NodeScreenPosition | null) => void;
   fitViewSignal?: number;
+  // When non-null, pan/zoom to that node id (used for citation-hover preview).
+  focusNodeId?: string | null;
 };
 
 export function KnowledgeGraphCanvas({
@@ -204,6 +206,7 @@ export function KnowledgeGraphCanvas({
   onBackgroundClick,
   onSelectedNodePosition,
   fitViewSignal,
+  focusNodeId,
 }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<Graph | null>(null);
@@ -400,6 +403,16 @@ export function KnowledgeGraphCanvas({
 
     graph.setElementState(state, false);
   }, [nodes, links, selectedNodeId, neighborIds, matchedIds]);
+
+  // Pan/zoom toward a transiently-focused node (driven by citation hover in
+  // chat). Reuses focusOnIds with a single id so the camera centers on it.
+  useEffect(() => {
+    const graph = graphRef.current;
+    if (!graph) return;
+    if (!focusNodeId) return;
+    if (!nodeIndexRef.current.has(focusNodeId)) return;
+    focusOnIds(graph, [focusNodeId]);
+  }, [focusNodeId]);
 
   // Pan + zoom to fit the matched-search subset. When matches clear (null),
   // re-fit the whole graph so the user isn't stranded zoomed-in on nothing.
